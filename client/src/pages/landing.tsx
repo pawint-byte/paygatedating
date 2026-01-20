@@ -6,6 +6,7 @@ import { PricingSection } from "@/components/landing/pricing-section";
 import { Testimonials } from "@/components/landing/testimonials";
 import { SecuritySection } from "@/components/landing/security-section";
 import { Footer } from "@/components/landing/footer";
+import { Chatbot } from "@/components/chatbot";
 
 export default function Landing() {
   return (
@@ -20,6 +21,7 @@ export default function Landing() {
         <SecuritySection />
       </main>
       <Footer />
+      <Chatbot />
     </div>
   );
 }

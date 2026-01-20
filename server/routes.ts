@@ -16,6 +16,8 @@ import {
   GIFT_PLATFORM_FEE_PERCENT,
 } from "@shared/schema";
 import { z } from "zod";
+import OpenAI from "openai";
+import Stripe from "stripe";
 
 const depositSchema = z.object({
   amount: z.number().min(MINIMUM_WALLET_BALANCE, `Minimum deposit is $${MINIMUM_WALLET_BALANCE}`),
@@ -760,6 +762,279 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error claiming gift:", error);
       res.status(500).json({ message: "Failed to claim gift" });
+    }
+  });
+
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message, history } = req.body;
+
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        return res.json({ 
+          reply: "Thank you for your interest in PayGate Dating! Our AI assistant is currently being set up. In the meantime, you can sign up now and get $15 in free credits to start making meaningful connections!" 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: openaiApiKey });
+
+      const systemPrompt = `You are a friendly and helpful assistant for PayGate Dating, a premium dating platform that uses a unique 5-gate progression system.
+
+Key information about PayGate Dating:
+- Users pay incremental fees ($5-$20) at each interaction stage, filtering out low-effort interactions
+- New users get $15 in FREE credits when they sign up
+- The referral program gives $5 for each friend who joins
+- Users can create Items of Interest wishlists for gifts from matches
+- Premium subscription is $9.99/month or $99/year for enhanced features
+- The platform is designed for serious relationship seekers aged 25-45
+
+Your goals:
+1. Answer questions about the platform helpfully and accurately
+2. Promote sign-up by highlighting the $15 free credits and referral bonuses
+3. Explain the 5-gate system (Gate 1: Initial Interest, Gate 2: Getting to Know, Gate 3: Deeper Connection, Gate 4: Exclusive Chat, Gate 5: Real World)
+4. Be warm, encouraging, and professional
+5. Keep responses concise (2-3 sentences max unless explaining something complex)
+
+Always encourage visitors to sign up and try the platform!`;
+
+      const messages: OpenAI.ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt },
+        ...(history || []).map((m: { role: string; content: string }) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+        { role: "user", content: message },
+      ];
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 200,
+        temperature: 0.7,
+      });
+
+      const reply = completion.choices[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try again!";
+
+      res.json({ reply });
+    } catch (error) {
+      console.error("Error in chat endpoint:", error);
+      res.json({ 
+        reply: "I'm having a moment! While I get back on track, why not sign up and claim your $15 in free credits? It's the perfect way to start your PayGate Dating journey!" 
+      });
+    }
+  });
+
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
+
+  app.get("/api/subscription", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscription = await storage.getSubscription(userId);
+      res.json(subscription || null);
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
+      res.status(500).json({ message: "Failed to fetch subscription" });
+    }
+  });
+
+  app.post("/api/subscription/create-checkout", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ message: "Payment system not configured" });
+      }
+
+      const userId = req.user.claims.sub;
+      const { priceType } = req.body;
+      
+      if (!priceType || !["monthly", "yearly"].includes(priceType)) {
+        return res.status(400).json({ message: "Invalid price type" });
+      }
+
+      const profile = await storage.getProfile(userId);
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      let subscription = await storage.getSubscription(userId);
+      let customerId = subscription?.stripeCustomerId;
+
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          metadata: { userId },
+        });
+        customerId = customer.id;
+
+        if (!subscription) {
+          subscription = await storage.createSubscription({
+            userId,
+            stripeCustomerId: customerId,
+          });
+        } else {
+          await storage.updateSubscription(userId, { stripeCustomerId: customerId });
+        }
+      }
+
+      const prices = await stripe.prices.list({
+        lookup_keys: [priceType === "monthly" ? "premium_monthly" : "premium_yearly"],
+        expand: ["data.product"],
+      });
+
+      let priceId = prices.data[0]?.id;
+
+      if (!priceId) {
+        const product = await stripe.products.create({
+          name: "PayGate Premium",
+          description: "Premium subscription with enhanced features",
+        });
+
+        const price = await stripe.prices.create({
+          product: product.id,
+          unit_amount: priceType === "monthly" ? 999 : 9900,
+          currency: "usd",
+          recurring: { interval: priceType === "monthly" ? "month" : "year" },
+          lookup_key: priceType === "monthly" ? "premium_monthly" : "premium_yearly",
+        });
+        priceId = price.id;
+      }
+
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : process.env.REPLIT_DOMAINS 
+          ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+          : "http://localhost:5000";
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${baseUrl}/settings?subscription=success`,
+        cancel_url: `${baseUrl}/settings?subscription=canceled`,
+        metadata: { userId },
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/subscription/cancel", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ message: "Payment system not configured" });
+      }
+
+      const userId = req.user.claims.sub;
+      const subscription = await storage.getSubscription(userId);
+
+      if (!subscription?.stripeSubscriptionId) {
+        return res.status(404).json({ message: "No active subscription" });
+      }
+
+      await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+
+      await storage.updateSubscription(userId, { cancelAtPeriodEnd: true });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      res.status(500).json({ message: "Failed to cancel subscription" });
+    }
+  });
+
+  app.post("/api/webhooks/stripe", async (req: any, res) => {
+    if (!stripe) {
+      return res.status(503).json({ message: "Payment system not configured" });
+    }
+
+    const sig = req.headers["stripe-signature"];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.warn("Stripe webhook secret not configured");
+      return res.status(400).json({ message: "Webhook not configured" });
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.rawBody as Buffer, sig as string, webhookSecret);
+    } catch (err: any) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).json({ message: `Webhook Error: ${err.message}` });
+    }
+
+    try {
+      switch (event.type) {
+        case "customer.subscription.created":
+        case "customer.subscription.updated": {
+          const subscription = event.data.object as Stripe.Subscription;
+          const customerId = subscription.customer as string;
+          
+          const existingSub = await storage.getSubscriptionByCustomerId(customerId);
+          if (existingSub) {
+            const subData = subscription as any;
+            await storage.updateSubscription(existingSub.userId, {
+              stripeSubscriptionId: subscription.id,
+              stripePriceId: subscription.items.data[0]?.price.id,
+              status: subscription.status as any,
+              currentPeriodStart: new Date(subData.current_period_start * 1000),
+              currentPeriodEnd: new Date(subData.current_period_end * 1000),
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            });
+
+            if (subscription.status === "active") {
+              await storage.updateProfile(existingSub.userId, {
+                subscriptionTier: "premium",
+              });
+            }
+          }
+          break;
+        }
+
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object as Stripe.Subscription;
+          const customerId = subscription.customer as string;
+          
+          const existingSub = await storage.getSubscriptionByCustomerId(customerId);
+          if (existingSub) {
+            await storage.updateSubscription(existingSub.userId, {
+              status: "canceled",
+            });
+            await storage.updateProfile(existingSub.userId, {
+              subscriptionTier: "free",
+            });
+          }
+          break;
+        }
+
+        case "invoice.payment_failed": {
+          const invoice = event.data.object as Stripe.Invoice;
+          const customerId = invoice.customer as string;
+          
+          const existingSub = await storage.getSubscriptionByCustomerId(customerId);
+          if (existingSub) {
+            await storage.updateSubscription(existingSub.userId, {
+              status: "past_due",
+            });
+          }
+          break;
+        }
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Error processing webhook:", error);
+      res.status(500).json({ message: "Failed to process webhook" });
     }
   });
 

@@ -1,5 +1,6 @@
 import { Heart } from "lucide-react";
 import { Link } from "wouter";
+import { SocialShare } from "@/components/social-share";
 
 export function Footer() {
   return (
@@ -109,6 +110,10 @@ export function Footer() {
             &copy; {new Date().getFullYear()} PayGate Dating. All rights
             reserved.
           </p>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">Share:</span>
+            <SocialShare />
+          </div>
           <p className="text-sm text-muted-foreground">
             Made with <Heart className="w-3 h-3 inline text-primary" /> for
             meaningful connections

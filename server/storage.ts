@@ -7,6 +7,7 @@ import {
   referrals,
   registryItems,
   giftPurchases,
+  subscriptions,
   type Profile,
   type InsertProfile,
   type Wallet,
@@ -23,6 +24,8 @@ import {
   type InsertRegistryItem,
   type GiftPurchase,
   type InsertGiftPurchase,
+  type Subscription,
+  type InsertSubscription,
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
 } from "@shared/schema";
@@ -77,6 +80,12 @@ export interface IStorage {
   getGiftPurchasesByRecipient(userId: string): Promise<GiftPurchase[]>;
   createGiftPurchase(purchase: InsertGiftPurchase): Promise<GiftPurchase>;
   updateGiftPurchase(id: string, data: Partial<GiftPurchase>): Promise<GiftPurchase | undefined>;
+
+  getSubscription(userId: string): Promise<Subscription | undefined>;
+  getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<Subscription | undefined>;
+  getSubscriptionByCustomerId(stripeCustomerId: string): Promise<Subscription | undefined>;
+  createSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  updateSubscription(userId: string, data: Partial<Subscription>): Promise<Subscription | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -306,6 +315,35 @@ export class DatabaseStorage implements IStorage {
       .update(giftPurchases)
       .set(data)
       .where(eq(giftPurchases.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getSubscription(userId: string): Promise<Subscription | undefined> {
+    const [subscription] = await db.select().from(subscriptions).where(eq(subscriptions.userId, userId));
+    return subscription;
+  }
+
+  async getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<Subscription | undefined> {
+    const [subscription] = await db.select().from(subscriptions).where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+    return subscription;
+  }
+
+  async getSubscriptionByCustomerId(stripeCustomerId: string): Promise<Subscription | undefined> {
+    const [subscription] = await db.select().from(subscriptions).where(eq(subscriptions.stripeCustomerId, stripeCustomerId));
+    return subscription;
+  }
+
+  async createSubscription(subscription: InsertSubscription): Promise<Subscription> {
+    const [newSubscription] = await db.insert(subscriptions).values(subscription).returning();
+    return newSubscription;
+  }
+
+  async updateSubscription(userId: string, data: Partial<Subscription>): Promise<Subscription | undefined> {
+    const [updated] = await db
+      .update(subscriptions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(subscriptions.userId, userId))
       .returning();
     return updated;
   }

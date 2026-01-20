@@ -114,6 +114,25 @@ export const giftPurchases = pgTable("gift_purchases", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const subscriptionStatusEnum = pgEnum("subscription_status", ["active", "canceled", "past_due", "trialing"]);
+
+export const subscriptions = pgTable("subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  stripePriceId: varchar("stripe_price_id"),
+  status: subscriptionStatusEnum("status").default("trialing").notNull(),
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const SUBSCRIPTION_MONTHLY_PRICE = 9.99;
+export const SUBSCRIPTION_YEARLY_PRICE = 99;
+
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   wallet: one(wallets, {
     fields: [profiles.userId],
@@ -206,6 +225,12 @@ export const insertReferralSchema = createInsertSchema(referrals).omit({
   bonusPaid: true,
 });
 
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Profile = typeof profiles.$inferSelect;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type Wallet = typeof wallets.$inferSelect;
@@ -222,6 +247,8 @@ export type GiftPurchase = typeof giftPurchases.$inferSelect;
 export type InsertGiftPurchase = z.infer<typeof insertGiftPurchaseSchema>;
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 
 export const GATE_COSTS = {
   gate1: 5,

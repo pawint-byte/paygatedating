@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import path from "path";
 
 const app = express();
 const httpServer = createServer(app);
@@ -11,6 +12,8 @@ declare module "http" {
     rawBody: unknown;
   }
 }
+
+app.use(express.static(path.join(process.cwd(), "public")));
 
 app.use(
   express.json({
