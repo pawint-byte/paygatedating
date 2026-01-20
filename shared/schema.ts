@@ -7,8 +7,11 @@ export * from "./models/auth";
 
 export const subscriptionTierEnum = pgEnum("subscription_tier", ["free", "premium"]);
 export const gateStageEnum = pgEnum("gate_stage", ["gate1", "gate2", "gate3", "gate4", "gate5", "completed"]);
-export const transactionTypeEnum = pgEnum("transaction_type", ["deposit", "gate_payment", "refund", "subscription"]);
+export const transactionTypeEnum = pgEnum("transaction_type", ["deposit", "gate_payment", "refund", "subscription", "trial_bonus", "referral_bonus"]);
 export const matchStatusEnum = pgEnum("match_status", ["pending", "active", "declined", "completed"]);
+
+export const TRIAL_CREDITS_AMOUNT = 15;
+export const REFERRAL_BONUS_AMOUNT = 5;
 
 export const profiles = pgTable("profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -31,6 +34,17 @@ export const wallets = pgTable("wallets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().unique(),
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  trialCreditsReceived: boolean("trial_credits_received").default(false).notNull(),
+  referralCode: varchar("referral_code", { length: 10 }).unique(),
+  referredBy: varchar("referred_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const referrals = pgTable("referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referrerUserId: varchar("referrer_user_id").notNull(),
+  referredUserId: varchar("referred_user_id").notNull().unique(),
+  bonusPaid: boolean("bonus_paid").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
