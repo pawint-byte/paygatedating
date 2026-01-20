@@ -545,12 +545,34 @@ export async function registerRoutes(
     }
   });
 
+  function addAmazonAffiliateTag(url: string): string {
+    const amazonTag = process.env.AMAZON_ASSOCIATE_TAG;
+    if (!amazonTag) return url;
+    
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('amazon.com') || urlObj.hostname.includes('amzn.to') || urlObj.hostname.includes('amzn.com')) {
+        urlObj.searchParams.set('tag', amazonTag);
+        return urlObj.toString();
+      }
+    } catch (e) {
+      // Invalid URL, return as-is
+    }
+    return url;
+  }
+
   app.post("/api/registry", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       
+      let affiliateUrl = req.body.affiliateUrl;
+      if (affiliateUrl) {
+        affiliateUrl = addAmazonAffiliateTag(affiliateUrl);
+      }
+      
       const validationResult = insertRegistryItemSchema.safeParse({
         ...req.body,
+        affiliateUrl,
         userId,
       });
 
