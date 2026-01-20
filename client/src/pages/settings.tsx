@@ -11,6 +11,8 @@ import { Crown, Bell, Eye, Shield, CreditCard } from "lucide-react";
 import type { Profile } from "@shared/schema";
 import { PREMIUM_MONTHLY_COST, PREMIUM_YEARLY_COST } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
+import { ReferralCard } from "@/components/dashboard/referral-card";
+import { WishlistManager } from "@/components/dashboard/wishlist-manager";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -127,6 +129,10 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      <ReferralCard />
+
+      <WishlistManager />
 
       <Card>
         <CardHeader>

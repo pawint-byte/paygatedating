@@ -8,7 +8,12 @@ import {
   insertProfileSchema, 
   insertMatchSchema,
   insertMessageSchema,
+  insertRegistryItemSchema,
   MINIMUM_WALLET_BALANCE,
+  TRIAL_CREDITS_AMOUNT,
+  REFERRAL_BONUS_AMOUNT,
+  GIFT_MINIMUM_VALUE,
+  GIFT_PLATFORM_FEE_PERCENT,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -67,7 +72,43 @@ export async function registerRoutes(
       
       let wallet = await storage.getWallet(userId);
       if (!wallet) {
-        wallet = await storage.createWallet({ userId });
+        const referredBy = req.body.referralCode || null;
+        wallet = await storage.createWallet({ userId, referredBy });
+      }
+
+      if (!wallet.trialCreditsReceived) {
+        const newBalance = (parseFloat(wallet.balance) + TRIAL_CREDITS_AMOUNT).toFixed(2);
+        await storage.updateWalletBalance(userId, newBalance);
+        await storage.markTrialCreditsReceived(userId);
+        
+        await storage.createTransaction({
+          walletId: wallet.id,
+          amount: TRIAL_CREDITS_AMOUNT.toFixed(2),
+          type: "trial_bonus",
+          description: `Welcome bonus: $${TRIAL_CREDITS_AMOUNT} free credits!`,
+        });
+
+        if (wallet.referredBy) {
+          const referrerWallet = await storage.getWalletByReferralCode(wallet.referredBy);
+          if (referrerWallet && referrerWallet.userId !== userId) {
+            const referral = await storage.createReferral({
+              referrerUserId: referrerWallet.userId,
+              referredUserId: userId,
+            });
+            
+            const referrerNewBalance = (parseFloat(referrerWallet.balance) + REFERRAL_BONUS_AMOUNT).toFixed(2);
+            await storage.updateWalletBalance(referrerWallet.userId, referrerNewBalance);
+            
+            await storage.createTransaction({
+              walletId: referrerWallet.id,
+              amount: REFERRAL_BONUS_AMOUNT.toFixed(2),
+              type: "referral_bonus",
+              description: `Referral bonus for inviting a friend`,
+            });
+
+            await storage.markReferralBonusPaid(referral.id);
+          }
+        }
       }
 
       res.status(201).json(profile);
@@ -427,6 +468,267 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error sending message:", error);
       res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.get("/api/referral", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wallet = await storage.getWallet(userId);
+      
+      if (!wallet) {
+        return res.status(404).json({ message: "Wallet not found" });
+      }
+
+      const referrals = await storage.getReferralsByReferrer(userId);
+      
+      res.json({
+        referralCode: wallet.referralCode,
+        totalReferrals: referrals.length,
+        bonusEarned: referrals.filter(r => r.bonusPaid).length * REFERRAL_BONUS_AMOUNT,
+        referrals: referrals.map(r => ({
+          id: r.id,
+          createdAt: r.createdAt,
+          bonusPaid: r.bonusPaid,
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching referral info:", error);
+      res.status(500).json({ message: "Failed to fetch referral info" });
+    }
+  });
+
+  app.get("/api/referral/validate/:code", async (req: any, res) => {
+    try {
+      const code = req.params.code;
+      const wallet = await storage.getWalletByReferralCode(code);
+      
+      res.json({ valid: !!wallet });
+    } catch (error) {
+      console.error("Error validating referral code:", error);
+      res.status(500).json({ message: "Failed to validate referral code" });
+    }
+  });
+
+  app.get("/api/registry", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const items = await storage.getRegistryItems(userId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching registry:", error);
+      res.status(500).json({ message: "Failed to fetch registry" });
+    }
+  });
+
+  app.get("/api/registry/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const viewerId = req.user.claims.sub;
+      const targetUserId = req.params.userId;
+      
+      const items = await storage.getRegistryItems(targetUserId);
+      
+      const existingMatch = (await storage.getMatchesByUser(viewerId))
+        .find(m => m.initiatorId === targetUserId || m.recipientId === targetUserId);
+      
+      const filteredItems = items.filter(item => {
+        if (item.visibility === "public") return true;
+        if (item.visibility === "matches_only" && existingMatch) return true;
+        if (item.visibility === "after_gate1" && existingMatch && existingMatch.currentGate !== "gate1") return true;
+        return false;
+      });
+      
+      res.json(filteredItems.filter(item => !item.isPurchased));
+    } catch (error) {
+      console.error("Error fetching user registry:", error);
+      res.status(500).json({ message: "Failed to fetch registry" });
+    }
+  });
+
+  app.post("/api/registry", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const validationResult = insertRegistryItemSchema.safeParse({
+        ...req.body,
+        userId,
+      });
+
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid registry item data",
+          errors: validationResult.error.flatten().fieldErrors,
+        });
+      }
+
+      const item = await storage.createRegistryItem(validationResult.data);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error creating registry item:", error);
+      res.status(500).json({ message: "Failed to create registry item" });
+    }
+  });
+
+  app.delete("/api/registry/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = req.params.id;
+      
+      const item = await storage.getRegistryItem(itemId);
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+      
+      if (item.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      await storage.deleteRegistryItem(itemId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting registry item:", error);
+      res.status(500).json({ message: "Failed to delete registry item" });
+    }
+  });
+
+  app.post("/api/gifts/purchase", isAuthenticated, async (req: any, res) => {
+    try {
+      const buyerUserId = req.user.claims.sub;
+      const { registryItemId, recipientUserId, matchId } = req.body;
+
+      if (!registryItemId || !recipientUserId) {
+        return res.status(400).json({ message: "Registry item and recipient are required" });
+      }
+
+      if (buyerUserId === recipientUserId) {
+        return res.status(400).json({ message: "Cannot purchase gifts for yourself" });
+      }
+
+      const item = await storage.getRegistryItem(registryItemId);
+      if (!item) {
+        return res.status(404).json({ message: "Registry item not found" });
+      }
+
+      if (item.userId !== recipientUserId) {
+        return res.status(400).json({ message: "This item does not belong to the recipient" });
+      }
+
+      if (item.isPurchased) {
+        return res.status(400).json({ message: "This item has already been purchased" });
+      }
+
+      const giftValue = parseFloat(item.price);
+      if (giftValue < GIFT_MINIMUM_VALUE) {
+        return res.status(400).json({ message: `Minimum gift value is $${GIFT_MINIMUM_VALUE}` });
+      }
+
+      if (matchId) {
+        const match = await storage.getMatch(matchId);
+        if (!match) {
+          return res.status(404).json({ message: "Match not found" });
+        }
+        if (match.initiatorId !== buyerUserId && match.recipientId !== buyerUserId) {
+          return res.status(403).json({ message: "Not authorized for this match" });
+        }
+        if ((match.initiatorId !== recipientUserId && match.recipientId !== recipientUserId)) {
+          return res.status(400).json({ message: "Recipient is not part of this match" });
+        }
+      }
+
+      const platformFee = (giftValue * GIFT_PLATFORM_FEE_PERCENT / 100).toFixed(2);
+      
+      let gatesUnlocked = 0;
+      if (giftValue >= 100) gatesUnlocked = 3;
+      else if (giftValue >= 50) gatesUnlocked = 2;
+      else if (giftValue >= 25) gatesUnlocked = 1;
+
+      const claimDeadline = new Date();
+      claimDeadline.setDate(claimDeadline.getDate() + 14);
+
+      const purchase = await storage.createGiftPurchase({
+        buyerUserId,
+        recipientUserId,
+        registryItemId,
+        matchId: matchId || null,
+        giftValue: giftValue.toFixed(2),
+        platformFee,
+        claimDeadline,
+      });
+
+      await storage.updateRegistryItem(registryItemId, { isPurchased: true });
+
+      if (matchId) {
+        const match = await storage.getMatch(matchId);
+        if (match && gatesUnlocked > 0 && match.currentGate !== "completed") {
+          const gateOrder = ["gate1", "gate2", "gate3", "gate4", "gate5", "completed"];
+          const currentIndex = gateOrder.indexOf(match.currentGate);
+          
+          if (currentIndex >= 0) {
+            const newIndex = Math.min(currentIndex + gatesUnlocked, gateOrder.length - 1);
+            const newGate = gateOrder[newIndex];
+            
+            await storage.updateMatch(matchId, {
+              currentGate: newGate as any,
+              status: "active",
+            });
+
+            await storage.updateGiftPurchase(purchase.id, { gatesUnlocked });
+          }
+        }
+      }
+
+      res.status(201).json(purchase);
+    } catch (error) {
+      console.error("Error purchasing gift:", error);
+      res.status(500).json({ message: "Failed to purchase gift" });
+    }
+  });
+
+  app.get("/api/gifts/sent", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const purchases = await storage.getGiftPurchasesByBuyer(userId);
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching sent gifts:", error);
+      res.status(500).json({ message: "Failed to fetch sent gifts" });
+    }
+  });
+
+  app.get("/api/gifts/received", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const purchases = await storage.getGiftPurchasesByRecipient(userId);
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching received gifts:", error);
+      res.status(500).json({ message: "Failed to fetch received gifts" });
+    }
+  });
+
+  app.post("/api/gifts/:id/claim", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const giftId = req.params.id;
+
+      const purchase = await storage.getGiftPurchase(giftId);
+      if (!purchase) {
+        return res.status(404).json({ message: "Gift not found" });
+      }
+
+      if (purchase.recipientUserId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (purchase.status !== "delivered" && purchase.status !== "shipped") {
+        return res.status(400).json({ message: "Gift cannot be claimed yet" });
+      }
+
+      const updatedPurchase = await storage.updateGiftPurchase(giftId, { status: "claimed" });
+      res.json(updatedPurchase);
+    } catch (error) {
+      console.error("Error claiming gift:", error);
+      res.status(500).json({ message: "Failed to claim gift" });
     }
   });
 

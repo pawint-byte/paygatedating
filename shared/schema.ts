@@ -80,6 +80,40 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const registryVisibilityEnum = pgEnum("registry_visibility", ["public", "matches_only", "after_gate1"]);
+export const registryPriceTierEnum = pgEnum("registry_price_tier", ["starter", "impressive", "vip"]);
+export const giftStatusEnum = pgEnum("gift_status", ["pending", "purchased", "shipped", "delivered", "claimed", "refunded"]);
+
+export const registryItems = pgTable("registry_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  affiliateUrl: text("affiliate_url").notNull(),
+  imageUrl: text("image_url"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  priceTier: registryPriceTierEnum("price_tier").default("starter").notNull(),
+  visibility: registryVisibilityEnum("visibility").default("public").notNull(),
+  isPurchased: boolean("is_purchased").default(false).notNull(),
+  isReserved: boolean("is_reserved").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const giftPurchases = pgTable("gift_purchases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  buyerUserId: varchar("buyer_user_id").notNull(),
+  recipientUserId: varchar("recipient_user_id").notNull(),
+  registryItemId: varchar("registry_item_id").notNull(),
+  matchId: varchar("match_id"),
+  giftValue: decimal("gift_value", { precision: 10, scale: 2 }).notNull(),
+  platformFee: decimal("platform_fee", { precision: 10, scale: 2 }).notNull(),
+  affiliateCommission: decimal("affiliate_commission", { precision: 10, scale: 2 }),
+  status: giftStatusEnum("status").default("pending").notNull(),
+  gatesUnlocked: integer("gates_unlocked").default(0).notNull(),
+  claimDeadline: timestamp("claim_deadline"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   wallet: one(wallets, {
     fields: [profiles.userId],
@@ -129,6 +163,8 @@ export const insertWalletSchema = createInsertSchema(wallets).omit({
   id: true,
   createdAt: true,
   balance: true,
+  trialCreditsReceived: true,
+  referralCode: true,
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
@@ -150,6 +186,26 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 
+export const insertRegistryItemSchema = createInsertSchema(registryItems).omit({
+  id: true,
+  createdAt: true,
+  isPurchased: true,
+  isReserved: true,
+});
+
+export const insertGiftPurchaseSchema = createInsertSchema(giftPurchases).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  gatesUnlocked: true,
+});
+
+export const insertReferralSchema = createInsertSchema(referrals).omit({
+  id: true,
+  createdAt: true,
+  bonusPaid: true,
+});
+
 export type Profile = typeof profiles.$inferSelect;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type Wallet = typeof wallets.$inferSelect;
@@ -160,6 +216,12 @@ export type Match = typeof matches.$inferSelect;
 export type InsertMatch = z.infer<typeof insertMatchSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type RegistryItem = typeof registryItems.$inferSelect;
+export type InsertRegistryItem = z.infer<typeof insertRegistryItemSchema>;
+export type GiftPurchase = typeof giftPurchases.$inferSelect;
+export type InsertGiftPurchase = z.infer<typeof insertGiftPurchaseSchema>;
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = z.infer<typeof insertReferralSchema>;
 
 export const GATE_COSTS = {
   gate1: 5,
@@ -173,3 +235,6 @@ export const SKIP_AHEAD_COST = 50;
 export const PREMIUM_MONTHLY_COST = 9.99;
 export const PREMIUM_YEARLY_COST = 99;
 export const MINIMUM_WALLET_BALANCE = 20;
+export const GIFT_MINIMUM_VALUE = 25;
+export const GIFT_PLATFORM_FEE_PERCENT = 10;
+export const GIFT_AFFILIATE_COMMISSION_PERCENT = 10;
