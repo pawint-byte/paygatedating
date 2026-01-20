@@ -45,3 +45,4 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_database:1.0.
 
 [userenv.shared]
 AMAZON_ASSOCIATE_TAG = "pawint-20"
+AWIN_PUBLISHER_ID = "2735710"

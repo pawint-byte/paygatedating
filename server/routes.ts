@@ -545,16 +545,25 @@ export async function registerRoutes(
     }
   });
 
-  function addAmazonAffiliateTag(url: string): string {
-    const amazonTag = process.env.AMAZON_ASSOCIATE_TAG;
-    if (!amazonTag) return url;
-    
+  function addAffiliateTag(url: string): string {
     try {
       const urlObj = new URL(url);
-      if (urlObj.hostname.includes('amazon.com') || urlObj.hostname.includes('amzn.to') || urlObj.hostname.includes('amzn.com')) {
+      
+      // Amazon affiliate tagging
+      const amazonTag = process.env.AMAZON_ASSOCIATE_TAG;
+      if (amazonTag && (urlObj.hostname.includes('amazon.com') || urlObj.hostname.includes('amzn.to') || urlObj.hostname.includes('amzn.com'))) {
         urlObj.searchParams.set('tag', amazonTag);
         return urlObj.toString();
       }
+      
+      // Etsy via Awin affiliate network
+      const awinPublisherId = process.env.AWIN_PUBLISHER_ID;
+      if (awinPublisherId && urlObj.hostname.includes('etsy.com')) {
+        const etsyMerchantId = '6220'; // Etsy's Awin merchant ID
+        const encodedUrl = encodeURIComponent(url);
+        return `https://www.awin1.com/cread.php?awinmid=${etsyMerchantId}&awinaffid=${awinPublisherId}&ued=${encodedUrl}`;
+      }
+      
     } catch (e) {
       // Invalid URL, return as-is
     }
@@ -567,7 +576,7 @@ export async function registerRoutes(
       
       let affiliateUrl = req.body.affiliateUrl;
       if (affiliateUrl) {
-        affiliateUrl = addAmazonAffiliateTag(affiliateUrl);
+        affiliateUrl = addAffiliateTag(affiliateUrl);
       }
       
       const validationResult = insertRegistryItemSchema.safeParse({
