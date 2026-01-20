@@ -1,8 +1,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, MapPin, Heart, Sparkles } from "lucide-react";
+import { Link } from "wouter";
+import { User, MapPin, Heart, Sparkles, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -30,12 +32,15 @@ const profileSchema = z.object({
   bio: z.string().max(2000).optional(),
   lookingFor: z.string().optional(),
   interests: z.string().optional(),
+  termsAccepted: z.boolean().refine(val => val === true, {
+    message: "You must accept the Terms of Service and Privacy Policy",
+  }),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 interface ProfileSetupFormProps {
-  onSubmit: (data: ProfileFormData & { interests: string[] }) => void;
+  onSubmit: (data: Omit<ProfileFormData, 'interests' | 'termsAccepted'> & { interests: string[] }) => void;
   isPending?: boolean;
   defaultValues?: Partial<ProfileFormData>;
 }
@@ -51,6 +56,7 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
       bio: defaultValues?.bio || "",
       lookingFor: defaultValues?.lookingFor || "",
       interests: defaultValues?.interests || "",
+      termsAccepted: false,
     },
   });
 
@@ -58,7 +64,8 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
     const interests = data.interests
       ? data.interests.split(",").map((i) => i.trim()).filter(Boolean)
       : [];
-    onSubmit({ ...data, interests });
+    const { termsAccepted, interests: _, ...rest } = data;
+    onSubmit({ ...rest, interests });
   };
 
   return (
@@ -227,6 +234,55 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                   </SelectContent>
                 </Select>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-lg font-medium">
+            <FileText className="w-5 h-5 text-primary" />
+            <span>Terms & Privacy</span>
+          </div>
+
+          <FormField
+            control={form.control}
+            name="termsAccepted"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    data-testid="checkbox-terms-accepted"
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-sm font-normal cursor-pointer">
+                    I agree to the{" "}
+                    <Link
+                      href="/terms"
+                      className="text-primary underline hover:text-primary/80"
+                      target="_blank"
+                      data-testid="link-terms-in-form"
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      href="/privacy"
+                      className="text-primary underline hover:text-primary/80"
+                      target="_blank"
+                      data-testid="link-privacy-in-form"
+                    >
+                      Privacy Policy
+                    </Link>
+                  </FormLabel>
+                  <FormDescription>
+                    You must accept our terms to create your profile
+                  </FormDescription>
+                  <FormMessage />
+                </div>
               </FormItem>
             )}
           />

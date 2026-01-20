@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import Landing from "@/pages/landing";
 import DashboardLayout from "@/pages/dashboard-layout";
+import Terms from "@/pages/terms";
+import Privacy from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,18 +22,22 @@ function Router() {
     );
   }
 
-  if (!user) {
-    return <Landing />;
-  }
-
   return (
     <Switch>
-      <Route path="/" component={DashboardLayout} />
-      <Route path="/discover" component={DashboardLayout} />
-      <Route path="/matches" component={DashboardLayout} />
-      <Route path="/messages" component={DashboardLayout} />
-      <Route path="/profile" component={DashboardLayout} />
-      <Route path="/settings" component={DashboardLayout} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/privacy" component={Privacy} />
+      {!user ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          <Route path="/" component={DashboardLayout} />
+          <Route path="/discover" component={DashboardLayout} />
+          <Route path="/matches" component={DashboardLayout} />
+          <Route path="/messages" component={DashboardLayout} />
+          <Route path="/profile" component={DashboardLayout} />
+          <Route path="/settings" component={DashboardLayout} />
+        </>
+      )}
       <Route component={NotFound} />
     </Switch>
   );
