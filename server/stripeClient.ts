@@ -1,8 +1,28 @@
 import Stripe from 'stripe';
 
 let connectionSettings: any;
+let cachedCredentials: { publishableKey: string; secretKey: string } | null = null;
 
 async function getCredentials() {
+  // Return cached credentials if available
+  if (cachedCredentials) {
+    return cachedCredentials;
+  }
+
+  // First, try environment variables (works for both dev and production)
+  const envPublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
+  const envSecretKey = process.env.STRIPE_SECRET_KEY;
+  
+  if (envPublishableKey && envSecretKey) {
+    console.log('Using Stripe credentials from environment variables');
+    cachedCredentials = {
+      publishableKey: envPublishableKey,
+      secretKey: envSecretKey,
+    };
+    return cachedCredentials;
+  }
+
+  // Fallback to Replit connector system
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -10,8 +30,8 @@ async function getCredentials() {
       ? 'depl ' + process.env.WEB_REPL_RENEWAL
       : null;
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  if (!xReplitToken || !hostname) {
+    throw new Error('Stripe credentials not found. Please set STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY environment variables.');
   }
 
   const connectorName = 'stripe';
@@ -35,13 +55,15 @@ async function getCredentials() {
   connectionSettings = data.items?.[0];
 
   if (!connectionSettings || (!connectionSettings.settings.publishable || !connectionSettings.settings.secret)) {
-    throw new Error(`Stripe ${targetEnvironment} connection not found`);
+    throw new Error(`Stripe ${targetEnvironment} connection not found. Please set STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY environment variables.`);
   }
 
-  return {
+  cachedCredentials = {
     publishableKey: connectionSettings.settings.publishable,
     secretKey: connectionSettings.settings.secret,
   };
+  
+  return cachedCredentials;
 }
 
 export async function getUncachableStripeClient() {
