@@ -39,16 +39,13 @@ export default function DashboardLayout() {
 
   const addFundsMutation = useMutation({
     mutationFn: async (amount: number) => {
-      return await apiRequest("POST", "/api/wallet/deposit", { amount });
+      const response = await apiRequest("POST", "/api/wallet/deposit", { amount });
+      return await response.json();
     },
-    onSuccess: () => {
-      toast({
-        title: "Funds Added!",
-        description: "Your wallet has been topped up successfully.",
-      });
-      setAddFundsOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
+    onSuccess: (data: { url: string }) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
@@ -64,7 +61,7 @@ export default function DashboardLayout() {
       }
       toast({
         title: "Error",
-        description: error.message || "Failed to add funds. Please try again.",
+        description: error.message || "Failed to create payment session. Please try again.",
         variant: "destructive",
       });
     },

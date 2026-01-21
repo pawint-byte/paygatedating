@@ -17,7 +17,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
-import Stripe from "stripe";
+import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 
 const depositSchema = z.object({
   amount: z.number().min(MINIMUM_WALLET_BALANCE, `Minimum deposit is $${MINIMUM_WALLET_BALANCE}`),
@@ -207,20 +207,48 @@ export async function registerRoutes(
         wallet = await storage.createWallet({ userId });
       }
 
-      const newBalance = (parseFloat(wallet.balance) + amount).toFixed(2);
-      const updatedWallet = await storage.updateWalletBalance(userId, newBalance);
-
-      await storage.createTransaction({
-        walletId: wallet.id,
-        amount: amount.toFixed(2),
-        type: "deposit",
-        description: "Wallet deposit",
+      const stripe = await getUncachableStripeClient();
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `Add $${amount} to PayGate Wallet`,
+                description: 'Wallet credits for PayGate Dating',
+              },
+              unit_amount: amount * 100,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${baseUrl}/wallet?success=true&amount=${amount}`,
+        cancel_url: `${baseUrl}/wallet?canceled=true`,
+        metadata: {
+          type: 'wallet_funding',
+          userId: userId,
+          amount: amount.toString(),
+        },
       });
 
-      res.json(updatedWallet);
+      res.json({ url: session.url });
     } catch (error) {
-      console.error("Error depositing funds:", error);
-      res.status(500).json({ message: "Failed to deposit funds" });
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Failed to create payment session" });
+    }
+  });
+
+  app.get("/api/stripe/publishable-key", async (req, res) => {
+    try {
+      const key = await getStripePublishableKey();
+      res.json({ publishableKey: key });
+    } catch (error) {
+      console.error("Error getting Stripe key:", error);
+      res.status(500).json({ message: "Failed to get payment configuration" });
     }
   });
 
@@ -828,8 +856,13 @@ Always encourage visitors to sign up and try the platform!`;
     }
   });
 
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
+  let stripeAvailable = false;
+  try {
+    await getUncachableStripeClient();
+    stripeAvailable = true;
+  } catch (e) {
+    console.log('Stripe not configured, subscription features disabled');
+  }
 
   app.get("/api/subscription", isAuthenticated, async (req: any, res) => {
     try {
@@ -844,10 +877,11 @@ Always encourage visitors to sign up and try the platform!`;
 
   app.post("/api/subscription/create-checkout", isAuthenticated, async (req: any, res) => {
     try {
-      if (!stripe) {
+      if (!stripeAvailable) {
         return res.status(503).json({ message: "Payment system not configured" });
       }
 
+      const stripe = await getUncachableStripeClient();
       const userId = req.user.claims.sub;
       const { priceType } = req.body;
       
@@ -927,10 +961,11 @@ Always encourage visitors to sign up and try the platform!`;
 
   app.post("/api/subscription/cancel", isAuthenticated, async (req: any, res) => {
     try {
-      if (!stripe) {
+      if (!stripeAvailable) {
         return res.status(503).json({ message: "Payment system not configured" });
       }
 
+      const stripe = await getUncachableStripeClient();
       const userId = req.user.claims.sub;
       const subscription = await storage.getSubscription(userId);
 
@@ -948,93 +983,6 @@ Always encourage visitors to sign up and try the platform!`;
     } catch (error) {
       console.error("Error canceling subscription:", error);
       res.status(500).json({ message: "Failed to cancel subscription" });
-    }
-  });
-
-  app.post("/api/webhooks/stripe", async (req: any, res) => {
-    if (!stripe) {
-      return res.status(503).json({ message: "Payment system not configured" });
-    }
-
-    const sig = req.headers["stripe-signature"];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      console.warn("Stripe webhook secret not configured");
-      return res.status(400).json({ message: "Webhook not configured" });
-    }
-
-    let event: Stripe.Event;
-
-    try {
-      event = stripe.webhooks.constructEvent(req.rawBody as Buffer, sig as string, webhookSecret);
-    } catch (err: any) {
-      console.error("Webhook signature verification failed:", err.message);
-      return res.status(400).json({ message: `Webhook Error: ${err.message}` });
-    }
-
-    try {
-      switch (event.type) {
-        case "customer.subscription.created":
-        case "customer.subscription.updated": {
-          const subscription = event.data.object as Stripe.Subscription;
-          const customerId = subscription.customer as string;
-          
-          const existingSub = await storage.getSubscriptionByCustomerId(customerId);
-          if (existingSub) {
-            const subData = subscription as any;
-            await storage.updateSubscription(existingSub.userId, {
-              stripeSubscriptionId: subscription.id,
-              stripePriceId: subscription.items.data[0]?.price.id,
-              status: subscription.status as any,
-              currentPeriodStart: new Date(subData.current_period_start * 1000),
-              currentPeriodEnd: new Date(subData.current_period_end * 1000),
-              cancelAtPeriodEnd: subscription.cancel_at_period_end,
-            });
-
-            if (subscription.status === "active") {
-              await storage.updateProfile(existingSub.userId, {
-                subscriptionTier: "premium",
-              });
-            }
-          }
-          break;
-        }
-
-        case "customer.subscription.deleted": {
-          const subscription = event.data.object as Stripe.Subscription;
-          const customerId = subscription.customer as string;
-          
-          const existingSub = await storage.getSubscriptionByCustomerId(customerId);
-          if (existingSub) {
-            await storage.updateSubscription(existingSub.userId, {
-              status: "canceled",
-            });
-            await storage.updateProfile(existingSub.userId, {
-              subscriptionTier: "free",
-            });
-          }
-          break;
-        }
-
-        case "invoice.payment_failed": {
-          const invoice = event.data.object as Stripe.Invoice;
-          const customerId = invoice.customer as string;
-          
-          const existingSub = await storage.getSubscriptionByCustomerId(customerId);
-          if (existingSub) {
-            await storage.updateSubscription(existingSub.userId, {
-              status: "past_due",
-            });
-          }
-          break;
-        }
-      }
-
-      res.json({ received: true });
-    } catch (error) {
-      console.error("Error processing webhook:", error);
-      res.status(500).json({ message: "Failed to process webhook" });
     }
   });
 
