@@ -110,6 +110,17 @@ Preferred communication style: Simple, everyday language.
 - **API Endpoints**: /api/connections, /api/connections/mutual/:userId, /api/connections/mutual-counts/:userIds
 - **Duplicate Prevention**: Unique constraint + createConnectionIfNotExists with PostgreSQL error handling (code 23505)
 
+### Date Planning System
+- **Purpose**: Users can propose dates with activity details, locations, and payment preferences
+- **Availability**: Available for completed matches (users who have passed all gates)
+- **Schema**: date_plans table with matchId, proposerId, recipientId, activity, activityType, placeName, placeAddress, proposedDate, paymentPreference (ill_pay/you_pay/split), notes, status (proposed/accepted/declined/completed/cancelled)
+- **Payment Preferences**: Informational only - "I'll pay", "You pay", or "Split the bill" options help coordinate expectations
+- **Security**: recipientId derived server-side from match participants, preventing unauthorized targeting
+- **API Endpoints**: POST /api/matches/:matchId/date-plans (create), GET /api/matches/:matchId/date-plans (list), PATCH /api/date-plans/:id/status (update status)
+- **Validation**: Zod schemas for server-side validation of date plan creation and status updates
+- **UI Components**: DatePlanDialog for proposing dates, DatePlanCard for displaying/responding to proposals
+- **Authorization**: Only match participants can view/create date plans; only recipients can accept/decline proposals
+
 ## External Dependencies
 
 ### Database
