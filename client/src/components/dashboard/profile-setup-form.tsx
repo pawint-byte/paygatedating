@@ -1,10 +1,12 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
-import { User, MapPin, Heart, Sparkles, FileText } from "lucide-react";
+import { User, MapPin, Heart, Sparkles, FileText, Camera, Video, Phone, X, Upload, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -32,6 +34,10 @@ const profileSchema = z.object({
   bio: z.string().max(2000).optional(),
   lookingFor: z.string().optional(),
   interests: z.string().optional(),
+  hobbies: z.string().optional(),
+  mustHaves: z.string().optional(),
+  dealBreakers: z.string().optional(),
+  facetimeAvailable: z.boolean().default(false),
   termsAccepted: z.boolean().refine(val => val === true, {
     message: "You must accept the Terms of Service and Privacy Policy",
   }),
@@ -40,12 +46,33 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 interface ProfileSetupFormProps {
-  onSubmit: (data: Omit<ProfileFormData, 'interests' | 'termsAccepted'> & { interests: string[] }) => void;
+  onSubmit: (data: {
+    displayName: string;
+    age: number;
+    location?: string;
+    tagline?: string;
+    bio?: string;
+    lookingFor?: string;
+    interests: string[];
+    hobbies: string[];
+    mustHaves: string[];
+    dealBreakers: string[];
+    photos: string[];
+    videos: string[];
+    facetimeAvailable: boolean;
+  }) => void;
   isPending?: boolean;
-  defaultValues?: Partial<ProfileFormData>;
+  defaultValues?: Partial<ProfileFormData & { photos?: string[]; videos?: string[] }>;
 }
 
 export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: ProfileSetupFormProps) {
+  const [photos, setPhotos] = useState<string[]>(defaultValues?.photos || []);
+  const [videos, setVideos] = useState<string[]>(defaultValues?.videos || []);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -56,16 +83,75 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
       bio: defaultValues?.bio || "",
       lookingFor: defaultValues?.lookingFor || "",
       interests: defaultValues?.interests || "",
+      hobbies: defaultValues?.hobbies || "",
+      mustHaves: defaultValues?.mustHaves || "",
+      dealBreakers: defaultValues?.dealBreakers || "",
+      facetimeAvailable: defaultValues?.facetimeAvailable || false,
       termsAccepted: false,
     },
   });
 
+  const parseCommaSeparated = (value: string | undefined): string[] => {
+    return value ? value.split(",").map((i) => i.trim()).filter(Boolean) : [];
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingPhoto(true);
+    try {
+      for (const file of Array.from(files)) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          setPhotos(prev => [...prev, dataUrl]);
+        };
+        reader.readAsDataURL(file);
+      }
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingVideo(true);
+    try {
+      for (const file of Array.from(files)) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          setVideos(prev => [...prev, dataUrl]);
+        };
+        reader.readAsDataURL(file);
+      }
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeVideo = (index: number) => {
+    setVideos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (data: ProfileFormData) => {
-    const interests = data.interests
-      ? data.interests.split(",").map((i) => i.trim()).filter(Boolean)
-      : [];
-    const { termsAccepted, interests: _, ...rest } = data;
-    onSubmit({ ...rest, interests });
+    const { termsAccepted, interests, hobbies, mustHaves, dealBreakers, ...rest } = data;
+    onSubmit({
+      ...rest,
+      interests: parseCommaSeparated(interests),
+      hobbies: parseCommaSeparated(hobbies),
+      mustHaves: parseCommaSeparated(mustHaves),
+      dealBreakers: parseCommaSeparated(dealBreakers),
+      photos,
+      videos,
+    });
   };
 
   return (
@@ -206,6 +292,136 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="hobbies"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hobbies</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Hiking, Gaming, Photography, Yoga..."
+                    {...field}
+                    data-testid="input-hobbies"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Separate hobbies with commas
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-lg font-medium">
+            <Camera className="w-5 h-5 text-primary" />
+            <span>Photos & Videos</span>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <FormLabel>Profile Photos</FormLabel>
+              <FormDescription className="mb-3">
+                Add up to 6 photos to your profile
+              </FormDescription>
+              <div className="grid grid-cols-3 gap-3">
+                {photos.map((photo, index) => (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                    <img src={photo} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="destructive"
+                      className="absolute top-1 right-1 h-6 w-6"
+                      onClick={() => removePhoto(index)}
+                      data-testid={`button-remove-photo-${index}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+                {photos.length < 6 && (
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    className="aspect-square rounded-lg border-2 border-dashed border-border hover-elevate flex flex-col items-center justify-center gap-2 text-muted-foreground"
+                    data-testid="button-add-photo"
+                  >
+                    {uploadingPhoto ? (
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5" />
+                        <span className="text-xs">Add Photo</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handlePhotoUpload}
+                data-testid="input-photo-upload"
+              />
+            </div>
+
+            <div>
+              <FormLabel>Profile Videos</FormLabel>
+              <FormDescription className="mb-3">
+                Add up to 2 short intro videos
+              </FormDescription>
+              <div className="grid grid-cols-2 gap-3">
+                {videos.map((video, index) => (
+                  <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border">
+                    <video src={video} className="w-full h-full object-cover" controls />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="destructive"
+                      className="absolute top-1 right-1 h-6 w-6"
+                      onClick={() => removeVideo(index)}
+                      data-testid={`button-remove-video-${index}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+                {videos.length < 2 && (
+                  <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    className="aspect-video rounded-lg border-2 border-dashed border-border hover-elevate flex flex-col items-center justify-center gap-2 text-muted-foreground"
+                    data-testid="button-add-video"
+                  >
+                    {uploadingVideo ? (
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+                    ) : (
+                      <>
+                        <Video className="w-5 h-5" />
+                        <span className="text-xs">Add Video</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*"
+                multiple
+                className="hidden"
+                onChange={handleVideoUpload}
+                data-testid="input-video-upload"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -234,6 +450,81 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                   </SelectContent>
                 </Select>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="mustHaves"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  <ThumbsUp className="w-4 h-4 text-green-500" />
+                  Must Haves
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Honest, Kind, Good sense of humor, Ambitious..."
+                    className="min-h-[80px] resize-none"
+                    {...field}
+                    data-testid="input-must-haves"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Qualities your ideal partner must have (separate with commas)
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="dealBreakers"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  <ThumbsDown className="w-4 h-4 text-destructive" />
+                  Deal Breakers
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Smoker, Not interested in kids, Long distance..."
+                    className="min-h-[80px] resize-none"
+                    {...field}
+                    data-testid="input-deal-breakers"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Things you absolutely cannot accept (separate with commas)
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="facetimeAvailable"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-primary" />
+                    FaceTime / Video Calls
+                  </FormLabel>
+                  <FormDescription>
+                    Let others know you're open to video calls
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    data-testid="switch-facetime"
+                  />
+                </FormControl>
               </FormItem>
             )}
           />
