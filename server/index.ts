@@ -14,19 +14,6 @@ declare module "http" {
   }
 }
 
-async function initStripe() {
-  try {
-    await getUncachableStripeClient();
-    console.log('Stripe client initialized successfully');
-  } catch (error) {
-    console.log('Stripe not configured, payment features may be limited');
-  }
-}
-
-(async () => {
-  await initStripe();
-})();
-
 app.use(express.static(path.join(process.cwd(), "public")));
 
 app.use(
@@ -77,6 +64,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    await getUncachableStripeClient();
+    console.log('Stripe client initialized successfully');
+  } catch (error) {
+    console.log('Stripe not configured, payment features may be limited');
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
