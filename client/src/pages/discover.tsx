@@ -39,9 +39,17 @@ export default function Discover() {
     }
   }, [searchPrefs]);
 
-  const { data: profiles, isLoading } = useQuery<Profile[]>({
+  const { data: profiles, isLoading, error } = useQuery<Profile[]>({
     queryKey: ["/api/profiles/discover"],
   });
+
+  // Debug: Log profiles data on production
+  useEffect(() => {
+    console.log("[Discover] profiles data:", profiles);
+    console.log("[Discover] profiles length:", profiles?.length);
+    console.log("[Discover] isLoading:", isLoading);
+    console.log("[Discover] error:", error);
+  }, [profiles, isLoading, error]);
 
   // Get profile user IDs for mutual connection counts
   const profileUserIds = useMemo(() => 
