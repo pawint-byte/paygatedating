@@ -60,6 +60,11 @@ export const profiles = pgTable("profiles", {
   // Zodiac (optional fun)
   zodiacSign: varchar("zodiac_sign", { length: 20 }),
   
+  // Geolocation
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  city: varchar("city", { length: 100 }),
+  
   // Visibility Settings - what's shown before gate progression
   showPhotoPublicly: boolean("show_photo_publicly").default(true).notNull(),
   showLocationPublicly: boolean("show_location_publicly").default(true).notNull(),
@@ -112,6 +117,11 @@ export const matches = pgTable("matches", {
   lastActionBy: varchar("last_action_by"),
   skipPaid: boolean("skip_paid").default(false).notNull(),
   message: text("message"),
+  gate1PaidBy: varchar("gate1_paid_by"),
+  gate2PaidBy: varchar("gate2_paid_by"),
+  gate3PaidBy: varchar("gate3_paid_by"),
+  gate4PaidBy: varchar("gate4_paid_by"),
+  gate5PaidBy: varchar("gate5_paid_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -177,6 +187,17 @@ export const subscriptions = pgTable("subscriptions", {
 
 export const SUBSCRIPTION_MONTHLY_PRICE = 9.99;
 export const SUBSCRIPTION_YEARLY_PRICE = 99;
+
+export const searchPreferences = pgTable("search_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  minAge: integer("min_age").default(18),
+  maxAge: integer("max_age").default(99),
+  maxDistance: integer("max_distance").default(100),
+  genderPreference: text("gender_preference").array(),
+  interestsFilter: text("interests_filter").array(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   wallet: one(wallets, {
@@ -276,6 +297,11 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
   updatedAt: true,
 });
 
+export const insertSearchPreferencesSchema = createInsertSchema(searchPreferences).omit({
+  id: true,
+  updatedAt: true,
+});
+
 export type Profile = typeof profiles.$inferSelect;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type Wallet = typeof wallets.$inferSelect;
@@ -294,6 +320,8 @@ export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type SearchPreferences = typeof searchPreferences.$inferSelect;
+export type InsertSearchPreferences = z.infer<typeof insertSearchPreferencesSchema>;
 
 export const GATE_COSTS = {
   gate1: 5,

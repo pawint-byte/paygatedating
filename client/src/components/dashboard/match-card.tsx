@@ -63,13 +63,13 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
               </Badge>
             )}
           </div>
-          {showLocation && profile.location && (
+          {showLocation && (profile.city || profile.location) && (
             <div className="flex items-center gap-1 text-sm text-white/80">
               <MapPin className="w-3 h-3" />
-              <span>{profile.location}</span>
+              <span>{profile.city || profile.location}</span>
             </div>
           )}
-          {!showLocation && profile.location && (
+          {!showLocation && (profile.city || profile.location) && (
             <div className="flex items-center gap-1 text-sm text-white/60">
               <Lock className="w-3 h-3" />
               <span>Location hidden</span>

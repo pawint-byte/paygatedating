@@ -148,11 +148,77 @@ export async function registerRoutes(
   app.get("/api/profiles/discover", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const profiles = await storage.getDiscoverProfiles(userId);
+      const prefs = await storage.getSearchPreferences(userId);
+      
+      let profiles;
+      if (prefs) {
+        profiles = await storage.getFilteredProfiles(userId, prefs);
+      } else {
+        profiles = await storage.getDiscoverProfiles(userId);
+      }
       res.json(profiles);
     } catch (error) {
       console.error("Error fetching discover profiles:", error);
       res.status(500).json({ message: "Failed to fetch profiles" });
+    }
+  });
+
+  app.get("/api/search-preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const prefs = await storage.getSearchPreferences(userId);
+      res.json(prefs || {
+        minAge: 18,
+        maxAge: 99,
+        maxDistance: 100,
+        genderPreference: [],
+        interestsFilter: [],
+      });
+    } catch (error) {
+      console.error("Error fetching search preferences:", error);
+      res.status(500).json({ message: "Failed to fetch search preferences" });
+    }
+  });
+
+  app.post("/api/search-preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { minAge, maxAge, maxDistance, genderPreference, interestsFilter } = req.body;
+      
+      const prefs = await storage.upsertSearchPreferences({
+        userId,
+        minAge: minAge ?? 18,
+        maxAge: maxAge ?? 99,
+        maxDistance: maxDistance ?? 100,
+        genderPreference: genderPreference ?? [],
+        interestsFilter: interestsFilter ?? [],
+      });
+      
+      res.json(prefs);
+    } catch (error) {
+      console.error("Error updating search preferences:", error);
+      res.status(500).json({ message: "Failed to update search preferences" });
+    }
+  });
+
+  app.patch("/api/profile/location", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { latitude, longitude, city } = req.body;
+      
+      const profile = await storage.updateProfile(userId, {
+        latitude: latitude?.toString(),
+        longitude: longitude?.toString(),
+        city,
+      });
+      
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error("Error updating location:", error);
+      res.status(500).json({ message: "Failed to update location" });
     }
   });
 
@@ -395,14 +461,7 @@ export async function registerRoutes(
       }
 
       const gateNum = parseInt(match.currentGate.replace("gate", ""));
-      const isInitiator = match.initiatorId === userId;
       
-      const isMyTurn = isInitiator ? gateNum % 2 === 1 : gateNum % 2 === 0;
-
-      if (!isMyTurn) {
-        return res.status(400).json({ message: "Not your turn to advance the gate" });
-      }
-
       const cost = GATE_COSTS[match.currentGate as keyof typeof GATE_COSTS];
       const wallet = await storage.getWallet(userId);
       
@@ -422,10 +481,13 @@ export async function registerRoutes(
       });
 
       const nextGate = gateNum >= 5 ? "completed" : `gate${gateNum + 1}`;
+      
+      const gatePaidByField = `gate${gateNum}PaidBy` as keyof typeof match;
       const updatedMatch = await storage.updateMatch(matchId, {
         currentGate: nextGate as any,
         status: gateNum === 1 ? "active" : match.status,
         lastActionBy: userId,
+        [gatePaidByField]: userId,
       });
 
       res.json(updatedMatch);

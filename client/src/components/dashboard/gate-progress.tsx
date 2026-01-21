@@ -81,9 +81,7 @@ export function GateProgress({
           <p className="text-sm text-muted-foreground">
             {isCompleted
               ? "Connection complete!"
-              : isMyTurn
-              ? "Your turn to pay"
-              : "Waiting for response"}
+              : `Gate ${currentGateNum} - Either of you can pay to advance`}
           </p>
         </div>
         {!isCompleted && (
@@ -147,20 +145,21 @@ export function GateProgress({
           })}
         </div>
 
-        {!isCompleted && isMyTurn && (
-          <Button
-            onClick={onAdvanceGate}
-            disabled={isPending}
-            className="w-full mt-2"
-            data-testid={`button-advance-gate-${match.id}`}
-          >
-            Pay ${currentCost} to Advance
-          </Button>
-        )}
-
-        {!isCompleted && !isMyTurn && (
-          <div className="text-center py-2 text-sm text-muted-foreground">
-            Waiting for {otherProfile.displayName} to respond...
+        {!isCompleted && (
+          <div className="space-y-2 mt-2">
+            <Button
+              onClick={onAdvanceGate}
+              disabled={isPending}
+              className="w-full"
+              data-testid={`button-advance-gate-${match.id}`}
+            >
+              Pay ${currentCost} to Advance
+            </Button>
+            {!isMyTurn && (
+              <p className="text-center text-xs text-muted-foreground">
+                It's {otherProfile.displayName}'s turn, but you can pay to move things forward
+              </p>
+            )}
           </div>
         )}
 

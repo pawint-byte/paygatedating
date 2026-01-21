@@ -8,6 +8,7 @@ import {
   registryItems,
   giftPurchases,
   subscriptions,
+  searchPreferences,
   type Profile,
   type InsertProfile,
   type Wallet,
@@ -26,11 +27,13 @@ import {
   type InsertGiftPurchase,
   type Subscription,
   type InsertSubscription,
+  type SearchPreferences,
+  type InsertSearchPreferences,
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, sql, gte, lte, ne, inArray } from "drizzle-orm";
 
 function generateReferralCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -87,6 +90,10 @@ export interface IStorage {
   getSubscriptionByCustomerId(stripeCustomerId: string): Promise<Subscription | undefined>;
   createSubscription(subscription: InsertSubscription): Promise<Subscription>;
   updateSubscription(userId: string, data: Partial<Subscription>): Promise<Subscription | undefined>;
+
+  getSearchPreferences(userId: string): Promise<SearchPreferences | undefined>;
+  upsertSearchPreferences(prefs: InsertSearchPreferences): Promise<SearchPreferences>;
+  getFilteredProfiles(userId: string, prefs: SearchPreferences): Promise<Profile[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -355,6 +362,79 @@ export class DatabaseStorage implements IStorage {
       .where(eq(subscriptions.userId, userId))
       .returning();
     return updated;
+  }
+
+  async getSearchPreferences(userId: string): Promise<SearchPreferences | undefined> {
+    const [prefs] = await db.select().from(searchPreferences).where(eq(searchPreferences.userId, userId));
+    return prefs;
+  }
+
+  async upsertSearchPreferences(prefs: InsertSearchPreferences): Promise<SearchPreferences> {
+    const existing = await this.getSearchPreferences(prefs.userId);
+    if (existing) {
+      const [updated] = await db
+        .update(searchPreferences)
+        .set({ ...prefs, updatedAt: new Date() })
+        .where(eq(searchPreferences.userId, prefs.userId))
+        .returning();
+      return updated;
+    }
+    const [newPrefs] = await db.insert(searchPreferences).values(prefs).returning();
+    return newPrefs;
+  }
+
+  async getFilteredProfiles(userId: string, prefs: SearchPreferences): Promise<Profile[]> {
+    const userProfile = await this.getProfile(userId);
+    
+    const conditions = [
+      ne(profiles.userId, userId),
+      eq(profiles.isVisible, true),
+    ];
+
+    if (prefs.minAge) {
+      conditions.push(gte(profiles.age, prefs.minAge));
+    }
+    if (prefs.maxAge) {
+      conditions.push(lte(profiles.age, prefs.maxAge));
+    }
+    if (prefs.genderPreference && prefs.genderPreference.length > 0) {
+      conditions.push(inArray(profiles.gender, prefs.genderPreference));
+    }
+
+    let results = await db
+      .select()
+      .from(profiles)
+      .where(and(...conditions))
+      .limit(100);
+
+    if (userProfile?.latitude && userProfile?.longitude && prefs.maxDistance) {
+      const userLat = parseFloat(userProfile.latitude);
+      const userLon = parseFloat(userProfile.longitude);
+      const maxDist = prefs.maxDistance;
+
+      results = results.filter(profile => {
+        if (!profile.latitude || !profile.longitude) return true;
+        const distance = this.calculateDistance(
+          userLat, userLon,
+          parseFloat(profile.latitude), parseFloat(profile.longitude)
+        );
+        return distance <= maxDist;
+      });
+    }
+
+    return results.slice(0, 50);
+  }
+
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 3959;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   }
 }
 

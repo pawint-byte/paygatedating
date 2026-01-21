@@ -7,12 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Bell, Eye, Shield, CreditCard } from "lucide-react";
+import { Crown, Bell, Eye, Shield, CreditCard, MapPin } from "lucide-react";
 import type { Profile } from "@shared/schema";
 import { PREMIUM_MONTHLY_COST, PREMIUM_YEARLY_COST } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { WishlistManager } from "@/components/dashboard/wishlist-manager";
+import { LocationCapture } from "@/components/dashboard/location-capture";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -127,6 +128,21 @@ export default function Settings() {
               data-testid="switch-visibility"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary" />
+            <CardTitle>Location</CardTitle>
+          </div>
+          <CardDescription>
+            Set your location for better match suggestions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LocationCapture currentCity={profile?.city} />
         </CardContent>
       </Card>
 
