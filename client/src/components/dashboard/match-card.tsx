@@ -2,7 +2,7 @@ import { MapPin, Heart, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { VerifiedBadge } from "@/components/verified-badge";
+import { VerificationStatusIndicator } from "@/components/verified-badge";
 import type { Profile } from "@shared/schema";
 import { GATE_COSTS } from "@shared/schema";
 
@@ -59,9 +59,10 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
                 {displayName}
                 {showAge && <span>, {profile.age}</span>}
               </h3>
-              {profile.verificationStatus === "verified" && (
-                <VerifiedBadge size="sm" />
-              )}
+              <VerificationStatusIndicator 
+                status={profile.verificationStatus || "none"} 
+                size="sm" 
+              />
             </div>
             {profile.subscriptionTier === "premium" && (
               <Badge variant="secondary" className="bg-amber-500/20 text-amber-200 border-amber-500/30">
