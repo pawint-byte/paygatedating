@@ -2,6 +2,7 @@ import { NavHeader } from "@/components/landing/nav-header";
 import { HeroSection } from "@/components/landing/hero-section";
 import { GateTimeline } from "@/components/landing/gate-timeline";
 import { ValueProps } from "@/components/landing/value-props";
+import { FeaturesSection } from "@/components/landing/features-section";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { Testimonials } from "@/components/landing/testimonials";
 import { SecuritySection } from "@/components/landing/security-section";
@@ -16,6 +17,7 @@ export default function Landing() {
         <HeroSection />
         <GateTimeline />
         <ValueProps />
+        <FeaturesSection />
         <PricingSection />
         <Testimonials />
         <SecuritySection />

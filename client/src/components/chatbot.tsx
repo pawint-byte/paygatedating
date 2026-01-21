@@ -76,14 +76,18 @@ export function Chatbot() {
       <Button
         data-testid="button-chatbot-toggle"
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl hover:scale-105 transition-transform"
+        style={{ zIndex: 9999 }}
         size="icon"
       >
         {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+        {!isOpen && (
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-background animate-pulse" />
+        )}
       </Button>
 
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 z-50 w-[350px] max-w-[calc(100vw-3rem)] shadow-xl flex flex-col" style={{ height: "450px" }}>
+        <Card className="fixed bottom-24 right-6 w-[350px] max-w-[calc(100vw-3rem)] shadow-xl flex flex-col" style={{ height: "450px", zIndex: 9998 }}>
           <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
