@@ -321,6 +321,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(giftPurchases.createdAt));
   }
 
+  async getGiftPurchaseBySessionId(sessionId: string): Promise<GiftPurchase | undefined> {
+    const [purchase] = await db
+      .select()
+      .from(giftPurchases)
+      .where(eq(giftPurchases.stripeSessionId, sessionId));
+    return purchase;
+  }
+
   async createGiftPurchase(purchase: InsertGiftPurchase): Promise<GiftPurchase> {
     const [newPurchase] = await db.insert(giftPurchases).values(purchase).returning();
     return newPurchase;

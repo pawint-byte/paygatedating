@@ -166,6 +166,7 @@ export const giftPurchases = pgTable("gift_purchases", {
   status: giftStatusEnum("status").default("pending").notNull(),
   gatesUnlocked: integer("gates_unlocked").default(0).notNull(),
   claimDeadline: timestamp("claim_deadline"),
+  stripeSessionId: varchar("stripe_session_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

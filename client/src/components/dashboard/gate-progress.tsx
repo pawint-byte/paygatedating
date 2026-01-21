@@ -1,9 +1,10 @@
-import { Send, MessageCircle, Camera, Video, Phone, Check, Lock, Zap } from "lucide-react";
+import { Send, MessageCircle, Camera, Video, Phone, Check, Lock, Zap, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { GATE_COSTS, SKIP_AHEAD_COST } from "@shared/schema";
 import type { Match, Profile } from "@shared/schema";
+import { GiftWishlist } from "./gift-wishlist";
 
 const gateIcons = {
   gate1: Send,
@@ -155,6 +156,12 @@ export function GateProgress({
             >
               Pay ${currentCost} to Advance
             </Button>
+            <div className="flex items-center justify-center gap-2">
+              <GiftWishlist 
+                recipientProfile={otherProfile} 
+                matchId={match.id}
+              />
+            </div>
             {!isMyTurn && (
               <p className="text-center text-xs text-muted-foreground">
                 It's {otherProfile.displayName}'s turn, but you can pay to move things forward

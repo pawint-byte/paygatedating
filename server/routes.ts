@@ -691,6 +691,25 @@ export async function registerRoutes(
     }
   });
 
+  function isValidAffiliateUrl(url: string | undefined | null): { valid: boolean; error?: string } {
+    if (!url || url.trim() === '') {
+      return { valid: false, error: "Product URL is required" };
+    }
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.toLowerCase();
+      const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
+      const isEtsy = hostname.includes('etsy.com');
+      
+      if (!isAmazon && !isEtsy) {
+        return { valid: false, error: "Only Amazon and Etsy links are supported for wishlist items" };
+      }
+      return { valid: true };
+    } catch {
+      return { valid: false, error: "Invalid URL format" };
+    }
+  }
+
   function addAffiliateTag(url: string): string {
     try {
       const urlObj = new URL(url);
@@ -721,9 +740,17 @@ export async function registerRoutes(
       const userId = req.user.claims.sub;
       
       let affiliateUrl = req.body.affiliateUrl;
-      if (affiliateUrl) {
-        affiliateUrl = addAffiliateTag(affiliateUrl);
+      
+      // Validate URL is from supported affiliate partner
+      const urlValidation = isValidAffiliateUrl(affiliateUrl);
+      if (!urlValidation.valid) {
+        return res.status(400).json({ 
+          message: urlValidation.error,
+        });
       }
+      
+      // Add affiliate tags
+      affiliateUrl = addAffiliateTag(affiliateUrl);
       
       const validationResult = insertRegistryItemSchema.safeParse({
         ...req.body,
@@ -768,7 +795,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/gifts/purchase", isAuthenticated, async (req: any, res) => {
+  app.post("/api/gifts/checkout", isAuthenticated, async (req: any, res) => {
     try {
       const buyerUserId = req.user.claims.sub;
       const { registryItemId, recipientUserId, matchId } = req.body;
@@ -790,8 +817,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "This item does not belong to the recipient" });
       }
 
-      if (item.isPurchased) {
-        return res.status(400).json({ message: "This item has already been purchased" });
+      if (item.isPurchased || item.isReserved) {
+        return res.status(400).json({ message: "This item is no longer available" });
       }
 
       const giftValue = parseFloat(item.price);
@@ -812,12 +839,93 @@ export async function registerRoutes(
         }
       }
 
-      const platformFee = (giftValue * GIFT_PLATFORM_FEE_PERCENT / 100).toFixed(2);
+      const platformFee = giftValue * GIFT_PLATFORM_FEE_PERCENT / 100;
+      const totalCharge = giftValue + platformFee;
       
+      await storage.updateRegistryItem(registryItemId, { isReserved: true });
+
+      const stripe = await getUncachableStripeClient();
+      const protocol = req.headers['x-forwarded-proto'] || 'https';
+      const host = req.headers['host'];
+      const baseUrl = `${protocol}://${host}`;
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `Gift: ${item.title}`,
+                description: `Gift for your match (includes ${GIFT_PLATFORM_FEE_PERCENT}% service fee)`,
+              },
+              unit_amount: Math.round(totalCharge * 100),
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          type: 'gift_purchase',
+          registryItemId,
+          recipientUserId,
+          buyerUserId,
+          matchId: matchId || '',
+          giftValue: giftValue.toFixed(2),
+          platformFee: platformFee.toFixed(2),
+        },
+        success_url: `${baseUrl}/gift-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/gift-cancel?item_id=${registryItemId}`,
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Error creating gift checkout:", error);
+      res.status(500).json({ message: "Failed to create checkout session" });
+    }
+  });
+
+  app.get("/api/gifts/checkout/success", isAuthenticated, async (req: any, res) => {
+    try {
+      const { session_id } = req.query;
+      const buyerUserId = req.user.claims.sub;
+
+      if (!session_id) {
+        return res.status(400).json({ message: "Session ID required" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(session_id as string);
+
+      if (session.payment_status !== 'paid') {
+        return res.status(400).json({ message: "Payment not completed" });
+      }
+
+      if (session.metadata?.buyerUserId !== buyerUserId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (session.metadata?.type !== 'gift_purchase') {
+        return res.status(400).json({ message: "Invalid session type" });
+      }
+
+      const existingPurchase = await storage.getGiftPurchaseBySessionId(session_id as string);
+      if (existingPurchase) {
+        const item = await storage.getRegistryItem(existingPurchase.registryItemId);
+        return res.json({ 
+          purchase: existingPurchase,
+          affiliateUrl: item?.affiliateUrl,
+          itemTitle: item?.title,
+        });
+      }
+
+      const { registryItemId, recipientUserId, matchId, giftValue, platformFee } = session.metadata;
+
       let gatesUnlocked = 0;
-      if (giftValue >= 100) gatesUnlocked = 3;
-      else if (giftValue >= 50) gatesUnlocked = 2;
-      else if (giftValue >= 25) gatesUnlocked = 1;
+      const giftValueNum = parseFloat(giftValue);
+      if (giftValueNum >= 100) gatesUnlocked = 3;
+      else if (giftValueNum >= 50) gatesUnlocked = 2;
+      else if (giftValueNum >= 25) gatesUnlocked = 1;
 
       const claimDeadline = new Date();
       claimDeadline.setDate(claimDeadline.getDate() + 14);
@@ -827,12 +935,14 @@ export async function registerRoutes(
         recipientUserId,
         registryItemId,
         matchId: matchId || null,
-        giftValue: giftValue.toFixed(2),
+        giftValue,
         platformFee,
         claimDeadline,
+        stripeSessionId: session_id as string,
       });
 
-      await storage.updateRegistryItem(registryItemId, { isPurchased: true });
+      await storage.updateRegistryItem(registryItemId, { isPurchased: true, isReserved: false });
+      await storage.updateGiftPurchase(purchase.id, { status: 'purchased', gatesUnlocked });
 
       if (matchId) {
         const match = await storage.getMatch(matchId);
@@ -848,16 +958,40 @@ export async function registerRoutes(
               currentGate: newGate as any,
               status: "active",
             });
-
-            await storage.updateGiftPurchase(purchase.id, { gatesUnlocked });
           }
         }
       }
 
-      res.status(201).json(purchase);
+      const item = await storage.getRegistryItem(registryItemId);
+      res.json({ 
+        purchase,
+        affiliateUrl: item?.affiliateUrl,
+        itemTitle: item?.title,
+        gatesUnlocked,
+      });
     } catch (error) {
-      console.error("Error purchasing gift:", error);
-      res.status(500).json({ message: "Failed to purchase gift" });
+      console.error("Error processing gift checkout success:", error);
+      res.status(500).json({ message: "Failed to process gift purchase" });
+    }
+  });
+
+  app.post("/api/gifts/checkout/cancel", isAuthenticated, async (req: any, res) => {
+    try {
+      const { itemId } = req.body;
+      
+      if (!itemId) {
+        return res.status(400).json({ message: "Item ID required" });
+      }
+
+      const item = await storage.getRegistryItem(itemId);
+      if (item && item.isReserved && !item.isPurchased) {
+        await storage.updateRegistryItem(itemId, { isReserved: false });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error canceling gift checkout:", error);
+      res.status(500).json({ message: "Failed to cancel checkout" });
     }
   });
 

@@ -43,6 +43,14 @@ Preferred communication style: Simple, everyday language.
 - **Storage Abstraction**: `IStorage` interface in `server/storage.ts` abstracts database operations
 - **Query Invalidation**: React Query cache invalidation after mutations for real-time UI updates
 - **Gate Progression**: Match states tracked via `gate_stage` enum (gate1 through completed)
+- **Gift Purchase Flow**: Users can purchase gifts from match wishlists via Stripe checkout, platform takes 10% service fee, then redirects to affiliate link for product purchase
+
+### Gift Purchasing System
+- **Wishlist Items**: Users add items from Amazon/Etsy only (validated on frontend + backend)
+- **Affiliate Integration**: URLs auto-tagged with affiliate codes (AMAZON_ASSOCIATE_TAG, AWIN_PUBLISHER_ID)
+- **Revenue Capture**: 10% platform fee charged via Stripe + affiliate commissions on product purchases
+- **Gate Unlocking**: Gifts unlock gates based on value ($25=1, $50=2, $100=3 gates)
+- **Reservation System**: Items reserved during checkout, released on cancel or 14-day timeout
 
 ## External Dependencies
 

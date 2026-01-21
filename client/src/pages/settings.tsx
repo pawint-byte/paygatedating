@@ -14,6 +14,7 @@ import { isUnauthorizedError } from "@/lib/auth-utils";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { WishlistManager } from "@/components/dashboard/wishlist-manager";
 import { LocationCapture } from "@/components/dashboard/location-capture";
+import { GiftHistory } from "@/components/dashboard/gift-history";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -149,6 +150,8 @@ export default function Settings() {
       <ReferralCard />
 
       <WishlistManager />
+
+      <GiftHistory />
 
       <Card>
         <CardHeader>

@@ -144,7 +144,7 @@ export function WishlistManager() {
               <DialogHeader>
                 <DialogTitle>Add Wishlist Item</DialogTitle>
                 <DialogDescription>
-                  Add an item you'd love to receive. Others can purchase items to show genuine interest.
+                  Add an item you'd love to receive. When someone purchases a gift from your wishlist, PayGate earns a small commission from our retail partners.
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -173,21 +173,33 @@ export function WishlistManager() {
                     name="affiliateUrl"
                     rules={{ 
                       required: "Product URL is required",
-                      pattern: {
-                        value: /^https?:\/\/.+/,
-                        message: "Please enter a valid URL",
+                      validate: (value) => {
+                        if (!value) return "Product URL is required";
+                        try {
+                          const url = new URL(value);
+                          const hostname = url.hostname.toLowerCase();
+                          const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
+                          const isEtsy = hostname.includes('etsy.com');
+                          if (!isAmazon && !isEtsy) {
+                            return "Only Amazon and Etsy links are supported";
+                          }
+                          return true;
+                        } catch {
+                          return "Please enter a valid URL";
+                        }
                       }
                     }}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Product URL (Amazon, Etsy, etc.)</FormLabel>
+                        <FormLabel>Product URL</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="https://amazon.com/..." 
+                            placeholder="https://amazon.com/... or https://etsy.com/..." 
                             {...field}
                             data-testid="input-item-url" 
                           />
                         </FormControl>
+                        <p className="text-xs text-muted-foreground">Only Amazon and Etsy links are supported</p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -321,7 +333,7 @@ export function WishlistManager() {
           </Dialog>
         </div>
         <CardDescription>
-          Create your wishlist. When someone purchases an item, it unlocks gates automatically.
+          Create your wishlist. When someone purchases an item, it unlocks gates automatically. PayGate earns a small commission on purchases.
         </CardDescription>
       </CardHeader>
       <CardContent>

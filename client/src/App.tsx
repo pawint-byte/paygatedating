@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import Landing from "@/pages/landing";
 import DashboardLayout from "@/pages/dashboard-layout";
+import GiftSuccess from "@/pages/gift-success";
+import GiftCancel from "@/pages/gift-cancel";
 import Terms from "@/pages/terms";
 import Privacy from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
@@ -37,6 +39,8 @@ function Router() {
           <Route path="/profile" component={DashboardLayout} />
           <Route path="/settings" component={DashboardLayout} />
           <Route path="/wallet" component={DashboardLayout} />
+          <Route path="/gift-success" component={GiftSuccess} />
+          <Route path="/gift-cancel" component={GiftCancel} />
         </>
       )}
       <Route component={NotFound} />
