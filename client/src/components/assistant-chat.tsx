@@ -141,17 +141,17 @@ export function AssistantChat() {
       <Button
         size="icon"
         className={cn(
-          "fixed bottom-4 right-4 z-50 rounded-full shadow-lg",
+          "fixed bottom-4 right-4 z-[9999] rounded-full shadow-lg h-12 w-12",
           isOpen && "invisible"
         )}
         onClick={() => setIsOpen(true)}
         data-testid="button-open-assistant"
       >
-        <Sparkles className="h-5 w-5" />
+        <Sparkles className="h-6 w-6" />
       </Button>
 
       {isOpen && (
-        <Card className="fixed bottom-4 right-4 z-50 w-96 max-h-[600px] flex flex-col shadow-2xl">
+        <Card className="fixed bottom-4 right-4 z-[9999] w-96 max-h-[600px] flex flex-col shadow-2xl">
           <CardHeader className="flex flex-row items-center justify-between gap-2 py-3 border-b">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
