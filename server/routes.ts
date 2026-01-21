@@ -1826,6 +1826,53 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     proposedDate: z.string().min(1, "Date is required"),
     paymentPreference: z.enum(["ill_pay", "you_pay", "split"]),
     notes: z.string().optional(),
+    preferences: z.array(z.string()).optional(),
+    blacklist: z.array(z.string()).optional(),
+    budgetFloor: z.number().min(0).optional(),
+    budgetCeiling: z.number().min(0).optional(),
+  });
+
+  // Get a user's date preferences (for showing match's preferences when proposing)
+  app.get("/api/users/:userId/date-preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const profile = await storage.getProfile(userId);
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      res.json({
+        datePreferences: profile.datePreferences || [],
+        dateBlacklist: profile.dateBlacklist || [],
+        dateBudgetFloor: profile.dateBudgetFloor,
+        dateBudgetCeiling: profile.dateBudgetCeiling,
+      });
+    } catch (error) {
+      console.error("Error fetching date preferences:", error);
+      res.status(500).json({ message: "Failed to fetch date preferences" });
+    }
+  });
+
+  // Update own date preferences
+  const datePreferencesUpdateSchema = z.object({
+    datePreferences: z.array(z.string()).optional(),
+    dateBlacklist: z.array(z.string()).optional(),
+    dateBudgetFloor: z.number().min(0).nullable().optional(),
+    dateBudgetCeiling: z.number().min(0).nullable().optional(),
+  });
+
+  app.patch("/api/profile/date-preferences", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = datePreferencesUpdateSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: validation.error.errors[0]?.message || "Invalid data" });
+      }
+      const updated = await storage.updateProfile(userId, validation.data);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating date preferences:", error);
+      res.status(500).json({ message: "Failed to update date preferences" });
+    }
   });
 
   app.post("/api/matches/:matchId/date-plans", isAuthenticated, async (req: any, res) => {
@@ -1838,7 +1885,7 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
         return res.status(400).json({ message: validation.error.errors[0]?.message || "Invalid date plan data" });
       }
 
-      const { activity, activityType, placeName, placeAddress, proposedDate, paymentPreference, notes } = validation.data;
+      const { activity, activityType, placeName, placeAddress, proposedDate, paymentPreference, notes, preferences, blacklist, budgetFloor, budgetCeiling } = validation.data;
 
       const match = await storage.getMatch(matchId);
       if (!match) {
@@ -1862,6 +1909,10 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
         proposedDate: new Date(proposedDate),
         paymentPreference,
         notes,
+        preferences,
+        blacklist,
+        budgetFloor,
+        budgetCeiling,
       });
 
       res.status(201).json(datePlan);
