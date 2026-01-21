@@ -19,6 +19,7 @@ import {
 import { z } from "zod";
 import OpenAI from "openai";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { emailService } from "./lib/email";
 
 const depositSchema = z.object({
   amount: z.number().min(MINIMUM_WALLET_BALANCE, `Minimum deposit is $${MINIMUM_WALLET_BALANCE}`),
@@ -113,6 +114,14 @@ export async function registerRoutes(
             await storage.markReferralBonusPaid(referral.id);
           }
         }
+      }
+
+      // Send welcome email (non-blocking)
+      const userEmail = req.user.claims.email;
+      if (userEmail) {
+        emailService.sendWelcome(userEmail, profile.displayName || 'there').catch(err => 
+          console.error('Failed to send welcome email:', err)
+        );
       }
 
       res.status(201).json(profile);
@@ -311,6 +320,15 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
           verificationRejectionReason: null,
           verificationAttempts: newAttemptCount,
         } as any);
+
+        // Send verification approved email (non-blocking)
+        const userEmail = req.user.claims.email;
+        const userName = profile.displayName || req.user.claims.first_name || 'there';
+        if (userEmail) {
+          emailService.sendVerificationApproved(userEmail, userName).catch(err => 
+            console.error('Failed to send verification email:', err)
+          );
+        }
 
         res.json({ 
           verified: true, 
@@ -1801,6 +1819,15 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
       }
 
       const newFeedback = await storage.createFeedback(feedbackValidation.data);
+
+      // Send support confirmation email (non-blocking)
+      const userEmail = req.user.claims.email;
+      const userName = req.user.claims.first_name || 'there';
+      if (userEmail) {
+        emailService.sendSupportConfirmation(userEmail, userName, newFeedback.subject).catch(err => 
+          console.error('Failed to send support confirmation email:', err)
+        );
+      }
 
       res.status(201).json(newFeedback);
     } catch (error) {
