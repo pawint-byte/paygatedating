@@ -86,6 +86,14 @@ Preferred communication style: Simple, everyday language.
 - **Display**: Icons with links on profile cards and in Nearby map popups
 - **Validation**: Optional fields in profile setup form
 
+### Help & Support System
+- **Purpose**: Users can submit issues, complaints, feature requests, and general feedback
+- **Schema**: feedback table with userId, category enum (issue/complaint/feature_request/general), subject, message, status enum (pending/reviewed/resolved/closed), timestamps
+- **API Endpoints**: POST /api/feedback (create), GET /api/feedback (list user's submissions)
+- **Validation**: Zod schemas with min 5 chars subject, min 20 chars message, max 200 subject (shared between client/server via insertFeedbackSchema)
+- **UI**: Tabbed interface with submission form and history view, located in sidebar settings section
+- **Route**: /help in sidebar with HelpCircle icon
+
 ### Friends-of-Friends Network (Friendster-style)
 - **Purpose**: Build trust by showing degrees of separation and mutual connections
 - **Connections Table**: Tracks bidirectional relationships between users with unique constraint
