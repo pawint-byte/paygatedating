@@ -53,6 +53,7 @@ export async function registerRoutes(
   app.post("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log("POST /api/profile - userId:", userId, "photos count:", req.body.photos?.length || 0);
       
       const existingProfile = await storage.getProfile(userId);
       if (existingProfile) {
@@ -124,6 +125,8 @@ export async function registerRoutes(
   app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      
+      console.log("Profile update received - photos count:", req.body.photos?.length || 0);
       
       const partialSchema = insertProfileSchema.partial().omit({ userId: true });
       const validationResult = partialSchema.safeParse(req.body);
