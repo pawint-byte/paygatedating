@@ -94,6 +94,14 @@ Preferred communication style: Simple, everyday language.
 - **UI**: Tabbed interface with submission form and history view, located in sidebar settings section
 - **Route**: /help in sidebar with HelpCircle icon
 
+### Admin Dashboard
+- **Purpose**: Platform administrators can view and manage all user feedback submissions
+- **Access Control**: isAdmin boolean field on users table, isAdmin middleware protects all admin routes
+- **Admin API Endpoints**: GET /api/admin/status (check admin status), GET /api/admin/feedback (list all feedback), PATCH /api/admin/feedback/:id/status (update status)
+- **Features**: Stats cards (total/pending/reviewed/resolved/issues/features), table view with all submissions, status update controls via dropdown
+- **UI**: Admin-only section in sidebar (Shield icon), access denied view for non-admins
+- **Route**: /admin/feedback (visible only to admins in sidebar)
+
 ### Friends-of-Friends Network (Friendster-style)
 - **Purpose**: Build trust by showing degrees of separation and mutual connections
 - **Connections Table**: Tracks bidirectional relationships between users with unique constraint
