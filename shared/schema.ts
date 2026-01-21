@@ -18,6 +18,7 @@ export const profiles = pgTable("profiles", {
   userId: varchar("user_id").notNull().unique(),
   displayName: varchar("display_name", { length: 100 }).notNull(),
   age: integer("age").notNull(),
+  gender: varchar("gender", { length: 50 }),
   location: varchar("location", { length: 100 }),
   bio: text("bio"),
   tagline: varchar("tagline", { length: 200 }),
@@ -29,6 +30,36 @@ export const profiles = pgTable("profiles", {
   photos: text("photos").array(),
   videos: text("videos").array(),
   facetimeAvailable: boolean("facetime_available").default(false),
+  
+  // Physical Attributes
+  height: varchar("height", { length: 20 }),
+  bodyType: varchar("body_type", { length: 50 }),
+  eyeColor: varchar("eye_color", { length: 30 }),
+  hairColor: varchar("hair_color", { length: 30 }),
+  ethnicity: varchar("ethnicity", { length: 50 }),
+  
+  // Lifestyle
+  smoking: varchar("smoking", { length: 30 }),
+  drinking: varchar("drinking", { length: 30 }),
+  exercise: varchar("exercise", { length: 30 }),
+  diet: varchar("diet", { length: 50 }),
+  
+  // Background
+  education: varchar("education", { length: 100 }),
+  occupation: varchar("occupation", { length: 100 }),
+  income: varchar("income", { length: 50 }),
+  religion: varchar("religion", { length: 50 }),
+  politics: varchar("politics", { length: 50 }),
+  languages: text("languages").array(),
+  
+  // Relationship
+  relationshipStatus: varchar("relationship_status", { length: 50 }),
+  hasKids: varchar("has_kids", { length: 30 }),
+  wantsKids: varchar("wants_kids", { length: 30 }),
+  
+  // Zodiac (optional fun)
+  zodiacSign: varchar("zodiac_sign", { length: 20 }),
+  
   subscriptionTier: subscriptionTierEnum("subscription_tier").default("free").notNull(),
   isPremiumSince: timestamp("is_premium_since"),
   isVisible: boolean("is_visible").default(true).notNull(),
