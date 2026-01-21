@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio, HelpCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio, HelpCircle, Shield } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -71,6 +72,11 @@ const settingsMenuItems = [
 
 export function AppSidebar({ user, profile }: AppSidebarProps) {
   const [location] = useLocation();
+  
+  const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
+    queryKey: ["/api/admin/status"],
+    enabled: !!user,
+  });
 
   const displayName = profile?.displayName || user?.firstName || "Member";
   const initials = displayName
@@ -135,6 +141,28 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {adminStatus?.isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location === "/admin/feedback"}
+                    data-testid="nav-admin-feedback"
+                  >
+                    <Link href="/admin/feedback">
+                      <Shield className="w-4 h-4" />
+                      <span>Feedback Manager</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-sidebar-border">

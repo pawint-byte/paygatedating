@@ -21,6 +21,7 @@ import ProfilePage from "./profile";
 import Verification from "./verification";
 import Settings from "./settings";
 import Help from "./help";
+import AdminFeedback from "./admin-feedback";
 
 export default function DashboardLayout() {
   const { user } = useAuth();
@@ -151,6 +152,7 @@ export default function DashboardLayout() {
               <Route path="/verification" component={Verification} />
               <Route path="/settings" component={Settings} />
               <Route path="/help" component={Help} />
+              <Route path="/admin/feedback" component={AdminFeedback} />
               <Route>
                 <Redirect to="/discover" />
               </Route>

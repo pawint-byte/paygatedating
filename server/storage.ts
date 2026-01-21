@@ -117,6 +117,11 @@ export interface IStorage {
   // Feedback / Support
   createFeedback(feedbackData: InsertFeedback): Promise<Feedback>;
   getFeedbackByUser(userId: string): Promise<Feedback[]>;
+  
+  // Admin
+  getAllFeedback(): Promise<Feedback[]>;
+  updateFeedbackStatus(feedbackId: string, status: string): Promise<Feedback | undefined>;
+  isUserAdmin(userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -651,6 +656,24 @@ export class DatabaseStorage implements IStorage {
 
   async getFeedbackByUser(userId: string): Promise<Feedback[]> {
     return await db.select().from(feedback).where(eq(feedback.userId, userId)).orderBy(desc(feedback.createdAt));
+  }
+
+  async getAllFeedback(): Promise<Feedback[]> {
+    return await db.select().from(feedback).orderBy(desc(feedback.createdAt));
+  }
+
+  async updateFeedbackStatus(feedbackId: string, status: string): Promise<Feedback | undefined> {
+    const [updated] = await db
+      .update(feedback)
+      .set({ status: status as any, updatedAt: new Date() })
+      .where(eq(feedback.id, feedbackId))
+      .returning();
+    return updated;
+  }
+
+  async isUserAdmin(userId: string): Promise<boolean> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    return user?.isAdmin ?? false;
   }
 }
 

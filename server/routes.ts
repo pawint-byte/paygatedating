@@ -1817,5 +1817,65 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     }
   });
 
+  // ===== ADMIN ROUTES =====
+  const isAdmin = async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const adminStatus = await storage.isUserAdmin(userId);
+      if (!adminStatus) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      next();
+    } catch (error) {
+      console.error("Admin check error:", error);
+      res.status(500).json({ message: "Failed to verify admin status" });
+    }
+  };
+
+  app.get("/api/admin/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const isAdmin = await storage.isUserAdmin(userId);
+      res.json({ isAdmin });
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+      res.status(500).json({ message: "Failed to check admin status" });
+    }
+  });
+
+  app.get("/api/admin/feedback", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allFeedback = await storage.getAllFeedback();
+      res.json(allFeedback);
+    } catch (error) {
+      console.error("Error fetching all feedback:", error);
+      res.status(500).json({ message: "Failed to fetch feedback" });
+    }
+  });
+
+  app.patch("/api/admin/feedback/:id/status", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const feedbackId = req.params.id;
+      const { status } = req.body;
+      
+      const validStatuses = ["pending", "reviewed", "resolved", "closed"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const updated = await storage.updateFeedbackStatus(feedbackId, status);
+      if (!updated) {
+        return res.status(404).json({ message: "Feedback not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating feedback status:", error);
+      res.status(500).json({ message: "Failed to update feedback status" });
+    }
+  });
+
   return httpServer;
 }
