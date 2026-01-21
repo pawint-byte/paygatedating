@@ -391,13 +391,18 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
   app.get("/api/profiles/discover", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log("[Discover API] User ID:", userId);
+      
       const prefs = await storage.getSearchPreferences(userId);
+      console.log("[Discover API] Has prefs:", !!prefs);
       
       let profiles;
       if (prefs) {
         profiles = await storage.getFilteredProfiles(userId, prefs);
+        console.log("[Discover API] Filtered profiles count:", profiles.length);
       } else {
         profiles = await storage.getDiscoverProfiles(userId);
+        console.log("[Discover API] Discover profiles count:", profiles.length);
       }
       res.json(profiles);
     } catch (error) {
