@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio } from "lucide-react";
+import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio, HelpCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -61,6 +61,11 @@ const settingsMenuItems = [
     title: "Settings",
     url: "/settings",
     icon: Settings,
+  },
+  {
+    title: "Help & Support",
+    url: "/help",
+    icon: HelpCircle,
   },
 ];
 

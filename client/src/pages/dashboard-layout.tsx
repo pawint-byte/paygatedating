@@ -20,6 +20,7 @@ import Messages from "./messages";
 import ProfilePage from "./profile";
 import Verification from "./verification";
 import Settings from "./settings";
+import Help from "./help";
 
 export default function DashboardLayout() {
   const { user } = useAuth();
@@ -149,6 +150,7 @@ export default function DashboardLayout() {
               <Route path="/profile" component={ProfilePage} />
               <Route path="/verification" component={Verification} />
               <Route path="/settings" component={Settings} />
+              <Route path="/help" component={Help} />
               <Route>
                 <Redirect to="/discover" />
               </Route>

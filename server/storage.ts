@@ -32,6 +32,9 @@ import {
   type InsertSearchPreferences,
   type Connection,
   type InsertConnection,
+  feedback,
+  type Feedback,
+  type InsertFeedback,
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
 } from "@shared/schema";
@@ -110,6 +113,10 @@ export interface IStorage {
   createConnectionIfNotExists(userId: string, connectedUserId: string, matchId: string): Promise<Connection | undefined>;
   getMutualConnections(userId: string, otherUserId: string): Promise<Profile[]>;
   getFriendsOfFriends(userId: string): Promise<{ profile: Profile; mutualCount: number; throughUsers: string[] }[]>;
+  
+  // Feedback / Support
+  createFeedback(feedbackData: InsertFeedback): Promise<Feedback>;
+  getFeedbackByUser(userId: string): Promise<Feedback[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -635,6 +642,15 @@ export class DatabaseStorage implements IStorage {
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
+  }
+
+  async createFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
+    const [newFeedback] = await db.insert(feedback).values(feedbackData).returning();
+    return newFeedback;
+  }
+
+  async getFeedbackByUser(userId: string): Promise<Feedback[]> {
+    return await db.select().from(feedback).where(eq(feedback.userId, userId)).orderBy(desc(feedback.createdAt));
   }
 }
 

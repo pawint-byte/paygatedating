@@ -9,6 +9,7 @@ import {
   insertMatchSchema,
   insertMessageSchema,
   insertRegistryItemSchema,
+  insertFeedbackSchema,
   MINIMUM_WALLET_BALANCE,
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
@@ -1778,6 +1779,41 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
       } else {
         res.status(500).json({ message: "Failed to process chat" });
       }
+    }
+  });
+
+  // ===== FEEDBACK / SUPPORT ROUTES =====
+  app.post("/api/feedback", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Validate with schema
+      const feedbackValidation = insertFeedbackSchema.extend({
+        subject: z.string().min(5, "Subject must be at least 5 characters").max(200, "Subject must be 200 characters or less"),
+        message: z.string().min(20, "Please provide more details (at least 20 characters)"),
+      }).safeParse({ ...req.body, userId });
+      
+      if (!feedbackValidation.success) {
+        return res.status(400).json({ message: feedbackValidation.error.errors[0]?.message || "Invalid feedback data" });
+      }
+
+      const newFeedback = await storage.createFeedback(feedbackValidation.data);
+
+      res.status(201).json(newFeedback);
+    } catch (error) {
+      console.error("Error creating feedback:", error);
+      res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  app.get("/api/feedback", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const feedbackList = await storage.getFeedbackByUser(userId);
+      res.json(feedbackList);
+    } catch (error) {
+      console.error("Error fetching feedback:", error);
+      res.status(500).json({ message: "Failed to fetch feedback" });
     }
   });
 

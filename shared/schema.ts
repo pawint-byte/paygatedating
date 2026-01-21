@@ -233,6 +233,25 @@ export const connections = pgTable("connections", {
   uniqueConnection: unique().on(table.userId, table.connectedUserId),
 }));
 
+// Feedback / Support System
+export const feedbackCategoryEnum = pgEnum("feedback_category", ["issue", "complaint", "feature_request", "general"]);
+export const feedbackStatusEnum = pgEnum("feedback_status", ["pending", "reviewed", "resolved", "closed"]);
+
+export const feedback = pgTable("feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  category: feedbackCategoryEnum("category").notNull(),
+  subject: varchar("subject", { length: 200 }).notNull(),
+  message: text("message").notNull(),
+  status: feedbackStatusEnum("status").default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({ id: true, createdAt: true, updatedAt: true, status: true });
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type Feedback = typeof feedback.$inferSelect;
+
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   wallet: one(wallets, {
     fields: [profiles.userId],
