@@ -119,7 +119,22 @@ export default function Settings() {
             </Badge>
           </div>
 
-          {!isPremium && (
+          {!isPremium && !profile && (
+            <div className="bg-muted/50 border rounded-lg p-4">
+              <p className="font-medium mb-2">Complete Your Profile First</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                You need to set up your profile before upgrading to Premium.
+              </p>
+              <Button 
+                onClick={() => window.location.href = "/profile-setup"}
+                data-testid="button-complete-profile"
+              >
+                Complete Profile
+              </Button>
+            </div>
+          )}
+
+          {!isPremium && profile && (
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
               <p className="font-medium mb-2">Upgrade to Premium</p>
               <p className="text-sm text-muted-foreground mb-4">
