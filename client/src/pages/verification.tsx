@@ -27,6 +27,8 @@ export default function Verification() {
 
   const { data: profile, isLoading: profileLoading } = useQuery<Profile>({
     queryKey: ["/api/profile"],
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: verificationStatus, isLoading: statusLoading } = useQuery<VerificationStatus>({
