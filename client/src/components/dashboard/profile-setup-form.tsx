@@ -7,8 +7,9 @@ import {
   User, MapPin, Heart, Sparkles, FileText, Camera, Video, Phone, X, Upload, 
   ThumbsUp, ThumbsDown, Ruler, Dumbbell, Wine, Cigarette, Briefcase, 
   GraduationCap, DollarSign, Church, Vote, Globe, Baby, Star, Eye, Gift, 
-  Lightbulb, ChevronDown, ChevronUp
+  Lightbulb, ChevronDown, ChevronUp, Share2
 } from "lucide-react";
+import { SiInstagram, SiTiktok, SiX, SiSnapchat } from "react-icons/si";
 
 import manPhoto1 from "@assets/stock_images/professional_headsho_c2f05730.jpg";
 import manPhoto2 from "@assets/stock_images/professional_headsho_c85690d1.jpg";
@@ -79,6 +80,12 @@ const profileSchema = z.object({
   wantsKids: z.string().optional(),
   zodiacSign: z.string().optional(),
   
+  // Social Media Links
+  instagramUsername: z.string().max(100).optional(),
+  tiktokUsername: z.string().max(100).optional(),
+  twitterUsername: z.string().max(100).optional(),
+  snapchatUsername: z.string().max(100).optional(),
+  
   // Visibility Settings
   showPhotoPublicly: z.boolean().default(true),
   showLocationPublicly: z.boolean().default(true),
@@ -135,6 +142,12 @@ interface ProfileSetupFormProps {
     showAgePublicly: boolean;
     showRegistryPublicly: boolean;
     showInterestsPublicly: boolean;
+    socialLinks?: {
+      instagram?: string;
+      tiktok?: string;
+      twitter?: string;
+      snapchat?: string;
+    };
   }) => void;
   isPending?: boolean;
   defaultValues?: Partial<ProfileFormData & { photos?: string[]; videos?: string[] }>;
@@ -188,6 +201,10 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
       showAgePublicly: defaultValues?.showAgePublicly ?? true,
       showRegistryPublicly: defaultValues?.showRegistryPublicly ?? false,
       showInterestsPublicly: defaultValues?.showInterestsPublicly ?? true,
+      instagramUsername: defaultValues?.instagramUsername || "",
+      tiktokUsername: defaultValues?.tiktokUsername || "",
+      twitterUsername: defaultValues?.twitterUsername || "",
+      snapchatUsername: defaultValues?.snapchatUsername || "",
       termsAccepted: false,
     },
   });
@@ -273,7 +290,27 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
   };
 
   const handleSubmit = (data: ProfileFormData) => {
-    const { termsAccepted, interests, hobbies, mustHaves, dealBreakers, languages, ...rest } = data;
+    const { 
+      termsAccepted, 
+      interests, 
+      hobbies, 
+      mustHaves, 
+      dealBreakers, 
+      languages,
+      instagramUsername,
+      tiktokUsername,
+      twitterUsername,
+      snapchatUsername,
+      ...rest 
+    } = data;
+    
+    const socialLinks = {
+      instagram: instagramUsername || undefined,
+      tiktok: tiktokUsername || undefined,
+      twitter: twitterUsername || undefined,
+      snapchat: snapchatUsername || undefined,
+    };
+    
     onSubmit({
       ...rest,
       interests: parseCommaSeparated(interests),
@@ -283,6 +320,7 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
       languages: parseCommaSeparated(languages),
       photos,
       videos,
+      socialLinks,
     });
   };
 
@@ -1278,6 +1316,103 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 data-testid="input-video-upload"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Social Media Links Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-lg font-medium">
+            <Share2 className="w-5 h-5 text-primary" />
+            <span>Social Media Links</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Connect your social media profiles so others can find you. These are optional and visible on your profile.
+          </p>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="instagramUsername"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <SiInstagram className="w-4 h-4 text-pink-500" />
+                    Instagram
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="@username"
+                      {...field}
+                      data-testid="input-instagram"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tiktokUsername"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <SiTiktok className="w-4 h-4" />
+                    TikTok
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="@username"
+                      {...field}
+                      data-testid="input-tiktok"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="twitterUsername"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <SiX className="w-4 h-4" />
+                    X (Twitter)
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="@username"
+                      {...field}
+                      data-testid="input-twitter"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="snapchatUsername"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <SiSnapchat className="w-4 h-4 text-yellow-400" />
+                    Snapchat
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="@username"
+                      {...field}
+                      data-testid="input-snapchat"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
         </div>
 

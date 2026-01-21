@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -41,6 +41,19 @@ export default function Discover() {
 
   const { data: profiles, isLoading } = useQuery<Profile[]>({
     queryKey: ["/api/profiles/discover"],
+  });
+
+  // Get profile user IDs for mutual connection counts
+  const profileUserIds = useMemo(() => 
+    profiles?.map(p => p.userId).filter(Boolean) || [], 
+    [profiles]
+  );
+
+  // Fetch mutual connection counts for all discovered profiles (using GET with encoded params)
+  const userIdsParam = profileUserIds.join(",");
+  const { data: mutualCounts } = useQuery<Record<string, number>>({
+    queryKey: ["/api/connections/mutual-counts", userIdsParam],
+    enabled: profileUserIds.length > 0,
   });
 
   const updateFiltersMutation = useMutation({
@@ -237,6 +250,7 @@ export default function Discover() {
               profile={profile}
               onSendInterest={handleSendInterest}
               isPending={sendInterestMutation.isPending}
+              mutualConnections={profile.userId ? mutualCounts?.[profile.userId] : undefined}
             />
           ))}
         </div>

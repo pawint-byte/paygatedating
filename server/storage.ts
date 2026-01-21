@@ -9,6 +9,7 @@ import {
   giftPurchases,
   subscriptions,
   searchPreferences,
+  connections,
   type Profile,
   type InsertProfile,
   type Wallet,
@@ -29,6 +30,8 @@ import {
   type InsertSubscription,
   type SearchPreferences,
   type InsertSearchPreferences,
+  type Connection,
+  type InsertConnection,
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
 } from "@shared/schema";
@@ -95,6 +98,18 @@ export interface IStorage {
   getSearchPreferences(userId: string): Promise<SearchPreferences | undefined>;
   upsertSearchPreferences(prefs: InsertSearchPreferences): Promise<SearchPreferences>;
   getFilteredProfiles(userId: string, prefs: SearchPreferences): Promise<Profile[]>;
+  
+  // Live Nearby Feature
+  getLiveProfiles(userId: string, lat: number, lng: number, radiusKm: number): Promise<Profile[]>;
+  updateLiveStatus(userId: string, isLive: boolean, lat?: number, lng?: number): Promise<Profile | undefined>;
+  
+  // Connections (Friends-of-Friends)
+  getConnections(userId: string): Promise<Connection[]>;
+  getConnection(userId: string, connectedUserId: string): Promise<Connection | undefined>;
+  createConnection(connection: InsertConnection): Promise<Connection>;
+  createConnectionIfNotExists(userId: string, connectedUserId: string, matchId: string): Promise<Connection | undefined>;
+  getMutualConnections(userId: string, otherUserId: string): Promise<Profile[]>;
+  getFriendsOfFriends(userId: string): Promise<{ profile: Profile; mutualCount: number; throughUsers: string[] }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -445,6 +460,169 @@ export class DatabaseStorage implements IStorage {
     }
 
     return results.slice(0, 50);
+  }
+
+  // Live Nearby Feature
+  async getLiveProfiles(userId: string, lat: number, lng: number, radiusKm: number): Promise<Profile[]> {
+    // Get profiles that are live and visible
+    const liveProfiles = await db
+      .select()
+      .from(profiles)
+      .where(and(
+        eq(profiles.isLive, true),
+        eq(profiles.isVisible, true),
+        ne(profiles.userId, userId)
+      ))
+      .limit(100);
+
+    // Filter by distance (radius in km, convert to miles for calculation)
+    const radiusMiles = radiusKm * 0.621371;
+    return liveProfiles.filter(profile => {
+      if (!profile.latitude || !profile.longitude) return false;
+      const distance = this.calculateDistance(
+        lat, lng,
+        parseFloat(profile.latitude), parseFloat(profile.longitude)
+      );
+      return distance <= radiusMiles;
+    });
+  }
+
+  async updateLiveStatus(userId: string, isLive: boolean, lat?: number, lng?: number): Promise<Profile | undefined> {
+    const updateData: Partial<Profile> = {
+      isLive,
+      locationUpdatedAt: new Date(),
+    };
+    
+    if (lat !== undefined && lng !== undefined) {
+      updateData.latitude = lat.toString();
+      updateData.longitude = lng.toString();
+    }
+    
+    const [updated] = await db
+      .update(profiles)
+      .set(updateData)
+      .where(eq(profiles.userId, userId))
+      .returning();
+    
+    return updated;
+  }
+
+  // Connections (Friends-of-Friends)
+  async getConnections(userId: string): Promise<Connection[]> {
+    return await db
+      .select()
+      .from(connections)
+      .where(eq(connections.userId, userId));
+  }
+
+  async getConnection(userId: string, connectedUserId: string): Promise<Connection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(connections)
+      .where(and(
+        eq(connections.userId, userId),
+        eq(connections.connectedUserId, connectedUserId)
+      ));
+    return connection;
+  }
+
+  async createConnection(connection: InsertConnection): Promise<Connection> {
+    const [newConnection] = await db.insert(connections).values(connection).returning();
+    return newConnection;
+  }
+
+  async createConnectionIfNotExists(userId: string, connectedUserId: string, matchId: string): Promise<Connection | undefined> {
+    // Check if connection already exists first
+    const existing = await this.getConnection(userId, connectedUserId);
+    if (existing) return existing;
+    
+    // Try to create, handling potential race condition via unique constraint
+    try {
+      const [newConnection] = await db.insert(connections).values({
+        userId,
+        connectedUserId,
+        status: "connected",
+        matchId,
+      }).returning();
+      return newConnection;
+    } catch (error: any) {
+      // If duplicate key error, just return undefined (connection already exists)
+      if (error?.code === "23505") { // PostgreSQL unique violation
+        return await this.getConnection(userId, connectedUserId);
+      }
+      throw error;
+    }
+  }
+
+  async getMutualConnections(userId: string, otherUserId: string): Promise<Profile[]> {
+    // Get user's connections
+    const userConnections = await db
+      .select({ connectedUserId: connections.connectedUserId })
+      .from(connections)
+      .where(eq(connections.userId, userId));
+    
+    const userConnectedIds = new Set(userConnections.map(c => c.connectedUserId));
+    
+    // Get other user's connections
+    const otherConnections = await db
+      .select({ connectedUserId: connections.connectedUserId })
+      .from(connections)
+      .where(eq(connections.userId, otherUserId));
+    
+    // Find intersection
+    const mutualIds = otherConnections
+      .map(c => c.connectedUserId)
+      .filter(id => userConnectedIds.has(id));
+    
+    if (mutualIds.length === 0) return [];
+    
+    return await db
+      .select()
+      .from(profiles)
+      .where(inArray(profiles.userId, mutualIds));
+  }
+
+  async getFriendsOfFriends(userId: string): Promise<{ profile: Profile; mutualCount: number; throughUsers: string[] }[]> {
+    // Get direct connections
+    const directConnections = await db
+      .select({ connectedUserId: connections.connectedUserId })
+      .from(connections)
+      .where(eq(connections.userId, userId));
+    
+    const directIds = new Set(directConnections.map(c => c.connectedUserId));
+    directIds.add(userId); // Exclude self
+    
+    // For each connection, get their connections (2nd degree)
+    const secondDegree: Map<string, string[]> = new Map();
+    
+    for (const conn of directConnections) {
+      const theirConnections = await db
+        .select({ connectedUserId: connections.connectedUserId })
+        .from(connections)
+        .where(eq(connections.userId, conn.connectedUserId));
+      
+      for (const c of theirConnections) {
+        if (!directIds.has(c.connectedUserId)) {
+          const existing = secondDegree.get(c.connectedUserId) || [];
+          existing.push(conn.connectedUserId);
+          secondDegree.set(c.connectedUserId, existing);
+        }
+      }
+    }
+    
+    if (secondDegree.size === 0) return [];
+    
+    // Get profiles for 2nd degree connections
+    const fofProfiles = await db
+      .select()
+      .from(profiles)
+      .where(inArray(profiles.userId, Array.from(secondDegree.keys())));
+    
+    return fofProfiles.map(profile => ({
+      profile,
+      mutualCount: secondDegree.get(profile.userId)?.length || 0,
+      throughUsers: secondDegree.get(profile.userId) || [],
+    }));
   }
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, decimal, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, timestamp, decimal, pgEnum, jsonb, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -72,6 +72,18 @@ export const profiles = pgTable("profiles", {
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
   city: varchar("city", { length: 100 }),
+  
+  // Live Nearby Feature
+  isLive: boolean("is_live").default(false).notNull(),
+  locationUpdatedAt: timestamp("location_updated_at"),
+  
+  // Social Media Links
+  socialLinks: jsonb("social_links").$type<{
+    instagram?: string;
+    tiktok?: string;
+    twitter?: string;
+    snapchat?: string;
+  }>(),
   
   // Visibility Settings - what's shown before gate progression
   showPhotoPublicly: boolean("show_photo_publicly").default(true).notNull(),
@@ -208,6 +220,19 @@ export const searchPreferences = pgTable("search_preferences", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const connectionStatusEnum = pgEnum("connection_status", ["pending", "connected", "blocked"]);
+
+export const connections = pgTable("connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  connectedUserId: varchar("connected_user_id").notNull(),
+  status: connectionStatusEnum("status").default("connected").notNull(),
+  matchId: varchar("match_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueConnection: unique().on(table.userId, table.connectedUserId),
+}));
+
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   wallet: one(wallets, {
     fields: [profiles.userId],
@@ -311,6 +336,11 @@ export const insertSearchPreferencesSchema = createInsertSchema(searchPreference
   updatedAt: true,
 });
 
+export const insertConnectionSchema = createInsertSchema(connections).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Profile = typeof profiles.$inferSelect;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type Wallet = typeof wallets.$inferSelect;
@@ -331,6 +361,15 @@ export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 export type SearchPreferences = typeof searchPreferences.$inferSelect;
 export type InsertSearchPreferences = z.infer<typeof insertSearchPreferencesSchema>;
+export type Connection = typeof connections.$inferSelect;
+export type InsertConnection = z.infer<typeof insertConnectionSchema>;
+
+export type SocialLinks = {
+  instagram?: string;
+  tiktok?: string;
+  twitter?: string;
+  snapchat?: string;
+};
 
 export const GATE_COSTS = {
   gate1: 5,

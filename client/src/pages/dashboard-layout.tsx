@@ -14,6 +14,7 @@ import type { Profile, Wallet, Transaction } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 
 import Discover from "./discover";
+import Nearby from "./nearby";
 import Matches from "./matches";
 import Messages from "./messages";
 import ProfilePage from "./profile";
@@ -142,6 +143,7 @@ export default function DashboardLayout() {
           <main className="flex-1 overflow-auto">
             <Switch>
               <Route path="/discover" component={Discover} />
+              <Route path="/nearby" component={Nearby} />
               <Route path="/matches" component={Matches} />
               <Route path="/messages" component={Messages} />
               <Route path="/profile" component={ProfilePage} />

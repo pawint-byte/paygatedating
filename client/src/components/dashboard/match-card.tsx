@@ -1,4 +1,4 @@
-import { MapPin, Heart, Lock } from "lucide-react";
+import { MapPin, Heart, Lock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,10 @@ interface MatchCardProps {
   profile: Profile;
   onSendInterest: (profile: Profile) => void;
   isPending?: boolean;
+  mutualConnections?: number;
 }
 
-export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps) {
+export function MatchCard({ profile, onSendInterest, isPending, mutualConnections }: MatchCardProps) {
   const initials = profile.displayName
     .split(" ")
     .map((n) => n[0])
@@ -80,6 +81,12 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
             <div className="flex items-center gap-1 text-sm text-white/60">
               <Lock className="w-3 h-3" />
               <span>Location hidden</span>
+            </div>
+          )}
+          {mutualConnections && mutualConnections > 0 && (
+            <div className="flex items-center gap-1 text-sm text-white/80 mt-1" data-testid={`mutual-connections-${profile.id}`}>
+              <Users className="w-3 h-3" />
+              <span>{mutualConnections} mutual {mutualConnections === 1 ? 'connection' : 'connections'}</span>
             </div>
           )}
         </div>

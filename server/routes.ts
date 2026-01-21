@@ -711,6 +711,17 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         [gatePaidByField]: userId,
       });
 
+      // Create bidirectional connections when match becomes active (gate 1 paid)
+      if (gateNum === 1) {
+        try {
+          await storage.createConnectionIfNotExists(match.initiatorId, match.recipientId, matchId);
+          await storage.createConnectionIfNotExists(match.recipientId, match.initiatorId, matchId);
+        } catch (connError) {
+          // Log but don't fail gate advancement for connection creation issues
+          console.error("Error creating connections:", connError);
+        }
+      }
+
       res.json(updatedMatch);
     } catch (error) {
       console.error("Error advancing gate:", error);
@@ -758,6 +769,15 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         skipPaid: true,
         lastActionBy: userId,
       });
+
+      // Create bidirectional connections when skipping ahead
+      try {
+        await storage.createConnectionIfNotExists(match.initiatorId, match.recipientId, matchId);
+        await storage.createConnectionIfNotExists(match.recipientId, match.initiatorId, matchId);
+      } catch (connError) {
+        // Log but don't fail skip for connection creation issues
+        console.error("Error creating connections:", connError);
+      }
 
       res.json(updatedMatch);
     } catch (error) {
@@ -911,6 +931,129 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     } catch (error) {
       console.error("Error fetching invite profile:", error);
       res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  // =================
+  // NEARBY LIVE FEATURE
+  // =================
+  
+  // Get live profiles near user
+  app.get("/api/nearby", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const lat = parseFloat(req.query.lat as string);
+      const lng = parseFloat(req.query.lng as string);
+      const radius = parseFloat(req.query.radius as string) || 10; // Default 10km
+      
+      if (isNaN(lat) || isNaN(lng)) {
+        return res.status(400).json({ message: "Valid latitude and longitude required" });
+      }
+      
+      const nearbyProfiles = await storage.getLiveProfiles(userId, lat, lng, radius);
+      
+      // Fuzz locations for privacy (round to ~500m)
+      const fuzzedProfiles = nearbyProfiles.map(profile => ({
+        ...profile,
+        latitude: profile.latitude ? (Math.round(parseFloat(profile.latitude) * 200) / 200).toString() : null,
+        longitude: profile.longitude ? (Math.round(parseFloat(profile.longitude) * 200) / 200).toString() : null,
+      }));
+      
+      res.json(fuzzedProfiles);
+    } catch (error) {
+      console.error("Error fetching nearby profiles:", error);
+      res.status(500).json({ message: "Failed to fetch nearby profiles" });
+    }
+  });
+  
+  // Update live status
+  app.post("/api/nearby/live", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { isLive, latitude, longitude } = req.body;
+      
+      const updated = await storage.updateLiveStatus(
+        userId, 
+        isLive, 
+        latitude ? parseFloat(latitude) : undefined, 
+        longitude ? parseFloat(longitude) : undefined
+      );
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating live status:", error);
+      res.status(500).json({ message: "Failed to update live status" });
+    }
+  });
+
+  // =================
+  // CONNECTIONS (FRIENDS-OF-FRIENDS)
+  // =================
+  
+  // Get user's connections
+  app.get("/api/connections", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connections = await storage.getConnections(userId);
+      res.json(connections);
+    } catch (error) {
+      console.error("Error fetching connections:", error);
+      res.status(500).json({ message: "Failed to fetch connections" });
+    }
+  });
+  
+  // Get mutual connections with another user
+  app.get("/api/connections/mutual/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const otherUserId = req.params.userId;
+      const mutualConnections = await storage.getMutualConnections(userId, otherUserId);
+      res.json(mutualConnections);
+    } catch (error) {
+      console.error("Error fetching mutual connections:", error);
+      res.status(500).json({ message: "Failed to fetch mutual connections" });
+    }
+  });
+  
+  // Batch get mutual connection counts for multiple users (GET with query params)
+  app.get("/api/connections/mutual-counts/:userIds", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userIdsParam = req.params.userIds;
+      
+      // Validate and parse comma-separated user IDs (max 50 for performance)
+      if (!userIdsParam || typeof userIdsParam !== "string") {
+        return res.status(400).json({ message: "userIds parameter is required" });
+      }
+      
+      const userIds = userIdsParam.split(",").filter(id => id.length > 0).slice(0, 50);
+      
+      if (userIds.length === 0) {
+        return res.json({});
+      }
+      
+      const counts: Record<string, number> = {};
+      for (const otherUserId of userIds) {
+        const mutualConnections = await storage.getMutualConnections(userId, otherUserId);
+        counts[otherUserId] = mutualConnections.length;
+      }
+      
+      res.json(counts);
+    } catch (error) {
+      console.error("Error fetching mutual connection counts:", error);
+      res.status(500).json({ message: "Failed to fetch mutual connection counts" });
+    }
+  });
+  
+  // Get friends-of-friends (2nd degree connections)
+  app.get("/api/connections/friends-of-friends", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const fof = await storage.getFriendsOfFriends(userId);
+      res.json(fof);
+    } catch (error) {
+      console.error("Error fetching friends of friends:", error);
+      res.status(500).json({ message: "Failed to fetch friends of friends" });
     }
   });
 

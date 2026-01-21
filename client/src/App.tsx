@@ -39,6 +39,7 @@ function Router() {
           <>
             <Route path="/" component={DashboardLayout} />
             <Route path="/discover" component={DashboardLayout} />
+            <Route path="/nearby" component={DashboardLayout} />
             <Route path="/matches" component={DashboardLayout} />
             <Route path="/messages" component={DashboardLayout} />
             <Route path="/profile" component={DashboardLayout} />

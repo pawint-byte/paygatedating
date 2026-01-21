@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck } from "lucide-react";
+import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -28,6 +28,11 @@ const mainMenuItems = [
     title: "Discover",
     url: "/discover",
     icon: Users,
+  },
+  {
+    title: "Nearby",
+    url: "/nearby",
+    icon: Radio,
   },
   {
     title: "My Matches",
