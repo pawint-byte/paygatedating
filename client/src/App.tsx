@@ -10,6 +10,7 @@ import DashboardLayout from "@/pages/dashboard-layout";
 import GiftSuccess from "@/pages/gift-success";
 import GiftCancel from "@/pages/gift-cancel";
 import SubscriptionSuccess from "@/pages/subscription-success";
+import InvitePage from "@/pages/invite";
 import Terms from "@/pages/terms";
 import Privacy from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
@@ -31,6 +32,7 @@ function Router() {
       <Switch>
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/invite/:referralCode" component={InvitePage} />
         {!user ? (
           <Route path="/" component={Landing} />
         ) : (

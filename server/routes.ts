@@ -877,6 +877,43 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
   });
 
+  // Public invite page - shows limited profile info for sharing
+  app.get("/api/invite/:referralCode", async (req: any, res) => {
+    try {
+      const code = req.params.referralCode;
+      const wallet = await storage.getWalletByReferralCode(code);
+      
+      if (!wallet) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      const profile = await storage.getProfile(wallet.userId);
+      
+      if (!profile || !profile.isVisible) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      // Return only public-safe information
+      const publicProfile = {
+        displayName: profile.showFirstNamePublicly ? profile.displayName : "PayGate User",
+        age: profile.showAgePublicly ? profile.age : undefined,
+        location: profile.showLocationPublicly ? profile.location : undefined,
+        city: profile.showLocationPublicly ? profile.city : undefined,
+        bio: profile.bio ? profile.bio.substring(0, 200) : undefined,
+        tagline: profile.tagline,
+        photos: profile.showPhotoPublicly && profile.photos ? [profile.photos[0]] : undefined,
+        verificationStatus: profile.verificationStatus,
+        interests: profile.showInterestsPublicly ? profile.interests?.slice(0, 5) : undefined,
+        referralCode: code,
+      };
+
+      res.json(publicProfile);
+    } catch (error) {
+      console.error("Error fetching invite profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
   app.get("/api/registry", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

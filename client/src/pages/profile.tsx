@@ -5,25 +5,68 @@ import { ProfileSetupForm } from "@/components/dashboard/profile-setup-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Crown } from "lucide-react";
-import type { Profile as ProfileType } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Crown, Share2, Copy, Check } from "lucide-react";
+import type { Profile as ProfileType, Wallet } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { isUnauthorizedError } from "@/lib/auth-utils";
+import { useState } from "react";
+
+interface ReferralInfo {
+  referralCode: string;
+  referralCount: number;
+  totalBonusEarned: string;
+}
 
 export default function Profile() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [copied, setCopied] = useState(false);
 
   const { data: profile, isLoading } = useQuery<ProfileType>({
     queryKey: ["/api/profile"],
   });
+
+  const { data: referralInfo } = useQuery<ReferralInfo>({
+    queryKey: ["/api/referral"],
+  });
+
+  const copyInviteLink = async () => {
+    if (!referralInfo?.referralCode) return;
+    
+    const inviteUrl = `${window.location.origin}/invite/${referralInfo.referralCode}`;
+    
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      toast({
+        title: "Link Copied!",
+        description: "Share this link to invite friends. You'll both earn bonus credits!",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: inviteUrl,
+        variant: "destructive",
+      });
+    }
+  };
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
       if (profile) {
         return await apiRequest("PATCH", "/api/profile", data);
       } else {
-        return await apiRequest("POST", "/api/profile", data);
+        // Include referral code from localStorage if present (from invite link)
+        const referralCode = localStorage.getItem("referralCode");
+        const profileData = referralCode ? { ...data, referralCode } : data;
+        const result = await apiRequest("POST", "/api/profile", profileData);
+        // Clear the referral code after successful signup
+        if (referralCode) {
+          localStorage.removeItem("referralCode");
+        }
+        return result;
       }
     },
     onSuccess: () => {
@@ -55,11 +98,26 @@ export default function Profile() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
-        <p className="text-muted-foreground">
-          Manage your dating profile and preferences
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
+          <p className="text-muted-foreground">
+            Manage your dating profile and preferences
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={copyInviteLink}
+          disabled={!referralInfo?.referralCode}
+          data-testid="button-share-profile"
+        >
+          {copied ? (
+            <Check className="w-4 h-4 mr-2" />
+          ) : (
+            <Share2 className="w-4 h-4 mr-2" />
+          )}
+          {copied ? "Copied!" : "Share Profile"}
+        </Button>
       </div>
 
       {isLoading ? (
