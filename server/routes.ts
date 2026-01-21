@@ -1418,7 +1418,7 @@ Always encourage visitors to sign up and try the platform!`;
         mode: "subscription",
         payment_method_types: ["card"],
         line_items: [{ price: priceId, quantity: 1 }],
-        success_url: `${baseUrl}/settings?subscription=success`,
+        success_url: `${baseUrl}/subscription/success`,
         cancel_url: `${baseUrl}/settings?subscription=canceled`,
         metadata: { userId },
       });
