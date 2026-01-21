@@ -6,8 +6,16 @@ import { Link } from "wouter";
 import { 
   User, MapPin, Heart, Sparkles, FileText, Camera, Video, Phone, X, Upload, 
   ThumbsUp, ThumbsDown, Ruler, Dumbbell, Wine, Cigarette, Briefcase, 
-  GraduationCap, DollarSign, Church, Vote, Globe, Baby, Star, Eye, Gift
+  GraduationCap, DollarSign, Church, Vote, Globe, Baby, Star, Eye, Gift, 
+  Lightbulb, ChevronDown, ChevronUp
 } from "lucide-react";
+
+import manPhoto1 from "@assets/stock_images/professional_headsho_c2f05730.jpg";
+import manPhoto2 from "@assets/stock_images/professional_headsho_c85690d1.jpg";
+import manPhoto3 from "@assets/stock_images/professional_headsho_b488eeda.jpg";
+import womanPhoto1 from "@assets/stock_images/professional_headsho_9c70b8c6.jpg";
+import womanPhoto2 from "@assets/stock_images/professional_headsho_28bbcf07.jpg";
+import womanPhoto3 from "@assets/stock_images/professional_headsho_9aa97416.jpg";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
