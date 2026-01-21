@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -22,8 +22,52 @@ import Settings from "./settings";
 export default function DashboardLayout() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [addFundsOpen, setAddFundsOpen] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success');
+    const sessionId = params.get('session_id');
+    const canceled = params.get('canceled');
+
+    if (canceled) {
+      toast({
+        title: "Payment Canceled",
+        description: "Your payment was canceled. No funds were added.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, '', location.split('?')[0]);
+    }
+
+    if (success && sessionId && !paymentVerified) {
+      setPaymentVerified(true);
+      apiRequest("POST", "/api/wallet/verify-payment", { sessionId })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            toast({
+              title: "Payment Successful!",
+              description: "Your wallet has been topped up.",
+            });
+            queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
+          }
+        })
+        .catch(error => {
+          console.error("Payment verification error:", error);
+          toast({
+            title: "Verification Issue",
+            description: "Please check your wallet balance. Contact support if funds are missing.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          window.history.replaceState({}, '', location.split('?')[0]);
+        });
+    }
+  }, [location, paymentVerified, toast]);
 
   const { data: profile } = useQuery<Profile>({
     queryKey: ["/api/profile"],

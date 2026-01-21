@@ -226,7 +226,7 @@ export async function registerRoutes(
           },
         ],
         mode: 'payment',
-        success_url: `${baseUrl}/wallet?success=true&amount=${amount}`,
+        success_url: `${baseUrl}/wallet?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/wallet?canceled=true`,
         metadata: {
           type: 'wallet_funding',
@@ -249,6 +249,54 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error getting Stripe key:", error);
       res.status(500).json({ message: "Failed to get payment configuration" });
+    }
+  });
+
+  app.post("/api/wallet/verify-payment", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { sessionId } = req.body;
+
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID required" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (session.payment_status !== 'paid') {
+        return res.status(400).json({ message: "Payment not completed" });
+      }
+
+      if (session.metadata?.type !== 'wallet_funding') {
+        return res.status(400).json({ message: "Invalid session type" });
+      }
+
+      if (session.metadata?.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      const amount = parseInt(session.metadata.amount, 10);
+      let wallet = await storage.getWallet(userId);
+      
+      if (!wallet) {
+        wallet = await storage.createWallet({ userId });
+      }
+
+      const newBalance = (parseFloat(wallet.balance) + amount).toFixed(2);
+      const updatedWallet = await storage.updateWalletBalance(userId, newBalance);
+
+      await storage.createTransaction({
+        walletId: wallet.id,
+        amount: amount.toFixed(2),
+        type: "deposit",
+        description: `Added $${amount} via Stripe`,
+      });
+
+      res.json({ success: true, wallet: updatedWallet });
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      res.status(500).json({ message: "Failed to verify payment" });
     }
   });
 

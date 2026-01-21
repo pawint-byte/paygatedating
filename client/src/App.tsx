@@ -36,6 +36,7 @@ function Router() {
           <Route path="/messages" component={DashboardLayout} />
           <Route path="/profile" component={DashboardLayout} />
           <Route path="/settings" component={DashboardLayout} />
+          <Route path="/wallet" component={DashboardLayout} />
         </>
       )}
       <Route component={NotFound} />
