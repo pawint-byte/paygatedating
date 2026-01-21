@@ -1,0 +1,168 @@
+1. Install OpenAI Integration
+In Pay Gate Dating's Replit, use the integrations panel to add "OpenAI AI Integrations" (the Replit-managed one).
+
+2. Create the AI Assistant Component
+Create client/src/components/ai-submission-assistant.tsx:
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Wand2, Maximize2, Minimize2, HelpCircle, Loader2 } from "lucide-react";
+type ActionType = "improve" | "expand" | "simplify" | "suggest";
+interface AISubmissionAssistantProps {
+  description: string;
+  onApply: (text: string) => void;
+}
+export function AISubmissionAssistant({ description, onApply }: AISubmissionAssistantProps) {
+  const { toast } = useToast();
+  const [result, setResult] = useState<string | null>(null);
+  const [currentAction, setCurrentAction] = useState<ActionType | null>(null);
+  const { data: availabilityData } = useQuery<{ available: boolean }>({
+    queryKey: ["/api/ai/available"],
+  });
+  const isAvailable = availabilityData?.available ?? false;
+  const improveDescription = useMutation({
+    mutationFn: async ({ description, action }: { description: string; action: ActionType }) => {
+      const response = await apiRequest("POST", "/api/ai/improve-description", {
+        description,
+        action,
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setResult(data.result);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "AI Error",
+        description: error.message || "Failed to improve description",
+        variant: "destructive",
+      });
+    },
+  });
+  const handleAction = (action: ActionType) => {
+    if (!description.trim()) {
+      toast({
+        title: "No description",
+        description: "Please write something first before using AI assistance.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCurrentAction(action);
+    setResult(null);
+    improveDescription.mutate({ description, action });
+  };
+  const handleApply = () => {
+    if (result) {
+      onApply(result);
+      setResult(null);
+      setCurrentAction(null);
+      toast({
+        title: "Applied",
+        description: "AI suggestion has been applied to your description.",
+      });
+    }
+  };
+  const handleDismiss = () => {
+    setResult(null);
+    setCurrentAction(null);
+  };
+  if (!isAvailable) {
+    return null;
+  }
+  const actions = [
+    { type: "improve" as ActionType, label: "Improve", icon: Wand2, description: "Make it clearer" },
+    { type: "expand" as ActionType, label: "Expand", icon: Maximize2, description: "Add more detail" },
+    { type: "simplify" as ActionType, label: "Simplify", icon: Minimize2, description: "Make it concise" },
+    { type: "suggest" as ActionType, label: "Suggest", icon: HelpCircle, description: "Get suggestions" },
+  ];
+  return (
+    <div className="mt-4 p-4 border rounded-lg bg-muted/30">
+      <div className="flex items-center gap-2 mb-3">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span className="text-sm font-medium">AI Writing Assistant</span>
+      </div>
+      
+      <div className="flex flex-wrap gap-2 mb-3">
+        {actions.map(({ type, label, icon: Icon }) => (
+          <Button
+            key={type}
+            variant="outline"
+            size="sm"
+            onClick={() => handleAction(type)}
+            disabled={improveDescription.isPending}
+            data-testid={`button-ai-${type}`}
+          >
+            {improveDescription.isPending && currentAction === type ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <Icon className="h-3 w-3 mr-1" />
+            )}
+            {label}
+          </Button>
+        ))}
+      </div>
+      {result && (
+        <div className="mt-3 p-3 border rounded bg-background">
+          <p className="text-xs text-muted-foreground mb-2">AI Improved Version:</p>
+          <p className="text-sm whitespace-pre-wrap">{result}</p>
+          <div className="flex gap-2 mt-3">
+            <Button size="sm" onClick={handleApply} data-testid="button-ai-apply">
+              Apply This
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleDismiss} data-testid="button-ai-dismiss">
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+3. Add Backend Endpoints
+Add these to your server/routes.ts:
+
+// AI Submission Assistant
+app.get("/api/ai/available", async (req, res) => {
+  const available = !!process.env.REPLIT_AI_API_KEY || !!process.env.OPENAI_API_KEY;
+  res.json({ available });
+});
+app.post("/api/ai/improve-description", async (req, res) => {
+  try {
+    const { description, action } = req.body;
+    
+    if (!description || !action) {
+      return res.status(400).json({ error: "Missing description or action" });
+    }
+    const prompts: Record<string, string> = {
+      improve: "Improve this problem description to be clearer and more professional:",
+      expand: "Expand this description with more detail and context:",
+      simplify: "Simplify this description to be concise and jargon-free:",
+      suggest: "Suggest what additional information should be included in this description:",
+    };
+    const prompt = prompts[action] || prompts.improve;
+    
+    // Use Replit AI integration
+    const OpenAI = (await import("openai")).default;
+    const openai = new OpenAI();
+    
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a helpful writing assistant. Provide improved text directly without preamble." },
+        { role: "user", content: `${prompt}\n\n${description}` }
+      ],
+      max_tokens: 500,
+    });
+    const result = completion.choices[0]?.message?.content || description;
+    res.json({ result });
+  } catch (error: any) {
+    console.error("AI error:", error);
+    res.status(500).json({ error: error.message || "AI service error" });
+  }
+});
+4. Integrate into Your Form
+Import and add the component to your submission/profile form, passing the description value and an onApply callback to update the form field.
