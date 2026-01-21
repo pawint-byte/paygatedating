@@ -126,7 +126,7 @@ export default function Settings() {
                 You need to set up your profile before upgrading to Premium.
               </p>
               <Button 
-                onClick={() => window.location.href = "/profile-setup"}
+                onClick={() => window.location.href = "/profile"}
                 data-testid="button-complete-profile"
               >
                 Complete Profile
