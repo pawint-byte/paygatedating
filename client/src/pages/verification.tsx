@@ -21,6 +21,7 @@ export default function Verification() {
   const { toast } = useToast();
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isCameraLoading, setIsCameraLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,15 +78,31 @@ export default function Verification() {
   });
 
   const startCamera = async () => {
+    // Show loading state while requesting camera permission
+    setIsCameraLoading(true);
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } 
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setIsCapturing(true);
-      }
+      
+      // Now show the capturing UI
+      setIsCapturing(true);
+      setIsCameraLoading(false);
+      
+      // Wait a tick for the video element to be rendered
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          // Explicitly play the video for mobile browsers
+          videoRef.current.play().catch((err) => {
+            console.error("Error playing video:", err);
+          });
+        }
+      }, 100);
     } catch (error) {
+      setIsCapturing(false);
+      setIsCameraLoading(false);
       toast({
         title: "Camera Access Denied",
         description: "Please allow camera access to take a verification selfie.",
@@ -310,9 +327,23 @@ export default function Verification() {
                 <div className="space-y-4">
                   {!uploadedPhoto && !isCapturing && (
                     <div className="flex flex-col sm:flex-row gap-3">
-                      <Button onClick={startCamera} className="flex-1 gap-2" data-testid="button-start-camera">
-                        <Camera className="h-4 w-4" />
-                        Take Selfie
+                      <Button 
+                        onClick={startCamera} 
+                        className="flex-1 gap-2" 
+                        disabled={isCameraLoading}
+                        data-testid="button-start-camera"
+                      >
+                        {isCameraLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Starting Camera...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="h-4 w-4" />
+                            Take Selfie
+                          </>
+                        )}
                       </Button>
                       <Button 
                         variant="outline" 
