@@ -276,7 +276,12 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      const amount = parseInt(session.metadata.amount, 10);
+      const existingTransaction = await storage.getTransactionByStripeSessionId(sessionId);
+      if (existingTransaction) {
+        return res.json({ success: true, message: "Payment already processed" });
+      }
+
+      const amount = parseFloat(session.metadata.amount);
       let wallet = await storage.getWallet(userId);
       
       if (!wallet) {
@@ -291,6 +296,7 @@ export async function registerRoutes(
         amount: amount.toFixed(2),
         type: "deposit",
         description: `Added $${amount} via Stripe`,
+        stripeSessionId: sessionId,
       });
 
       res.json({ success: true, wallet: updatedWallet });

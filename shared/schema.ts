@@ -99,6 +99,7 @@ export const transactions = pgTable("transactions", {
   type: transactionTypeEnum("type").notNull(),
   description: text("description"),
   relatedMatchId: varchar("related_match_id"),
+  stripeSessionId: varchar("stripe_session_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
