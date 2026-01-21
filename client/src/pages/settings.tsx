@@ -58,8 +58,8 @@ export default function Settings() {
   const isPremium = profile?.subscriptionTier === "premium";
 
   const createSubscriptionMutation = useMutation({
-    mutationFn: async (plan: "monthly" | "yearly") => {
-      const response = await apiRequest("POST", "/api/subscription/create-checkout", { plan });
+    mutationFn: async (priceType: "monthly" | "yearly") => {
+      const response = await apiRequest("POST", "/api/subscription/create-checkout", { priceType });
       return response.json();
     },
     onSuccess: (data: { url: string }) => {
