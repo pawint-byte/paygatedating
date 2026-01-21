@@ -60,6 +60,14 @@ export const profiles = pgTable("profiles", {
   // Zodiac (optional fun)
   zodiacSign: varchar("zodiac_sign", { length: 20 }),
   
+  // Visibility Settings - what's shown before gate progression
+  showPhotoPublicly: boolean("show_photo_publicly").default(true).notNull(),
+  showLocationPublicly: boolean("show_location_publicly").default(true).notNull(),
+  showFirstNamePublicly: boolean("show_first_name_publicly").default(true).notNull(),
+  showAgePublicly: boolean("show_age_publicly").default(true).notNull(),
+  showRegistryPublicly: boolean("show_registry_publicly").default(false).notNull(),
+  showInterestsPublicly: boolean("show_interests_publicly").default(true).notNull(),
+  
   subscriptionTier: subscriptionTierEnum("subscription_tier").default("free").notNull(),
   isPremiumSince: timestamp("is_premium_since"),
   isVisible: boolean("is_visible").default(true).notNull(),

@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { 
   User, MapPin, Heart, Sparkles, FileText, Camera, Video, Phone, X, Upload, 
   ThumbsUp, ThumbsDown, Ruler, Dumbbell, Wine, Cigarette, Briefcase, 
-  GraduationCap, DollarSign, Church, Vote, Globe, Baby, Star
+  GraduationCap, DollarSign, Church, Vote, Globe, Baby, Star, Eye, Gift
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -71,6 +71,14 @@ const profileSchema = z.object({
   wantsKids: z.string().optional(),
   zodiacSign: z.string().optional(),
   
+  // Visibility Settings
+  showPhotoPublicly: z.boolean().default(true),
+  showLocationPublicly: z.boolean().default(true),
+  showFirstNamePublicly: z.boolean().default(true),
+  showAgePublicly: z.boolean().default(true),
+  showRegistryPublicly: z.boolean().default(false),
+  showInterestsPublicly: z.boolean().default(true),
+  
   termsAccepted: z.boolean().refine(val => val === true, {
     message: "You must accept the Terms of Service and Privacy Policy",
   }),
@@ -113,6 +121,12 @@ interface ProfileSetupFormProps {
     hasKids?: string;
     wantsKids?: string;
     zodiacSign?: string;
+    showPhotoPublicly: boolean;
+    showLocationPublicly: boolean;
+    showFirstNamePublicly: boolean;
+    showAgePublicly: boolean;
+    showRegistryPublicly: boolean;
+    showInterestsPublicly: boolean;
   }) => void;
   isPending?: boolean;
   defaultValues?: Partial<ProfileFormData & { photos?: string[]; videos?: string[] }>;
@@ -160,6 +174,12 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
       hasKids: defaultValues?.hasKids || "",
       wantsKids: defaultValues?.wantsKids || "",
       zodiacSign: defaultValues?.zodiacSign || "",
+      showPhotoPublicly: defaultValues?.showPhotoPublicly ?? true,
+      showLocationPublicly: defaultValues?.showLocationPublicly ?? true,
+      showFirstNamePublicly: defaultValues?.showFirstNamePublicly ?? true,
+      showAgePublicly: defaultValues?.showAgePublicly ?? true,
+      showRegistryPublicly: defaultValues?.showRegistryPublicly ?? false,
+      showInterestsPublicly: defaultValues?.showInterestsPublicly ?? true,
       termsAccepted: false,
     },
   });
@@ -1250,6 +1270,167 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 data-testid="input-video-upload"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Privacy Controls Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-lg font-medium">
+            <Eye className="w-5 h-5 text-primary" />
+            <span>Privacy Controls</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Choose what information is visible to others before they progress through the gates. 
+            More details become visible as connections advance through each gate.
+          </p>
+
+          <div className="space-y-3">
+            <FormField
+              control={form.control}
+              name="showPhotoPublicly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="flex items-center gap-2">
+                      <Camera className="w-4 h-4" />
+                      Show Photos
+                    </FormLabel>
+                    <FormDescription>
+                      Display your photos before gate progression
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-show-photo"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="showFirstNamePublicly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Show First Name
+                    </FormLabel>
+                    <FormDescription>
+                      Display your name (otherwise shows initials)
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-show-name"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="showAgePublicly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Show Age</FormLabel>
+                    <FormDescription>
+                      Display your age on your public profile
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-show-age"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="showLocationPublicly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      Show Location
+                    </FormLabel>
+                    <FormDescription>
+                      Display your city/area on your profile
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-show-location"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="showInterestsPublicly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Show Interests
+                    </FormLabel>
+                    <FormDescription>
+                      Display your interests and hobbies publicly
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-show-interests"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="showRegistryPublicly"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="flex items-center gap-2">
+                      <Gift className="w-4 h-4" />
+                      Show Gift Registry
+                    </FormLabel>
+                    <FormDescription>
+                      Allow others to see your wishlist before connecting
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-show-registry"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
           </div>
         </div>
 
