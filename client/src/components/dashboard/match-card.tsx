@@ -1,4 +1,4 @@
-import { MapPin, Heart } from "lucide-react";
+import { MapPin, Heart, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,14 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
     .slice(0, 2);
 
   const primaryPhoto = profile.photos?.[0];
+  
+  const showPhoto = profile.showPhotoPublicly !== false;
+  const showName = profile.showFirstNamePublicly !== false;
+  const showAge = profile.showAgePublicly !== false;
+  const showLocation = profile.showLocationPublicly !== false;
+  const showInterests = profile.showInterestsPublicly !== false;
+
+  const displayName = showName ? profile.displayName : initials;
 
   return (
     <div
@@ -27,17 +35,17 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
       data-testid={`match-card-${profile.id}`}
     >
       <div className="relative aspect-[4/5] bg-muted">
-        {primaryPhoto ? (
+        {showPhoto && primaryPhoto ? (
           <img
             src={primaryPhoto}
-            alt={profile.displayName}
+            alt={showName ? profile.displayName : "Profile"}
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
             <Avatar className="w-24 h-24">
               <AvatarFallback className="text-3xl bg-primary/10 text-primary">
-                {initials}
+                {showPhoto ? initials : <Lock className="w-10 h-10" />}
               </AvatarFallback>
             </Avatar>
           </div>
@@ -46,7 +54,8 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
           <div className="flex items-center justify-between mb-1">
             <h3 className="font-semibold text-lg">
-              {profile.displayName}, {profile.age}
+              {displayName}
+              {showAge && <span>, {profile.age}</span>}
             </h3>
             {profile.subscriptionTier === "premium" && (
               <Badge variant="secondary" className="bg-amber-500/20 text-amber-200 border-amber-500/30">
@@ -54,10 +63,16 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
               </Badge>
             )}
           </div>
-          {profile.location && (
+          {showLocation && profile.location && (
             <div className="flex items-center gap-1 text-sm text-white/80">
               <MapPin className="w-3 h-3" />
               <span>{profile.location}</span>
+            </div>
+          )}
+          {!showLocation && profile.location && (
+            <div className="flex items-center gap-1 text-sm text-white/60">
+              <Lock className="w-3 h-3" />
+              <span>Location hidden</span>
             </div>
           )}
         </div>
@@ -70,7 +85,7 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
           </p>
         )}
 
-        {profile.interests && profile.interests.length > 0 && (
+        {showInterests && profile.interests && profile.interests.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {profile.interests.slice(0, 3).map((interest) => (
               <Badge key={interest} variant="secondary" className="text-xs">
@@ -82,6 +97,13 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
                 +{profile.interests.length - 3}
               </Badge>
             )}
+          </div>
+        )}
+        
+        {!showInterests && profile.interests && profile.interests.length > 0 && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Lock className="w-3 h-3" />
+            <span>Interests visible after connecting</span>
           </div>
         )}
 
