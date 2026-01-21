@@ -107,6 +107,17 @@ export default function Verification() {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
+      
+      // Check if video is ready
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        toast({
+          title: "Camera Not Ready",
+          description: "Please wait for the camera to load and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
