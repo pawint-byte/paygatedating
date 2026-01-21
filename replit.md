@@ -70,6 +70,30 @@ Preferred communication style: Simple, everyday language.
 - **Verified Badge**: Displayed on profile cards and sidebar for verified users
 - **UI**: Camera capture and file upload options on dedicated verification page
 
+### Nearby Map Feature (Walkbye-style)
+- **Purpose**: Discover singles in your area in real-time, showing general location for privacy
+- **Tech Stack**: Leaflet with OpenStreetMap (free, no API key), react-leaflet v4.2.1 for React 18 compatibility
+- **Go Live Toggle**: Users can broadcast their location to appear on map (auto-updates every 30 seconds)
+- **Privacy**: Location fuzzing rounds coordinates to ~500m radius (neighborhood level, not exact pins)
+- **Profile Popups**: Show profile photo, name, age, social links, and "Express Interest" CTA
+- **Route**: /nearby in sidebar with Radio icon
+- **Schema Fields**: isLive, latitude, longitude, locationUpdatedAt on profiles table
+
+### Social Media Profile Linking
+- **Purpose**: Additional verification and discovery through linked social accounts
+- **Platforms**: Instagram, TikTok, Twitter (X), Snapchat
+- **Storage**: socialLinks JSONB field on profiles table
+- **Display**: Icons with links on profile cards and in Nearby map popups
+- **Validation**: Optional fields in profile setup form
+
+### Friends-of-Friends Network (Friendster-style)
+- **Purpose**: Build trust by showing degrees of separation and mutual connections
+- **Connections Table**: Tracks bidirectional relationships between users with unique constraint
+- **Connection Creation**: Created when matches progress past gate 1 (active status) or skip ahead
+- **Mutual Connections**: Displayed as badge on profile cards in Discover view (e.g., "3 mutual connections")
+- **API Endpoints**: /api/connections, /api/connections/mutual/:userId, /api/connections/mutual-counts/:userIds
+- **Duplicate Prevention**: Unique constraint + createConnectionIfNotExists with PostgreSQL error handling (code 23505)
+
 ## External Dependencies
 
 ### Database
