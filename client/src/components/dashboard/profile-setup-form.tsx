@@ -99,18 +99,33 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const remainingSlots = 6 - photos.length;
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    if (filesToUpload.length === 0) return;
+
     setUploadingPhoto(true);
-    try {
-      for (const file of Array.from(files)) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const dataUrl = event.target?.result as string;
-          setPhotos(prev => [...prev, dataUrl]);
-        };
-        reader.readAsDataURL(file);
-      }
-    } finally {
-      setUploadingPhoto(false);
+    let completed = 0;
+
+    for (const file of filesToUpload) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setPhotos(prev => {
+          if (prev.length >= 6) return prev;
+          return [...prev, dataUrl];
+        });
+        completed++;
+        if (completed >= filesToUpload.length) {
+          setUploadingPhoto(false);
+        }
+      };
+      reader.onerror = () => {
+        completed++;
+        if (completed >= filesToUpload.length) {
+          setUploadingPhoto(false);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -118,18 +133,33 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const remainingSlots = 2 - videos.length;
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    if (filesToUpload.length === 0) return;
+
     setUploadingVideo(true);
-    try {
-      for (const file of Array.from(files)) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const dataUrl = event.target?.result as string;
-          setVideos(prev => [...prev, dataUrl]);
-        };
-        reader.readAsDataURL(file);
-      }
-    } finally {
-      setUploadingVideo(false);
+    let completed = 0;
+
+    for (const file of filesToUpload) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setVideos(prev => {
+          if (prev.length >= 2) return prev;
+          return [...prev, dataUrl];
+        });
+        completed++;
+        if (completed >= filesToUpload.length) {
+          setUploadingVideo(false);
+        }
+      };
+      reader.onerror = () => {
+        completed++;
+        if (completed >= filesToUpload.length) {
+          setUploadingVideo(false);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
