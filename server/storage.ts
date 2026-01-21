@@ -10,6 +10,7 @@ import {
   subscriptions,
   searchPreferences,
   connections,
+  users,
   type Profile,
   type InsertProfile,
   type Wallet,
