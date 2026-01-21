@@ -1236,5 +1236,143 @@ Always encourage visitors to sign up and try the platform!`;
     }
   });
 
+  const aiClient = new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  });
+
+  app.get("/api/profile/completeness", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      const registryItems = await storage.getRegistryItems(userId);
+
+      const completeness = {
+        hasProfile: !!profile,
+        hasDisplayName: !!profile?.displayName,
+        hasBio: !!(profile?.bio && profile.bio.length > 20),
+        hasPhotos: !!(profile?.photos && profile.photos.length >= 1),
+        hasInterests: !!(profile?.interests && profile.interests.length >= 3),
+        hasLocation: !!profile?.location,
+        hasAge: !!profile?.age,
+        hasLookingFor: !!profile?.lookingFor,
+        hasWishlistItems: registryItems.length >= 1,
+        score: 0,
+        suggestions: [] as string[],
+      };
+
+      let score = 0;
+      if (completeness.hasProfile) score += 10;
+      if (completeness.hasDisplayName) score += 10;
+      if (completeness.hasBio) score += 15;
+      if (completeness.hasPhotos) score += 20;
+      if (completeness.hasInterests) score += 15;
+      if (completeness.hasLocation) score += 10;
+      if (completeness.hasAge) score += 5;
+      if (completeness.hasLookingFor) score += 10;
+      if (completeness.hasWishlistItems) score += 5;
+      completeness.score = score;
+
+      if (!completeness.hasPhotos) completeness.suggestions.push("Add at least one photo to your profile");
+      if (!completeness.hasBio) completeness.suggestions.push("Write a bio that tells people about yourself");
+      if (!completeness.hasInterests) completeness.suggestions.push("Add at least 3 interests to help find compatible matches");
+      if (!completeness.hasLookingFor) completeness.suggestions.push("Specify what you're looking for in a partner");
+      if (!completeness.hasWishlistItems) completeness.suggestions.push("Add gift ideas to your wishlist");
+
+      res.json(completeness);
+    } catch (error) {
+      console.error("Error checking profile completeness:", error);
+      res.status(500).json({ message: "Failed to check profile completeness" });
+    }
+  });
+
+  app.post("/api/assistant/chat", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { message, conversationHistory = [] } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ message: "Message is required" });
+      }
+
+      const profile = await storage.getProfile(userId);
+      const wallet = await storage.getWallet(userId);
+      const registryItems = await storage.getRegistryItems(userId);
+      const matches = await storage.getActiveMatches(userId);
+
+      const profileContext = profile ? `
+User Profile:
+- Display Name: ${profile.displayName || 'Not set'}
+- Age: ${profile.age || 'Not set'}
+- Location: ${profile.location || 'Not set'}
+- Bio: ${profile.bio || 'Not written'}
+- Interests: ${profile.interests?.join(', ') || 'None added'}
+- Looking For: ${profile.lookingFor || 'Not specified'}
+- Photos: ${profile.photos?.length || 0} uploaded
+- Wishlist Items: ${registryItems.length} items
+` : 'User has no profile yet.';
+
+      const walletContext = wallet ? `Wallet balance: $${wallet.balance}` : 'No wallet set up.';
+      const matchContext = `Active matches: ${matches.length}`;
+
+      const systemPrompt = `You are a friendly, supportive dating coach assistant for PayGate Dating, a premium dating app. Your role is to help users:
+
+1. **Profile Setup**: Guide users to complete their profile with compelling photos, an engaging bio, and meaningful interests. Be specific about what makes profiles attractive.
+
+2. **Gate System**: Explain PayGate's unique 5-gate progression system where users pay incrementally ($5-$20) to advance through interaction stages. This filters out low-effort matches and creates more meaningful connections.
+
+3. **Wishlist/Registry**: Help users add items from Amazon or Etsy to their wishlist. Gifts from matches can unlock gates. Explain that only Amazon and Etsy links are allowed.
+
+4. **Match Tips**: Provide conversation starters, dating advice, and tips for advancing through gates successfully.
+
+5. **Wallet & Payments**: Explain how the wallet works, trial credits ($15 for new users), and referral bonuses ($5 per referral).
+
+Current user context:
+${profileContext}
+${walletContext}
+${matchContext}
+
+Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask for detailed help). Use their name if known. Never share explicit content or help with anything inappropriate.`;
+
+      const chatMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
+        { role: "system", content: systemPrompt },
+        ...conversationHistory.slice(-10).map((m: { role: string; content: string }) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+        { role: "user", content: message },
+      ];
+
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const stream = await aiClient.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: chatMessages,
+        stream: true,
+        max_tokens: 500,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || "";
+        if (content) {
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
+      }
+
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    } catch (error) {
+      console.error("Error in assistant chat:", error);
+      if (res.headersSent) {
+        res.write(`data: ${JSON.stringify({ error: "Chat failed" })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ message: "Failed to process chat" });
+      }
+    }
+  });
+
   return httpServer;
 }

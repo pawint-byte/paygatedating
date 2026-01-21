@@ -339,3 +339,33 @@ export const MINIMUM_WALLET_BALANCE = 20;
 export const GIFT_MINIMUM_VALUE = 25;
 export const GIFT_PLATFORM_FEE_PERCENT = 10;
 export const GIFT_AFFILIATE_COMMISSION_PERCENT = 10;
+
+export const aiConversations = pgTable("ai_conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  title: text("title").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const aiMessages = pgTable("ai_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull(),
+  role: varchar("role", { length: 20 }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAiConversationSchema = createInsertSchema(aiConversations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAiMessageSchema = createInsertSchema(aiMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AiConversation = typeof aiConversations.$inferSelect;
+export type InsertAiConversation = z.infer<typeof insertAiConversationSchema>;
+export type AiMessage = typeof aiMessages.$inferSelect;
+export type InsertAiMessage = z.infer<typeof insertAiMessageSchema>;
