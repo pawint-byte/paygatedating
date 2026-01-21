@@ -9,6 +9,7 @@ The platform generates revenue through premium subscriptions ($9.99/month or $99
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Reminder preference: Always remind user to publish after making changes.
 
 ## System Architecture
 
