@@ -12,6 +12,7 @@ import GiftCancel from "@/pages/gift-cancel";
 import Terms from "@/pages/terms";
 import Privacy from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
+import { AssistantChat } from "@/components/assistant-chat";
 
 function Router() {
   const { user, isLoading } = useAuth();
@@ -41,6 +42,7 @@ function Router() {
           <Route path="/wallet" component={DashboardLayout} />
           <Route path="/gift-success" component={GiftSuccess} />
           <Route path="/gift-cancel" component={GiftCancel} />
+          <AssistantChat />
         </>
       )}
       <Route component={NotFound} />
