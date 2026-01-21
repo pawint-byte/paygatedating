@@ -57,6 +57,36 @@ export default function Settings() {
 
   const isPremium = profile?.subscriptionTier === "premium";
 
+  const createSubscriptionMutation = useMutation({
+    mutationFn: async (plan: "monthly" | "yearly") => {
+      const response = await apiRequest("POST", "/api/subscription/create-checkout", { plan });
+      return response.json();
+    },
+    onSuccess: (data: { url: string }) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start checkout. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div className="mb-6">
@@ -95,10 +125,25 @@ export default function Settings() {
               <p className="text-sm text-muted-foreground mb-4">
                 Unlock likes, requests, and wallet funding for just ${PREMIUM_MONTHLY_COST}/month or ${PREMIUM_YEARLY_COST}/year.
               </p>
-              <Button data-testid="button-upgrade-premium">
-                <CreditCard className="w-4 h-4 mr-2" />
-                Upgrade Now
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => createSubscriptionMutation.mutate("monthly")}
+                  disabled={createSubscriptionMutation.isPending}
+                  data-testid="button-upgrade-monthly"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  {createSubscriptionMutation.isPending ? "Loading..." : `$${PREMIUM_MONTHLY_COST}/month`}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => createSubscriptionMutation.mutate("yearly")}
+                  disabled={createSubscriptionMutation.isPending}
+                  data-testid="button-upgrade-yearly"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  {createSubscriptionMutation.isPending ? "Loading..." : `$${PREMIUM_YEARLY_COST}/year (Save 17%)`}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
