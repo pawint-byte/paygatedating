@@ -23,7 +23,9 @@ async function initStripe() {
   }
 }
 
-await initStripe();
+(async () => {
+  await initStripe();
+})();
 
 app.use(express.static(path.join(process.cwd(), "public")));
 
