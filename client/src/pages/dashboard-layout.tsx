@@ -17,6 +17,7 @@ import Discover from "./discover";
 import Matches from "./matches";
 import Messages from "./messages";
 import ProfilePage from "./profile";
+import Verification from "./verification";
 import Settings from "./settings";
 
 export default function DashboardLayout() {
@@ -144,6 +145,7 @@ export default function DashboardLayout() {
               <Route path="/matches" component={Matches} />
               <Route path="/messages" component={Messages} />
               <Route path="/profile" component={ProfilePage} />
+              <Route path="/verification" component={Verification} />
               <Route path="/settings" component={Settings} />
               <Route>
                 <Redirect to="/discover" />

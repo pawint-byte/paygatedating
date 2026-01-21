@@ -9,6 +9,7 @@ export const subscriptionTierEnum = pgEnum("subscription_tier", ["free", "premiu
 export const gateStageEnum = pgEnum("gate_stage", ["gate1", "gate2", "gate3", "gate4", "gate5", "completed"]);
 export const transactionTypeEnum = pgEnum("transaction_type", ["deposit", "gate_payment", "refund", "subscription", "trial_bonus", "referral_bonus"]);
 export const matchStatusEnum = pgEnum("match_status", ["pending", "active", "declined", "completed"]);
+export const verificationStatusEnum = pgEnum("verification_status", ["none", "pending", "verified", "rejected"]);
 
 export const TRIAL_CREDITS_AMOUNT = 15;
 export const REFERRAL_BONUS_AMOUNT = 5;
@@ -59,6 +60,13 @@ export const profiles = pgTable("profiles", {
   
   // Zodiac (optional fun)
   zodiacSign: varchar("zodiac_sign", { length: 20 }),
+  
+  // ID Verification
+  verificationStatus: verificationStatusEnum("verification_status").default("none").notNull(),
+  verificationPhoto: text("verification_photo"),
+  verifiedAt: timestamp("verified_at"),
+  verificationAttempts: integer("verification_attempts").default(0).notNull(),
+  verificationRejectionReason: text("verification_rejection_reason"),
   
   // Geolocation
   latitude: decimal("latitude", { precision: 10, scale: 7 }),

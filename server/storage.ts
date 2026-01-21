@@ -62,6 +62,7 @@ export interface IStorage {
 
   getMatch(id: string): Promise<Match | undefined>;
   getMatchesByUser(userId: string): Promise<Match[]>;
+  getActiveMatches(userId: string): Promise<Match[]>;
   createMatch(match: InsertMatch): Promise<Match>;
   updateMatch(id: string, data: Partial<Match>): Promise<Match | undefined>;
 
@@ -211,6 +212,19 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(matches)
       .where(or(eq(matches.initiatorId, userId), eq(matches.recipientId, userId)))
+      .orderBy(desc(matches.updatedAt));
+  }
+
+  async getActiveMatches(userId: string): Promise<Match[]> {
+    return await db
+      .select()
+      .from(matches)
+      .where(
+        and(
+          or(eq(matches.initiatorId, userId), eq(matches.recipientId, userId)),
+          eq(matches.status, "active")
+        )
+      )
       .orderBy(desc(matches.updatedAt));
   }
 

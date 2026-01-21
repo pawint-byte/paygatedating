@@ -39,6 +39,7 @@ function Router() {
             <Route path="/matches" component={DashboardLayout} />
             <Route path="/messages" component={DashboardLayout} />
             <Route path="/profile" component={DashboardLayout} />
+            <Route path="/verification" component={DashboardLayout} />
             <Route path="/settings" component={DashboardLayout} />
             <Route path="/wallet" component={DashboardLayout} />
             <Route path="/gift-success" component={GiftSuccess} />

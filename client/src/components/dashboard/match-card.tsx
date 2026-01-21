@@ -2,6 +2,7 @@ import { MapPin, Heart, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { VerifiedBadge } from "@/components/verified-badge";
 import type { Profile } from "@shared/schema";
 import { GATE_COSTS } from "@shared/schema";
 
@@ -52,11 +53,16 @@ export function MatchCard({ profile, onSendInterest, isPending }: MatchCardProps
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-lg">
-              {displayName}
-              {showAge && <span>, {profile.age}</span>}
-            </h3>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg">
+                {displayName}
+                {showAge && <span>, {profile.age}</span>}
+              </h3>
+              {profile.verificationStatus === "verified" && (
+                <VerifiedBadge size="sm" />
+              )}
+            </div>
             {profile.subscriptionTier === "premium" && (
               <Badge variant="secondary" className="bg-amber-500/20 text-amber-200 border-amber-500/30">
                 Premium

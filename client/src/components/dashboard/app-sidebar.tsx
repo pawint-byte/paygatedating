@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown } from "lucide-react";
+import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { VerifiedBadge } from "@/components/verified-badge";
 import type { User as UserType } from "@shared/models/auth";
 import type { Profile } from "@shared/schema";
 
@@ -45,6 +46,11 @@ const settingsMenuItems = [
     title: "My Profile",
     url: "/profile",
     icon: User,
+  },
+  {
+    title: "Verification",
+    url: "/verification",
+    icon: ShieldCheck,
   },
   {
     title: "Settings",
@@ -123,14 +129,23 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
 
       <SidebarFooter className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-3">
-          <Avatar>
-            <AvatarImage src={profile?.photos?.[0] || user?.profileImageUrl || undefined} />
-            <AvatarFallback className="bg-primary/10 text-primary">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar>
+              <AvatarImage src={profile?.photos?.[0] || user?.profileImageUrl || undefined} />
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {profile?.verificationStatus === "verified" && (
+              <div className="absolute -bottom-1 -right-1">
+                <VerifiedBadge size="sm" />
+              </div>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">{displayName}</p>
+            <div className="flex items-center gap-1">
+              <p className="font-medium text-sm truncate">{displayName}</p>
+            </div>
             <div className="flex items-center gap-1">
               {profile?.subscriptionTier === "premium" ? (
                 <Badge variant="secondary" className="text-[10px] py-0 px-1.5 gap-0.5">

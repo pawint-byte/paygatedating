@@ -145,6 +145,227 @@ export async function registerRoutes(
     }
   });
 
+  // Helper to estimate base64 data URL size in bytes
+  const estimateBase64Size = (dataUrl: string): number => {
+    // Extract base64 portion after the comma
+    const base64 = dataUrl.split(",")[1];
+    if (!base64) return 0;
+    // Base64 encodes 3 bytes as 4 characters, so size ≈ length * 3/4
+    return Math.ceil(base64.length * 0.75);
+  };
+
+  // Verification request schema
+  const verificationSchema = z.object({
+    verificationPhoto: z.string()
+      .min(1, "Verification photo is required")
+      .refine((val) => val.startsWith("data:image/") || val.startsWith("http"), 
+        "Invalid image format - must be a data URL or HTTP URL")
+      .refine((val) => {
+        if (val.startsWith("data:image/")) {
+          // For data URLs, estimate actual byte size
+          return estimateBase64Size(val) < 5 * 1024 * 1024; // 5MB max
+        }
+        return true; // HTTP URLs don't need size check here
+      }, "Image too large - maximum 5MB")
+      .refine((val) => {
+        if (val.startsWith("data:image/")) {
+          // Check for valid image MIME types
+          const mimeMatch = val.match(/^data:(image\/(jpeg|jpg|png|gif|webp));base64,/);
+          return !!mimeMatch;
+        }
+        return true;
+      }, "Invalid image type - must be JPEG, PNG, GIF, or WebP"),
+  });
+
+  // ID Verification endpoint - compares selfie to profile photos
+  app.post("/api/profile/verify", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Validate input with Zod
+      const validationResult = verificationSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: validationResult.error.errors[0]?.message || "Invalid verification data" 
+        });
+      }
+      const { verificationPhoto } = validationResult.data;
+
+      const profile = await storage.getProfile(userId);
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      // Check if already verified
+      if (profile.verificationStatus === "verified") {
+        return res.status(400).json({ message: "Profile is already verified" });
+      }
+
+      // Check attempt limit (max 5 attempts)
+      if (profile.verificationAttempts >= 5) {
+        return res.status(400).json({ 
+          message: "Maximum verification attempts reached. Please contact support." 
+        });
+      }
+
+      // Must have at least one profile photo to verify against
+      if (!profile.photos || profile.photos.length === 0) {
+        return res.status(400).json({ 
+          message: "Please upload at least one profile photo before verification" 
+        });
+      }
+
+      // Check if AI is configured
+      if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY || !process.env.AI_INTEGRATIONS_OPENAI_BASE_URL) {
+        return res.status(503).json({ message: "Verification service not available" });
+      }
+
+      // Set pending status (don't increment attempts yet)
+      await storage.updateProfile(userId, {
+        verificationPhoto,
+        verificationStatus: "pending",
+      } as any);
+
+      const openai = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      });
+
+      // Use OpenAI Vision to compare the verification selfie with profile photos
+      const profilePhotoUrl = profile.photos[0]; // Compare against first profile photo
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are an identity verification assistant for a dating app. Your job is to compare a verification selfie with a profile photo and determine if they show the same person.
+
+Analyze:
+1. Facial structure (face shape, nose, eyes, mouth proportions)
+2. Distinctive features (moles, dimples, ear shape)
+3. Overall resemblance
+
+Respond with a JSON object only:
+{
+  "match": true/false,
+  "confidence": "high"/"medium"/"low",
+  "reason": "brief explanation"
+}
+
+Be strict but fair - the photos may have different lighting, angles, or ages. Focus on core facial features that don't change easily.`
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Compare these two images. The first is the verification selfie, the second is the profile photo. Are they the same person?" },
+              { type: "image_url", image_url: { url: verificationPhoto } },
+              { type: "image_url", image_url: { url: profilePhotoUrl } },
+            ],
+          },
+        ],
+        max_tokens: 500,
+      });
+
+      const resultText = response.choices[0]?.message?.content || "";
+      
+      // Parse the JSON response
+      let verificationResult;
+      try {
+        // Extract JSON from the response (in case there's extra text)
+        const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          verificationResult = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No JSON found in response");
+        }
+      } catch (parseError) {
+        console.error("Failed to parse verification result:", resultText);
+        // Revert status to none and increment attempts on parse failure
+        const newAttemptCount = profile.verificationAttempts + 1;
+        await storage.updateProfile(userId, {
+          verificationStatus: "none",
+          verificationRejectionReason: "Verification processing failed - please try again",
+          verificationAttempts: newAttemptCount,
+        } as any);
+        return res.status(500).json({ 
+          message: "Verification processing failed, please try again",
+          attemptsRemaining: 5 - newAttemptCount,
+        });
+      }
+
+      const isVerified = verificationResult.match === true && 
+        (verificationResult.confidence === "high" || verificationResult.confidence === "medium");
+
+      // Increment attempt count only after successful AI processing
+      const newAttemptCount = profile.verificationAttempts + 1;
+
+      if (isVerified) {
+        await storage.updateProfile(userId, {
+          verificationStatus: "verified",
+          verifiedAt: new Date(),
+          verificationRejectionReason: null,
+          verificationAttempts: newAttemptCount,
+        } as any);
+
+        res.json({ 
+          verified: true, 
+          message: "Verification successful! Your profile now has a verified badge.",
+          confidence: verificationResult.confidence,
+        });
+      } else {
+        await storage.updateProfile(userId, {
+          verificationStatus: "rejected",
+          verificationRejectionReason: verificationResult.reason || "Photos do not appear to match",
+          verificationAttempts: newAttemptCount,
+        } as any);
+
+        res.json({ 
+          verified: false, 
+          message: verificationResult.reason || "Verification failed. The photos don't appear to match.",
+          attemptsRemaining: 5 - newAttemptCount,
+        });
+      }
+    } catch (error) {
+      console.error("Error during verification:", error);
+      // Revert status on any error - don't leave in pending state
+      try {
+        const profile = await storage.getProfile(req.user.claims.sub);
+        if (profile && profile.verificationStatus === "pending") {
+          await storage.updateProfile(req.user.claims.sub, {
+            verificationStatus: "none",
+            verificationRejectionReason: "Verification service error - please try again",
+          } as any);
+        }
+      } catch (revertError) {
+        console.error("Failed to revert verification status:", revertError);
+      }
+      res.status(500).json({ message: "Verification failed, please try again" });
+    }
+  });
+
+  // Get verification status
+  app.get("/api/profile/verification-status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      res.json({
+        status: profile.verificationStatus,
+        verifiedAt: profile.verifiedAt,
+        attemptsRemaining: 5 - profile.verificationAttempts,
+        rejectionReason: profile.verificationRejectionReason,
+      });
+    } catch (error) {
+      console.error("Error fetching verification status:", error);
+      res.status(500).json({ message: "Failed to fetch verification status" });
+    }
+  });
+
   app.get("/api/profiles/discover", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
