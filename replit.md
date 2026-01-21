@@ -61,6 +61,15 @@ Preferred communication style: Simple, everyday language.
 - **Streaming Responses**: Real-time SSE streaming for natural conversation flow
 - **Tech Stack**: Uses Replit AI Integrations (OpenAI gpt-4o-mini) - no API key required
 
+### ID Verification System
+- **Purpose**: Prevents catfishing by comparing selfie to profile photos using AI vision
+- **AI Comparison**: OpenAI Vision (gpt-4o-mini) analyzes facial features with confidence scoring (high/medium/low)
+- **Verification Limits**: Max 5 attempts, 5MB image size limit (JPEG/PNG/GIF/WebP)
+- **Error Handling**: Parse failures and API errors revert status from "pending" to "none" to prevent stuck states
+- **Attempt Counting**: Only increments after completed verification attempts (success/reject/parse failure), not on transient errors
+- **Verified Badge**: Displayed on profile cards and sidebar for verified users
+- **UI**: Camera capture and file upload options on dedicated verification page
+
 ## External Dependencies
 
 ### Database
