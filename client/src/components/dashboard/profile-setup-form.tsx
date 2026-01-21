@@ -1,8 +1,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link } from "wouter";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 import { 
   User, MapPin, Heart, Sparkles, FileText, Camera, Video, Phone, X, Upload, 
   ThumbsUp, ThumbsDown, Ruler, Dumbbell, Wine, Cigarette, Briefcase, 
@@ -209,6 +211,29 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
     },
   });
 
+  const initialPhotosRef = useRef(defaultValues?.photos || []);
+  const initialVideosRef = useRef(defaultValues?.videos || []);
+  
+  const hasUnsavedChanges = useMemo(() => {
+    const formDirty = form.formState.isDirty;
+    const photosChanged = JSON.stringify(photos) !== JSON.stringify(initialPhotosRef.current);
+    const videosChanged = JSON.stringify(videos) !== JSON.stringify(initialVideosRef.current);
+    return formDirty || photosChanged || videosChanged;
+  }, [form.formState.isDirty, photos, videos]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const parseCommaSeparated = (value: string | undefined): string[] => {
     return value ? value.split(",").map((i) => i.trim()).filter(Boolean) : [];
   };
@@ -327,6 +352,26 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        {hasUnsavedChanges && (
+          <Alert className="bg-yellow-500/10 border-yellow-500/30">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="flex items-center justify-between">
+              <span className="text-yellow-700 dark:text-yellow-400">
+                You have unsaved changes. Scroll down and click "Save Profile" to keep them.
+              </span>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isPending}
+                className="ml-4"
+                data-testid="button-save-changes-banner"
+              >
+                {isPending ? "Saving..." : "Save Now"}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {/* Basic Info Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-lg font-medium">
