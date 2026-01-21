@@ -143,6 +143,7 @@ export default function Matches() {
                     key={match.id}
                     match={match}
                     otherProfile={match.otherProfile}
+                    currentUserId={currentProfile?.userId}
                     isMyTurn={isMyTurn(match)}
                     onAdvanceGate={() => advanceGateMutation.mutate(match.id)}
                     onSkipAhead={() => skipAheadMutation.mutate(match.id)}
@@ -165,6 +166,7 @@ export default function Matches() {
                     key={match.id}
                     match={match}
                     otherProfile={match.otherProfile}
+                    currentUserId={currentProfile?.userId}
                     isMyTurn={isMyTurn(match)}
                     onAdvanceGate={() => advanceGateMutation.mutate(match.id)}
                     onSkipAhead={() => skipAheadMutation.mutate(match.id)}
@@ -187,6 +189,7 @@ export default function Matches() {
                     key={match.id}
                     match={match}
                     otherProfile={match.otherProfile}
+                    currentUserId={currentProfile?.userId}
                     isMyTurn={false}
                     onAdvanceGate={() => {}}
                     onSkipAhead={() => {}}

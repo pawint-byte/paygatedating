@@ -1,10 +1,13 @@
-import { Send, MessageCircle, Camera, Video, Phone, Check, Lock, Zap, Gift } from "lucide-react";
+import { Send, MessageCircle, Camera, Video, Phone, Check, Lock, Zap, Gift, Calendar } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { GATE_COSTS, SKIP_AHEAD_COST } from "@shared/schema";
-import type { Match, Profile } from "@shared/schema";
+import type { Match, Profile, DatePlan } from "@shared/schema";
 import { GiftWishlist } from "./gift-wishlist";
+import { DatePlanDialog } from "./date-plan-dialog";
+import { DatePlanCard } from "./date-plan-card";
 
 const gateIcons = {
   gate1: Send,
@@ -36,6 +39,7 @@ const gateNumbers = {
 interface GateProgressProps {
   match: Match;
   otherProfile: Profile;
+  currentUserId?: string;
   isMyTurn: boolean;
   onAdvanceGate: () => void;
   onSkipAhead: () => void;
@@ -45,6 +49,7 @@ interface GateProgressProps {
 export function GateProgress({
   match,
   otherProfile,
+  currentUserId,
   isMyTurn,
   onAdvanceGate,
   onSkipAhead,
@@ -53,6 +58,12 @@ export function GateProgress({
   const currentGateNum = gateNumbers[match.currentGate];
   const progressPercent = ((currentGateNum - 1) / 5) * 100;
   const isCompleted = match.currentGate === "completed";
+  const canPlanDate = currentGateNum >= 3 || isCompleted;
+
+  const { data: datePlans } = useQuery<DatePlan[]>({
+    queryKey: ["/api/matches", match.id, "date-plans"],
+    enabled: canPlanDate,
+  });
 
   const initials = otherProfile.displayName
     .split(" ")
@@ -171,10 +182,46 @@ export function GateProgress({
         )}
 
         {isCompleted && (
-          <div className="text-center py-2">
-            <p className="text-sm text-primary font-medium">
+          <div className="space-y-3 pt-2">
+            <p className="text-sm text-primary font-medium text-center">
               You can now exchange contact details!
             </p>
+            
+            {currentUserId && (
+              <DatePlanDialog
+                matchId={match.id}
+                recipientId={otherProfile.userId}
+                recipientName={otherProfile.displayName}
+                trigger={
+                  <Button variant="outline" className="w-full" data-testid="button-plan-date">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Plan a Date
+                  </Button>
+                }
+              />
+            )}
+          </div>
+        )}
+
+        {canPlanDate && datePlans && datePlans.length > 0 && currentUserId && (
+          <div className="space-y-2 pt-3 border-t mt-3">
+            <h5 className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Date Plans
+            </h5>
+            {datePlans.slice(0, 2).map((plan) => (
+              <DatePlanCard 
+                key={plan.id} 
+                datePlan={plan} 
+                currentUserId={currentUserId}
+                matchId={match.id}
+              />
+            ))}
+            {datePlans.length > 2 && (
+              <p className="text-xs text-center text-muted-foreground">
+                +{datePlans.length - 2} more plans
+              </p>
+            )}
           </div>
         )}
       </div>

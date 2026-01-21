@@ -1817,6 +1817,118 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     }
   });
 
+  // ===== DATE PLAN ROUTES =====
+  const datePlanCreateSchema = z.object({
+    activity: z.string().min(3, "Activity must be at least 3 characters").max(100),
+    activityType: z.string().max(50).optional(),
+    placeName: z.string().max(200).optional(),
+    placeAddress: z.string().optional(),
+    proposedDate: z.string().min(1, "Date is required"),
+    paymentPreference: z.enum(["ill_pay", "you_pay", "split"]),
+    notes: z.string().optional(),
+  });
+
+  app.post("/api/matches/:matchId/date-plans", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { matchId } = req.params;
+      
+      const validation = datePlanCreateSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: validation.error.errors[0]?.message || "Invalid date plan data" });
+      }
+
+      const { activity, activityType, placeName, placeAddress, proposedDate, paymentPreference, notes } = validation.data;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized for this match" });
+      }
+
+      const recipientId = match.initiatorId === userId ? match.recipientId : match.initiatorId;
+
+      const datePlan = await storage.createDatePlan({
+        matchId,
+        proposerId: userId,
+        recipientId,
+        activity,
+        activityType,
+        placeName,
+        placeAddress,
+        proposedDate: new Date(proposedDate),
+        paymentPreference,
+        notes,
+      });
+
+      res.status(201).json(datePlan);
+    } catch (error) {
+      console.error("Error creating date plan:", error);
+      res.status(500).json({ message: "Failed to create date plan" });
+    }
+  });
+
+  app.get("/api/matches/:matchId/date-plans", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { matchId } = req.params;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized for this match" });
+      }
+
+      const datePlans = await storage.getDatePlansByMatch(matchId);
+      res.json(datePlans);
+    } catch (error) {
+      console.error("Error fetching date plans:", error);
+      res.status(500).json({ message: "Failed to fetch date plans" });
+    }
+  });
+
+  const datePlanStatusSchema = z.object({
+    status: z.enum(["accepted", "declined", "completed", "cancelled"]),
+  });
+
+  app.patch("/api/date-plans/:id/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const validation = datePlanStatusSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: validation.error.errors[0]?.message || "Invalid status" });
+      }
+      const { status } = validation.data;
+
+      const datePlan = await storage.getDatePlanById(id);
+      if (!datePlan) {
+        return res.status(404).json({ message: "Date plan not found" });
+      }
+
+      if (datePlan.proposerId !== userId && datePlan.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized to update this date plan" });
+      }
+
+      if (status === "accepted" && datePlan.proposerId === userId) {
+        return res.status(400).json({ message: "You cannot accept your own date proposal" });
+      }
+
+      const updated = await storage.updateDatePlanStatus(id, status);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating date plan:", error);
+      res.status(500).json({ message: "Failed to update date plan" });
+    }
+  });
+
   // ===== ADMIN ROUTES =====
   const isAdmin = async (req: any, res: any, next: any) => {
     try {

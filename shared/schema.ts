@@ -252,6 +252,31 @@ export const insertFeedbackSchema = createInsertSchema(feedback).omit({ id: true
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 export type Feedback = typeof feedback.$inferSelect;
 
+// Date Planning System
+export const datePlanStatusEnum = pgEnum("date_plan_status", ["proposed", "accepted", "declined", "completed", "cancelled"]);
+export const paymentPreferenceEnum = pgEnum("payment_preference", ["ill_pay", "you_pay", "split"]);
+
+export const datePlans = pgTable("date_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  matchId: varchar("match_id").notNull(),
+  proposerId: varchar("proposer_id").notNull(),
+  recipientId: varchar("recipient_id").notNull(),
+  activity: varchar("activity", { length: 100 }).notNull(),
+  activityType: varchar("activity_type", { length: 50 }),
+  placeName: varchar("place_name", { length: 200 }),
+  placeAddress: text("place_address"),
+  proposedDate: timestamp("proposed_date").notNull(),
+  paymentPreference: paymentPreferenceEnum("payment_preference").notNull(),
+  notes: text("notes"),
+  status: datePlanStatusEnum("status").default("proposed").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertDatePlanSchema = createInsertSchema(datePlans).omit({ id: true, createdAt: true, updatedAt: true, status: true });
+export type InsertDatePlan = z.infer<typeof insertDatePlanSchema>;
+export type DatePlan = typeof datePlans.$inferSelect;
+
 export const profilesRelations = relations(profiles, ({ one, many }) => ({
   wallet: one(wallets, {
     fields: [profiles.userId],

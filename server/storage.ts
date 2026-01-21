@@ -35,6 +35,9 @@ import {
   feedback,
   type Feedback,
   type InsertFeedback,
+  datePlans,
+  type DatePlan,
+  type InsertDatePlan,
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
 } from "@shared/schema";
@@ -122,6 +125,12 @@ export interface IStorage {
   getAllFeedback(): Promise<Feedback[]>;
   updateFeedbackStatus(feedbackId: string, status: string): Promise<Feedback | undefined>;
   isUserAdmin(userId: string): Promise<boolean>;
+  
+  // Date Plans
+  createDatePlan(datePlan: InsertDatePlan): Promise<DatePlan>;
+  getDatePlansByMatch(matchId: string): Promise<DatePlan[]>;
+  getDatePlanById(id: string): Promise<DatePlan | undefined>;
+  updateDatePlanStatus(id: string, status: string): Promise<DatePlan | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -674,6 +683,29 @@ export class DatabaseStorage implements IStorage {
   async isUserAdmin(userId: string): Promise<boolean> {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     return user?.isAdmin ?? false;
+  }
+
+  async createDatePlan(datePlan: InsertDatePlan): Promise<DatePlan> {
+    const [newDatePlan] = await db.insert(datePlans).values(datePlan).returning();
+    return newDatePlan;
+  }
+
+  async getDatePlansByMatch(matchId: string): Promise<DatePlan[]> {
+    return await db.select().from(datePlans).where(eq(datePlans.matchId, matchId)).orderBy(desc(datePlans.createdAt));
+  }
+
+  async getDatePlanById(id: string): Promise<DatePlan | undefined> {
+    const [datePlan] = await db.select().from(datePlans).where(eq(datePlans.id, id));
+    return datePlan;
+  }
+
+  async updateDatePlanStatus(id: string, status: string): Promise<DatePlan | undefined> {
+    const [updated] = await db
+      .update(datePlans)
+      .set({ status: status as any, updatedAt: new Date() })
+      .where(eq(datePlans.id, id))
+      .returning();
+    return updated;
   }
 }
 
