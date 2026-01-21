@@ -1867,6 +1867,12 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
       if (!validation.success) {
         return res.status(400).json({ message: validation.error.errors[0]?.message || "Invalid data" });
       }
+      
+      const existingProfile = await storage.getProfile(userId);
+      if (!existingProfile) {
+        return res.status(404).json({ message: "Profile not found. Please complete your profile setup first." });
+      }
+      
       const updated = await storage.updateProfile(userId, validation.data);
       res.json(updated);
     } catch (error) {

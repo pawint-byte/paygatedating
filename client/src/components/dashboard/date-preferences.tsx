@@ -85,6 +85,22 @@ export function DatePreferences() {
     });
   };
 
+  if (!profile) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-primary" />
+            <CardTitle>Date Preferences</CardTitle>
+          </div>
+          <CardDescription>
+            Complete your profile setup to set date preferences
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

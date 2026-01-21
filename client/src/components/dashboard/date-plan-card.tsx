@@ -4,7 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, CreditCard, Check, X, Clock, Sparkles } from "lucide-react";
+import { Calendar, MapPin, CreditCard, Check, X, Clock, Sparkles, DollarSign } from "lucide-react";
 import type { DatePlan } from "@shared/schema";
 
 const statusConfig = {
@@ -114,7 +114,44 @@ export function DatePlanCard({ datePlan, currentUserId, matchId }: DatePlanCardP
             <CreditCard className="w-4 h-4" />
             <span>{paymentDisplay}</span>
           </div>
+          
+          {(datePlan.budgetFloor !== null || datePlan.budgetCeiling !== null) && (
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              <span>
+                Budget: {datePlan.budgetFloor !== null ? `$${datePlan.budgetFloor}` : "$0"}
+                {" - "}
+                {datePlan.budgetCeiling !== null ? `$${datePlan.budgetCeiling}` : "No limit"}
+              </span>
+            </div>
+          )}
         </div>
+
+        {((datePlan.preferences && datePlan.preferences.length > 0) || 
+          (datePlan.blacklist && datePlan.blacklist.length > 0)) && (
+          <div className="mt-3 pt-3 border-t space-y-2">
+            {datePlan.preferences && datePlan.preferences.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                <span className="text-xs text-muted-foreground mr-1">Preferences:</span>
+                {datePlan.preferences.map((pref) => (
+                  <Badge key={pref} variant="secondary" className="text-xs">
+                    {pref}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {datePlan.blacklist && datePlan.blacklist.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                <span className="text-xs text-muted-foreground mr-1">Avoid:</span>
+                {datePlan.blacklist.map((item) => (
+                  <Badge key={item} variant="outline" className="text-xs border-destructive/30 text-destructive">
+                    {item}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {datePlan.notes && (
           <p className="mt-3 text-sm text-muted-foreground italic">
