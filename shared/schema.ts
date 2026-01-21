@@ -93,6 +93,12 @@ export const profiles = pgTable("profiles", {
   showRegistryPublicly: boolean("show_registry_publicly").default(false).notNull(),
   showInterestsPublicly: boolean("show_interests_publicly").default(true).notNull(),
   
+  // Date Preferences
+  datePreferences: text("date_preferences").array(),
+  dateBlacklist: text("date_blacklist").array(),
+  dateBudgetFloor: integer("date_budget_floor"),
+  dateBudgetCeiling: integer("date_budget_ceiling"),
+  
   subscriptionTier: subscriptionTierEnum("subscription_tier").default("free").notNull(),
   isPremiumSince: timestamp("is_premium_since"),
   isVisible: boolean("is_visible").default(true).notNull(),
@@ -268,6 +274,11 @@ export const datePlans = pgTable("date_plans", {
   proposedDate: timestamp("proposed_date").notNull(),
   paymentPreference: paymentPreferenceEnum("payment_preference").notNull(),
   notes: text("notes"),
+  // Per-date preferences (override profile defaults)
+  preferences: text("preferences").array(),
+  blacklist: text("blacklist").array(),
+  budgetFloor: integer("budget_floor"),
+  budgetCeiling: integer("budget_ceiling"),
   status: datePlanStatusEnum("status").default("proposed").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
