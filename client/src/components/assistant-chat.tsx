@@ -139,15 +139,15 @@ export function AssistantChat() {
   return (
     <>
       <Button
-        size="lg"
+        size="icon"
         className={cn(
-          "fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full shadow-lg",
+          "fixed bottom-4 right-4 z-50 rounded-full shadow-lg",
           isOpen && "invisible"
         )}
         onClick={() => setIsOpen(true)}
         data-testid="button-open-assistant"
       >
-        <Sparkles className="h-6 w-6" />
+        <Sparkles className="h-5 w-5" />
       </Button>
 
       {isOpen && (
@@ -170,7 +170,6 @@ export function AssistantChat() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
               onClick={() => setIsOpen(false)}
               data-testid="button-close-assistant"
             >
@@ -243,7 +242,7 @@ export function AssistantChat() {
                       key={idx}
                       variant="outline"
                       size="sm"
-                      className="text-xs h-7"
+                      className="text-xs"
                       onClick={() => {
                         setInput(q);
                         setTimeout(() => sendMessage(), 100);

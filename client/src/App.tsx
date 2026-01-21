@@ -26,27 +26,29 @@ function Router() {
   }
 
   return (
-    <Switch>
-      <Route path="/terms" component={Terms} />
-      <Route path="/privacy" component={Privacy} />
-      {!user ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/" component={DashboardLayout} />
-          <Route path="/discover" component={DashboardLayout} />
-          <Route path="/matches" component={DashboardLayout} />
-          <Route path="/messages" component={DashboardLayout} />
-          <Route path="/profile" component={DashboardLayout} />
-          <Route path="/settings" component={DashboardLayout} />
-          <Route path="/wallet" component={DashboardLayout} />
-          <Route path="/gift-success" component={GiftSuccess} />
-          <Route path="/gift-cancel" component={GiftCancel} />
-          <AssistantChat />
-        </>
-      )}
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <Switch>
+        <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
+        {!user ? (
+          <Route path="/" component={Landing} />
+        ) : (
+          <>
+            <Route path="/" component={DashboardLayout} />
+            <Route path="/discover" component={DashboardLayout} />
+            <Route path="/matches" component={DashboardLayout} />
+            <Route path="/messages" component={DashboardLayout} />
+            <Route path="/profile" component={DashboardLayout} />
+            <Route path="/settings" component={DashboardLayout} />
+            <Route path="/wallet" component={DashboardLayout} />
+            <Route path="/gift-success" component={GiftSuccess} />
+            <Route path="/gift-cancel" component={GiftCancel} />
+          </>
+        )}
+        <Route component={NotFound} />
+      </Switch>
+      {user && <AssistantChat />}
+    </>
   );
 }
 

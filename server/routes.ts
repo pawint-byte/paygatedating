@@ -1286,8 +1286,14 @@ Always encourage visitors to sign up and try the platform!`;
     }
   });
 
+  const aiConfigured = !!(process.env.AI_INTEGRATIONS_OPENAI_API_KEY && process.env.AI_INTEGRATIONS_OPENAI_BASE_URL);
+
   app.post("/api/assistant/chat", isAuthenticated, async (req: any, res) => {
     try {
+      if (!aiConfigured) {
+        return res.status(503).json({ message: "AI assistant not configured" });
+      }
+
       const userId = req.user.claims.sub;
       const { message, conversationHistory = [] } = req.body;
 

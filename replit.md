@@ -52,6 +52,15 @@ Preferred communication style: Simple, everyday language.
 - **Gate Unlocking**: Gifts unlock gates based on value ($25=1, $50=2, $100=3 gates)
 - **Reservation System**: Items reserved during checkout, released on cancel or 14-day timeout
 
+### AI Onboarding Assistant
+- **Floating Chatbot**: Accessible from all authenticated pages via floating button (bottom-right)
+- **Profile Context Awareness**: AI knows user's profile completeness, wallet balance, match count
+- **Guidance Topics**: Profile setup tips, gate system explanation, bio writing help, wishlist suggestions
+- **Profile Completeness Checker**: Tracks completion score (0-100%) with specific suggestions
+- **Quick Questions**: Pre-built questions for common topics (bio tips, gate system, first message advice)
+- **Streaming Responses**: Real-time SSE streaming for natural conversation flow
+- **Tech Stack**: Uses Replit AI Integrations (OpenAI gpt-4o-mini) - no API key required
+
 ## External Dependencies
 
 ### Database
