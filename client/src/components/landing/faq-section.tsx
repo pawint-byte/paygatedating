@@ -43,6 +43,10 @@ const faqs = [
     answer: "Share your unique referral code with friends. When they sign up and make their first gate payment, you both receive bonus credits in your wallet. It's our way of rewarding you for helping grow a community of serious daters."
   },
   {
+    question: "What is my Personal QR Code and how does it help me?",
+    answer: "Every user gets a unique QR code linking to their public profile. Share it with people you meet in real life - at coffee shops, events, or anywhere you go. When someone scans your code, they see your profile preview and wishlist, giving them a clear idea of what you're looking for and how to impress you. When they sign up through your code, you earn bonus credits! It's the perfect way to attract high-value suitors who are ready to invest in connecting with you."
+  },
+  {
     question: "Can I pay with cryptocurrency?",
     answer: "Yes! We accept cryptocurrency payments through Stripe's secure payment system. When you add funds to your wallet, you can choose to pay with stablecoins (USDC, USDT) or other cryptocurrencies like Bitcoin and Ethereum. Simply select the crypto option at checkout and complete your payment. Your wallet will be credited once the transaction is confirmed."
   },

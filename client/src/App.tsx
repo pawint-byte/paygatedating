@@ -11,6 +11,7 @@ import GiftSuccess from "@/pages/gift-success";
 import GiftCancel from "@/pages/gift-cancel";
 import SubscriptionSuccess from "@/pages/subscription-success";
 import InvitePage from "@/pages/invite";
+import PublicProfile from "@/pages/public-profile";
 import Terms from "@/pages/terms";
 import Privacy from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/invite/:referralCode" component={InvitePage} />
+        <Route path="/p/:userId" component={PublicProfile} />
         {!user ? (
           <Route path="/" component={Landing} />
         ) : (

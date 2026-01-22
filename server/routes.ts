@@ -964,6 +964,64 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
   });
 
+  // Public profile page - for QR code sharing (shows profile + wishlist)
+  app.get("/api/public-profile/:userId", async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      
+      const profile = await storage.getProfile(userId);
+      if (!profile || !profile.isVisible) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      // Get wallet for referral code
+      const wallet = await storage.getWallet(userId);
+      
+      // Get public wishlist items (only visible ones)
+      const allItems = await storage.getRegistryItems(userId);
+      const publicWishlist = profile.showRegistryPublicly 
+        ? allItems.filter(item => item.visibility === 'public' && !item.isPurchased)
+        : [];
+
+      // Return public-safe information with wishlist
+      // Bio and tagline are part of the profile intro so they're shown if profile is visible
+      // Social links are shown if photo is public (user wants to be discovered)
+      // lookingFor is relationship intent, shown if interests are public
+      const publicProfile = {
+        userId: profile.userId,
+        displayName: profile.showFirstNamePublicly ? profile.displayName : "PayGate User",
+        age: profile.showAgePublicly ? profile.age : undefined,
+        location: profile.showLocationPublicly ? profile.location : undefined,
+        city: profile.showLocationPublicly ? profile.city : undefined,
+        bio: profile.bio ? profile.bio.substring(0, 300) : undefined, // Limit bio preview
+        tagline: profile.tagline,
+        photos: profile.showPhotoPublicly && profile.photos ? profile.photos.slice(0, 3) : [],
+        verificationStatus: profile.verificationStatus,
+        interests: profile.showInterestsPublicly ? profile.interests : [],
+        lookingFor: profile.showInterestsPublicly ? profile.lookingFor : undefined,
+        socialLinks: profile.showPhotoPublicly ? profile.socialLinks : undefined,
+        referralCode: wallet?.referralCode,
+        wishlist: publicWishlist.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          imageUrl: item.imageUrl,
+          description: item.description,
+          platform: item.affiliateUrl?.includes('amazon') ? 'Amazon' :
+                    item.affiliateUrl?.includes('etsy') ? 'Etsy' :
+                    item.affiliateUrl?.includes('viator') ? 'Viator' :
+                    item.affiliateUrl?.includes('klook') ? 'Klook' :
+                    item.affiliateUrl?.includes('net-a-porter') ? 'Net-a-Porter' : 'Other',
+        })),
+      };
+
+      res.json(publicProfile);
+    } catch (error) {
+      console.error("Error fetching public profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
   // =================
   // NEARBY LIVE FEATURE
   // =================
