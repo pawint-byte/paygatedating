@@ -153,7 +153,7 @@ export function WishlistManager() {
           const hostname = url.hostname.toLowerCase();
           const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
           const isEtsy = hostname.includes('etsy.com');
-          const isViator = hostname.includes('viator.com');
+          const isViator = hostname.includes('viator.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
           
           if (isAmazon || isEtsy || isViator) {
             setUrlPasted(true);
@@ -203,7 +203,7 @@ export function WishlistManager() {
         const hostname = url.hostname.toLowerCase();
         const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
         const isEtsy = hostname.includes('etsy.com');
-        const isViator = hostname.includes('viator.com');
+        const isViator = hostname.includes('viator.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
         if (isAmazon || isEtsy || isViator) {
           setUrlPasted(true);
           setCurrentStep(2);
@@ -337,7 +337,7 @@ export function WishlistManager() {
                             const hostname = url.hostname.toLowerCase();
                             const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
                             const isEtsy = hostname.includes('etsy.com');
-                            const isViator = hostname.includes('viator.com');
+                            const isViator = hostname.includes('viator.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
                             if (!isAmazon && !isEtsy && !isViator) {
                               return "Only Amazon, Etsy, and Viator links are supported";
                             }

@@ -1131,7 +1131,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const hostname = urlObj.hostname.toLowerCase();
       const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
       const isEtsy = hostname.includes('etsy.com');
-      const isViator = hostname.includes('viator.com');
+      const isViator = hostname.includes('viator.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
       
       if (!isAmazon && !isEtsy && !isViator) {
         return { valid: false, error: "Only Amazon, Etsy, and Viator links are supported for wishlist items" };
@@ -1163,11 +1163,15 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       
       // Viator via Travelpayouts affiliate network  
       // Travelpayouts uses their white label domain (tp.st) for tracked links
-      // Since API call would be async, for now use direct Viator URL
-      // The Travelpayouts tracking pixel on the site will attribute conversions
+      // If user pastes a tp.st or travelpayouts.com link, it's already an affiliate link
+      if (urlObj.hostname.includes('tp.st') || urlObj.hostname.includes('travelpayouts.com')) {
+        // Already a Travelpayouts affiliate link - return as-is
+        return url;
+      }
+      
+      // Direct Viator URLs are accepted as-is
+      // Users can generate affiliate links via Travelpayouts dashboard for proper tracking
       if (urlObj.hostname.includes('viator.com')) {
-        // Viator URLs are accepted as-is - tracking relies on Travelpayouts site verification
-        // The verification script added to the site tracks referrals automatically
         return url;
       }
       
