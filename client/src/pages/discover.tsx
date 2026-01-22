@@ -119,6 +119,34 @@ export default function Discover() {
     },
   });
 
+  const seedDemoMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/setup/seed-demo-profiles");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Demo Profiles Added!",
+        description: `Created ${data.count} demo profiles to explore.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+    },
+    onError: (error: Error) => {
+      if (error.message.includes("already exist")) {
+        toast({
+          title: "Already Set Up",
+          description: "Demo profiles have already been added.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add demo profiles.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
   const handleSendInterest = (profile: Profile) => {
     sendInterestMutation.mutate(profile.userId);
   };
@@ -249,7 +277,17 @@ export default function Discover() {
           ))}
         </div>
       ) : !profiles || profiles.length === 0 ? (
-        <EmptyState type="discover" />
+        <div className="flex flex-col items-center gap-6">
+          <EmptyState type="discover" />
+          <Button 
+            onClick={() => seedDemoMutation.mutate()}
+            disabled={seedDemoMutation.isPending}
+            variant="outline"
+            data-testid="button-seed-demo"
+          >
+            {seedDemoMutation.isPending ? "Adding Demo Profiles..." : "Add Demo Profiles to Explore"}
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {profiles.map((profile) => (

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, AlertCircle, MessageSquare, Lightbulb, HelpCircle, Clock, CheckCircle, XCircle, Eye } from "lucide-react";
+import { Shield, AlertCircle, MessageSquare, Lightbulb, HelpCircle, Clock, CheckCircle, XCircle, Eye, Users } from "lucide-react";
 import type { Feedback } from "@shared/schema";
+import { isUnauthorizedError } from "@/lib/auth-utils";
 
 const categoryConfig = {
   issue: { label: "Issue", icon: AlertCircle, color: "bg-red-500/10 text-red-500" },
@@ -55,6 +56,31 @@ export default function AdminFeedback() {
     },
   });
 
+  const seedDemoMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/seed-demo-profiles");
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Demo Profiles Created",
+        description: `Created ${data.count} demo profiles: ${data.profiles.join(", ")}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({ title: "Session expired", variant: "destructive" });
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to seed demo profiles.",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (adminStatus?.isAdmin === false) {
     return (
       <div className="flex items-center justify-center h-full p-8">
@@ -82,12 +108,22 @@ export default function AdminFeedback() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center gap-3">
-        <Shield className="w-8 h-8 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="text-admin-title">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage user feedback and support requests</p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Shield className="w-8 h-8 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold" data-testid="text-admin-title">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Manage user feedback and support requests</p>
+          </div>
         </div>
+        <Button 
+          onClick={() => seedDemoMutation.mutate()}
+          disabled={seedDemoMutation.isPending}
+          data-testid="button-seed-demo-profiles"
+        >
+          <Users className="w-4 h-4 mr-2" />
+          {seedDemoMutation.isPending ? "Creating..." : "Add Demo Profiles"}
+        </Button>
       </div>
 
       {stats && (

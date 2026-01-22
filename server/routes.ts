@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { authStorage } from "./replit_integrations/auth/storage";
 import { 
   GATE_COSTS, 
   SKIP_AHEAD_COST, 
@@ -2215,6 +2216,411 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
 
   // Note: Stripe webhook endpoint is now registered in index.ts BEFORE express.json()
   // to ensure raw body buffer is available. Uses stripe-replit-sync for auto-management.
+
+  // One-time setup endpoint to seed demo profiles (works once per database)
+  app.post("/api/setup/seed-demo-profiles", isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if demo profiles already exist
+      const existingDemos = await storage.getDiscoverProfiles("check_demo");
+      const hasDemos = existingDemos.some(p => p.userId.startsWith("demo_"));
+      
+      if (hasDemos) {
+        return res.status(400).json({ message: "Demo profiles already exist" });
+      }
+    } catch (error) {
+      console.error("Check error:", error);
+    }
+
+    // Proceed with seeding
+    try {
+      const demoProfiles = getDemoProfiles();
+      const wishlistItems = getWishlistItems();
+
+      const createdProfiles = [];
+      for (const profileData of demoProfiles) {
+        await authStorage.upsertUser({
+          id: profileData.userId,
+          email: `${profileData.displayName.toLowerCase()}@demo.paygate.dating`,
+          firstName: profileData.displayName,
+          lastName: "Demo",
+        });
+
+        await storage.createWallet({ userId: profileData.userId });
+
+        await storage.createProfile({
+          userId: profileData.userId,
+          displayName: profileData.displayName,
+          age: profileData.age,
+          gender: profileData.gender,
+          location: profileData.location,
+          bio: profileData.bio,
+          tagline: profileData.tagline,
+          lookingFor: profileData.lookingFor,
+          interests: profileData.interests,
+          photos: profileData.photos,
+          height: profileData.height,
+          bodyType: profileData.bodyType,
+          occupation: profileData.occupation,
+          education: profileData.education,
+          zodiacSign: profileData.zodiacSign,
+          verificationStatus: profileData.verificationStatus as "none" | "pending" | "verified" | "rejected",
+          socialLinks: profileData.socialLinks,
+          isVisible: true,
+        });
+
+        const numItems = Math.floor(Math.random() * 2) + 2;
+        const shuffled = [...wishlistItems].sort(() => 0.5 - Math.random());
+        for (let i = 0; i < numItems; i++) {
+          const item = shuffled[i];
+          await storage.createRegistryItem({
+            userId: profileData.userId,
+            title: item.title,
+            price: item.price,
+            priceTier: item.priceTier as "starter" | "impressive" | "vip",
+            affiliateUrl: item.affiliateUrl,
+            visibility: "public",
+          });
+        }
+        createdProfiles.push(profileData.displayName);
+      }
+
+      res.json({ 
+        message: "Demo profiles created successfully", 
+        profiles: createdProfiles,
+        count: createdProfiles.length 
+      });
+    } catch (error) {
+      console.error("Error seeding demo profiles:", error);
+      res.status(500).json({ message: "Failed to seed demo profiles" });
+    }
+  });
+
+  // Helper functions for demo data
+  function getDemoProfiles() {
+    const timestamp = Date.now();
+    return [
+      {
+        userId: "demo_emma_" + timestamp,
+        displayName: "Emma",
+        age: 28,
+        gender: "woman",
+        location: "New York, NY",
+        bio: "Coffee enthusiast, book lover, and aspiring chef. I believe in genuine connections and meaningful conversations. Looking for someone who appreciates the simple things in life.",
+        tagline: "Life is too short for boring dates",
+        lookingFor: "Someone genuine who values deep talks and cozy nights in.",
+        interests: ["hiking", "cooking", "reading", "travel", "yoga", "wine tasting"],
+        photos: ["https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400"],
+        height: "5'7\"",
+        bodyType: "athletic",
+        occupation: "Marketing Manager",
+        education: "Masters Degree",
+        zodiacSign: "libra",
+        verificationStatus: "verified",
+        socialLinks: { instagram: "emma_adventures", tiktok: "emmacooks" },
+      },
+      {
+        userId: "demo_michael_" + timestamp,
+        displayName: "Michael",
+        age: 32,
+        gender: "man",
+        location: "San Francisco, CA",
+        bio: "Tech entrepreneur by day, amateur photographer by weekend. Love exploring new restaurants and hidden gems in the city. Dog dad to a golden retriever named Max.",
+        tagline: "Building the future, one adventure at a time",
+        lookingFor: "Intellectually curious, loves restaurants and adventures.",
+        interests: ["photography", "tech", "dogs", "food", "hiking", "startups"],
+        photos: ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400", "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400"],
+        height: "6'0\"",
+        bodyType: "fit",
+        occupation: "Software Engineer",
+        education: "Bachelors Degree",
+        zodiacSign: "scorpio",
+        verificationStatus: "verified",
+        socialLinks: { instagram: "mike_explores", twitter: "michaeltech" },
+      },
+      {
+        userId: "demo_sophia_" + timestamp,
+        displayName: "Sophia",
+        age: 26,
+        gender: "woman",
+        location: "Los Angeles, CA",
+        bio: "Artist and dreamer. I paint, I dance, I create. Looking for someone who appreciates creativity and isn't afraid to be themselves.",
+        tagline: "Creating art in everyday moments",
+        lookingFor: "A creative soul who appreciates art and spontaneity.",
+        interests: ["art", "dancing", "music", "museums", "beach", "painting", "yoga"],
+        photos: ["https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400"],
+        height: "5'5\"",
+        bodyType: "slim",
+        occupation: "Graphic Designer",
+        education: "Bachelors Degree",
+        zodiacSign: "pisces",
+        verificationStatus: "verified",
+        socialLinks: { instagram: "sophiaarts", tiktok: "sophiadances" },
+      },
+      {
+        userId: "demo_james_" + timestamp,
+        displayName: "James",
+        age: 35,
+        gender: "man",
+        location: "Chicago, IL",
+        bio: "Finance professional who knows how to work hard and play harder. Weekend warrior on the basketball court.",
+        tagline: "Work hard, love harder",
+        lookingFor: "Ambitious woman with a kind heart who enjoys fine dining.",
+        interests: ["basketball", "finance", "travel", "wine", "cooking", "golf"],
+        photos: ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400"],
+        height: "6'2\"",
+        bodyType: "athletic",
+        occupation: "Investment Banker",
+        education: "MBA",
+        zodiacSign: "aries",
+        verificationStatus: "verified",
+        socialLinks: { instagram: "james_lifestyle" },
+      },
+      {
+        userId: "demo_olivia_" + timestamp,
+        displayName: "Olivia",
+        age: 29,
+        gender: "woman",
+        location: "Austin, TX",
+        bio: "Music lover and concert-goer. I work in healthcare and love helping others. My ideal weekend involves brunch and live music.",
+        tagline: "Finding rhythm in chaos",
+        lookingFor: "Genuine, down-to-earth, values family and good humor.",
+        interests: ["music", "concerts", "brunch", "healthcare", "volunteering", "dancing"],
+        photos: ["https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400", "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=400"],
+        height: "5'6\"",
+        bodyType: "average",
+        occupation: "Nurse Practitioner",
+        education: "Masters Degree",
+        zodiacSign: "cancer",
+        verificationStatus: "none",
+        socialLinks: { instagram: "olivia_vibes", snapchat: "livmusic" },
+      },
+      {
+        userId: "demo_david_" + timestamp,
+        displayName: "David",
+        age: 31,
+        gender: "man",
+        location: "Seattle, WA",
+        bio: "Coffee snob and outdoor enthusiast. Product manager at a startup. I believe life is about experiences, not things.",
+        tagline: "Chasing sunsets and good coffee",
+        lookingFor: "Adventure buddy who loves outdoors and cozy movie nights.",
+        interests: ["coffee", "hiking", "startups", "movies", "camping", "photography"],
+        photos: ["https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400", "https://images.unsplash.com/photo-1463453091185-61582044d556?w=400"],
+        height: "5'10\"",
+        bodyType: "fit",
+        occupation: "Product Manager",
+        education: "Bachelors Degree",
+        zodiacSign: "virgo",
+        verificationStatus: "verified",
+        socialLinks: { instagram: "david_outdoors", twitter: "davidpm" },
+      },
+    ];
+  }
+
+  function getWishlistItems() {
+    return [
+      { title: "Kindle Paperwhite", price: "139.99", priceTier: "impressive", affiliateUrl: "https://www.amazon.com/dp/B09TMN58KL" },
+      { title: "Wine Tasting Experience", price: "89.00", priceTier: "impressive", affiliateUrl: "https://www.viator.com/tours/Napa-Valley" },
+      { title: "Artisan Jewelry Set", price: "45.00", priceTier: "starter", affiliateUrl: "https://www.etsy.com/listing/jewelry" },
+      { title: "Cooking Class for Two", price: "150.00", priceTier: "vip", affiliateUrl: "https://www.klook.com/activity/cooking-class" },
+      { title: "Designer Sunglasses", price: "195.00", priceTier: "vip", affiliateUrl: "https://www.net-a-porter.com/sunglasses" },
+      { title: "Scented Candle Set", price: "35.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/candles" },
+    ];
+  }
+
+  // Admin endpoint to seed demo profiles for showcasing the platform
+  app.post("/api/admin/seed-demo-profiles", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const demoProfiles = [
+        {
+          userId: "demo_emma_" + Date.now(),
+          displayName: "Emma",
+          age: 28,
+          gender: "woman",
+          location: "New York, NY",
+          bio: "Coffee enthusiast, book lover, and aspiring chef. I believe in genuine connections and meaningful conversations. Looking for someone who appreciates the simple things in life.",
+          tagline: "Life is too short for boring dates",
+          lookingFor: "Someone genuine who values deep talks and cozy nights in.",
+          interests: ["hiking", "cooking", "reading", "travel", "yoga", "wine tasting"],
+          photos: ["https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400"],
+          height: "5'7\"",
+          bodyType: "athletic",
+          occupation: "Marketing Manager",
+          education: "Masters Degree",
+          zodiacSign: "libra",
+          verificationStatus: "verified",
+          socialLinks: { instagram: "emma_adventures", tiktok: "emmacooks" },
+        },
+        {
+          userId: "demo_michael_" + Date.now(),
+          displayName: "Michael",
+          age: 32,
+          gender: "man",
+          location: "San Francisco, CA",
+          bio: "Tech entrepreneur by day, amateur photographer by weekend. Love exploring new restaurants and hidden gems in the city. Dog dad to a golden retriever named Max.",
+          tagline: "Building the future, one adventure at a time",
+          lookingFor: "Intellectually curious, loves restaurants and adventures.",
+          interests: ["photography", "tech", "dogs", "food", "hiking", "startups"],
+          photos: ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400", "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400"],
+          height: "6'0\"",
+          bodyType: "fit",
+          occupation: "Software Engineer",
+          education: "Bachelors Degree",
+          zodiacSign: "scorpio",
+          verificationStatus: "verified",
+          socialLinks: { instagram: "mike_explores", twitter: "michaeltech" },
+        },
+        {
+          userId: "demo_sophia_" + Date.now(),
+          displayName: "Sophia",
+          age: 26,
+          gender: "woman",
+          location: "Los Angeles, CA",
+          bio: "Artist and dreamer. I paint, I dance, I create. Looking for someone who appreciates creativity and isn't afraid to be themselves. Let's make beautiful memories together.",
+          tagline: "Creating art in everyday moments",
+          lookingFor: "A creative soul who appreciates art and spontaneity.",
+          interests: ["art", "dancing", "music", "museums", "beach", "painting", "yoga"],
+          photos: ["https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400", "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400"],
+          height: "5'5\"",
+          bodyType: "slim",
+          occupation: "Graphic Designer",
+          education: "Bachelors Degree",
+          zodiacSign: "pisces",
+          verificationStatus: "verified",
+          socialLinks: { instagram: "sophiaarts", tiktok: "sophiadances" },
+        },
+        {
+          userId: "demo_james_" + Date.now(),
+          displayName: "James",
+          age: 35,
+          gender: "man",
+          location: "Chicago, IL",
+          bio: "Finance professional who knows how to work hard and play harder. Weekend warrior on the basketball court. Looking for someone to share deep conversations and spontaneous adventures.",
+          tagline: "Work hard, love harder",
+          lookingFor: "Ambitious woman with a kind heart who enjoys fine dining.",
+          interests: ["basketball", "finance", "travel", "wine", "cooking", "golf"],
+          photos: ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400", "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400"],
+          height: "6'2\"",
+          bodyType: "athletic",
+          occupation: "Investment Banker",
+          education: "MBA",
+          zodiacSign: "aries",
+          verificationStatus: "verified",
+          socialLinks: { instagram: "james_lifestyle" },
+        },
+        {
+          userId: "demo_olivia_" + Date.now(),
+          displayName: "Olivia",
+          age: 29,
+          gender: "woman",
+          location: "Austin, TX",
+          bio: "Music lover and concert-goer. I work in healthcare and love helping others. My ideal weekend involves brunch, live music, and quality time with loved ones.",
+          tagline: "Finding rhythm in chaos",
+          lookingFor: "Genuine, down-to-earth, values family and good humor.",
+          interests: ["music", "concerts", "brunch", "healthcare", "volunteering", "dancing"],
+          photos: ["https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400", "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=400"],
+          height: "5'6\"",
+          bodyType: "average",
+          occupation: "Nurse Practitioner",
+          education: "Masters Degree",
+          zodiacSign: "cancer",
+          verificationStatus: "none",
+          socialLinks: { instagram: "olivia_vibes", snapchat: "livmusic" },
+        },
+        {
+          userId: "demo_david_" + Date.now(),
+          displayName: "David",
+          age: 31,
+          gender: "man",
+          location: "Seattle, WA",
+          bio: "Coffee snob and outdoor enthusiast. Product manager at a startup. I believe life is about experiences, not things. Looking for a partner to share hikes, coffee, and Netflix binges.",
+          tagline: "Chasing sunsets and good coffee",
+          lookingFor: "Adventure buddy who loves outdoors and cozy movie nights.",
+          interests: ["coffee", "hiking", "startups", "movies", "camping", "photography"],
+          photos: ["https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400", "https://images.unsplash.com/photo-1463453091185-61582044d556?w=400"],
+          height: "5'10\"",
+          bodyType: "fit",
+          occupation: "Product Manager",
+          education: "Bachelors Degree",
+          zodiacSign: "virgo",
+          verificationStatus: "verified",
+          socialLinks: { instagram: "david_outdoors", twitter: "davidpm" },
+        },
+      ];
+
+      const createdProfiles = [];
+      const wishlistItems = [
+        { title: "Kindle Paperwhite", price: "139.99", priceTier: "impressive", affiliateUrl: "https://www.amazon.com/dp/B09TMN58KL" },
+        { title: "Wine Tasting Experience", price: "89.00", priceTier: "impressive", affiliateUrl: "https://www.viator.com/tours/Napa-Valley" },
+        { title: "Artisan Jewelry Set", price: "45.00", priceTier: "starter", affiliateUrl: "https://www.etsy.com/listing/jewelry" },
+        { title: "Cooking Class for Two", price: "150.00", priceTier: "vip", affiliateUrl: "https://www.klook.com/activity/cooking-class" },
+        { title: "Designer Sunglasses", price: "195.00", priceTier: "vip", affiliateUrl: "https://www.net-a-porter.com/sunglasses" },
+        { title: "Scented Candle Set", price: "35.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/candles" },
+      ];
+
+      for (const profileData of demoProfiles) {
+        // Create user first
+        await authStorage.upsertUser({
+          id: profileData.userId,
+          email: `${profileData.displayName.toLowerCase()}@demo.paygate.dating`,
+          firstName: profileData.displayName,
+          lastName: "Demo",
+        });
+
+        // Create wallet
+        await storage.createWallet({
+          userId: profileData.userId,
+        });
+
+        // Create profile
+        await storage.createProfile({
+          userId: profileData.userId,
+          displayName: profileData.displayName,
+          age: profileData.age,
+          gender: profileData.gender,
+          location: profileData.location,
+          bio: profileData.bio,
+          tagline: profileData.tagline,
+          lookingFor: profileData.lookingFor,
+          interests: profileData.interests,
+          photos: profileData.photos,
+          height: profileData.height,
+          bodyType: profileData.bodyType,
+          occupation: profileData.occupation,
+          education: profileData.education,
+          zodiacSign: profileData.zodiacSign,
+          verificationStatus: profileData.verificationStatus as "none" | "pending" | "verified" | "rejected",
+          socialLinks: profileData.socialLinks,
+          isVisible: true,
+        });
+
+        // Add 2-3 random wishlist items
+        const numItems = Math.floor(Math.random() * 2) + 2;
+        const shuffled = [...wishlistItems].sort(() => 0.5 - Math.random());
+        for (let i = 0; i < numItems; i++) {
+          const item = shuffled[i];
+          await storage.createRegistryItem({
+            userId: profileData.userId,
+            title: item.title,
+            price: item.price,
+            priceTier: item.priceTier as "starter" | "impressive" | "vip",
+            affiliateUrl: item.affiliateUrl,
+            visibility: "public",
+          });
+        }
+
+        createdProfiles.push(profileData.displayName);
+      }
+
+      res.json({ 
+        message: "Demo profiles created successfully", 
+        profiles: createdProfiles,
+        count: createdProfiles.length 
+      });
+    } catch (error) {
+      console.error("Error seeding demo profiles:", error);
+      res.status(500).json({ message: "Failed to seed demo profiles" });
+    }
+  });
 
   return httpServer;
 }
