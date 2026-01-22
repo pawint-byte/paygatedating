@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CreditCard, DollarSign } from "lucide-react";
+import { CreditCard, DollarSign, Bitcoin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,12 +11,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MINIMUM_WALLET_BALANCE } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
 
 interface AddFundsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddFunds: (amount: number) => void;
+  onAddFundsCrypto?: (amount: number) => void;
   isPending?: boolean;
+  isCryptoPending?: boolean;
 }
 
 const quickAmounts = [20, 50, 100, 200];
@@ -25,17 +28,32 @@ export function AddFundsDialog({
   open,
   onOpenChange,
   onAddFunds,
+  onAddFundsCrypto,
   isPending,
+  isCryptoPending,
 }: AddFundsDialogProps) {
   const [amount, setAmount] = useState<string>("50");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "crypto">("card");
+
+  const { data: cryptoStatus } = useQuery<{ available: boolean; message: string }>({
+    queryKey: ["/api/wallet/crypto/status"],
+    enabled: open,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (numAmount >= MINIMUM_WALLET_BALANCE) {
-      onAddFunds(numAmount);
+      if (paymentMethod === "crypto" && onAddFundsCrypto) {
+        onAddFundsCrypto(numAmount);
+      } else {
+        onAddFunds(numAmount);
+      }
     }
   };
+
+  const isProcessing = paymentMethod === "crypto" ? isCryptoPending : isPending;
+  const cryptoAvailable = cryptoStatus?.available;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,6 +66,38 @@ export function AddFundsDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-3">
+            <Label>Payment Method</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={paymentMethod === "card" ? "default" : "outline"}
+                onClick={() => setPaymentMethod("card")}
+                className="w-full gap-2"
+                data-testid="button-payment-card"
+              >
+                <CreditCard className="w-4 h-4" />
+                Card
+              </Button>
+              <Button
+                type="button"
+                variant={paymentMethod === "crypto" ? "default" : "outline"}
+                onClick={() => setPaymentMethod("crypto")}
+                className="w-full gap-2"
+                disabled={!cryptoAvailable}
+                data-testid="button-payment-crypto"
+              >
+                <Bitcoin className="w-4 h-4" />
+                Crypto
+              </Button>
+            </div>
+            {!cryptoAvailable && (
+              <p className="text-xs text-muted-foreground">
+                Crypto payments coming soon
+              </p>
+            )}
+          </div>
+
           <div className="space-y-3">
             <Label>Quick Select</Label>
             <div className="grid grid-cols-4 gap-2">
@@ -107,15 +157,22 @@ export function AddFundsDialog({
           <Button
             type="submit"
             className="w-full gap-2"
-            disabled={isPending || parseFloat(amount) < MINIMUM_WALLET_BALANCE}
+            disabled={isProcessing || parseFloat(amount) < MINIMUM_WALLET_BALANCE}
             data-testid="button-confirm-add-funds"
           >
-            <CreditCard className="w-4 h-4" />
-            {isPending ? "Processing..." : `Add $${parseFloat(amount || "0").toFixed(2)}`}
+            {paymentMethod === "crypto" ? (
+              <Bitcoin className="w-4 h-4" />
+            ) : (
+              <CreditCard className="w-4 h-4" />
+            )}
+            {isProcessing ? "Processing..." : `Add $${parseFloat(amount || "0").toFixed(2)}`}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Payments are securely processed by Stripe. Your card details are never stored.
+            {paymentMethod === "crypto" 
+              ? "Pay with Bitcoin, Ethereum, or 300+ cryptocurrencies via NOWPayments."
+              : "Payments are securely processed by Stripe. Your card details are never stored."
+            }
           </p>
         </form>
       </DialogContent>
