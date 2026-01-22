@@ -23,6 +23,7 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
     .slice(0, 2);
 
   const primaryPhoto = profile.photos?.[0];
+  const isDemoProfile = profile.userId?.startsWith("demo_");
   
   const showPhoto = profile.showPhotoPublicly !== false;
   const showName = profile.showFirstNamePublicly !== false;
@@ -66,6 +67,11 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
                 size="sm" 
               />
             </div>
+            {isDemoProfile && (
+              <Badge variant="outline" className="bg-blue-500/20 text-blue-200 border-blue-400/50 text-xs">
+                Demo
+              </Badge>
+            )}
             {profile.subscriptionTier === "premium" && (
               <Badge variant="secondary" className="bg-amber-500/20 text-amber-200 border-amber-500/30">
                 Premium
@@ -187,12 +193,12 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
 
         <Button
           onClick={() => onSendInterest(profile)}
-          disabled={isPending}
+          disabled={isPending || isDemoProfile}
           className="w-full gap-2"
           data-testid={`button-send-interest-${profile.id}`}
         >
           <Heart className="w-4 h-4" />
-          Send Interest (${GATE_COSTS.gate1})
+          {isDemoProfile ? "Demo Profile - Browse Only" : `Send Interest ($${GATE_COSTS.gate1})`}
         </Button>
       </div>
     </div>
