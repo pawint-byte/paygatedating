@@ -160,6 +160,7 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
   const [videos, setVideos] = useState<string[]>(defaultValues?.videos || []);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [showDetailedSections, setShowDetailedSections] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -1265,7 +1266,7 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
             <div>
               <FormLabel>Profile Photos</FormLabel>
               <FormDescription className="mb-3">
-                Add up to 6 photos, or connect your social media below and let matches view your content directly
+                Add up to 6 photos to your profile
               </FormDescription>
               <div className="grid grid-cols-3 gap-3">
                 {photos.map((photo, index) => (
@@ -1370,11 +1371,9 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
             <Share2 className="w-5 h-5 text-primary" />
             <span>Social Media Links</span>
           </div>
-          <div className="p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Pro tip:</strong> Link your social media as an alternative to uploading photos. Potential matches can click through to see your real, up-to-date content - saving you storage and keeping your profile fresh!
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Connect your social media profiles so others can find you. These are optional and visible on your profile.
+          </p>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <FormField

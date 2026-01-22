@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio, HelpCircle, Shield } from "lucide-react";
+import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio, HelpCircle, Shield, Gift } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -46,6 +46,11 @@ const mainMenuItems = [
     title: "Messages",
     url: "/messages",
     icon: MessageSquare,
+  },
+  {
+    title: "My Wishlist",
+    url: "/wishlist",
+    icon: Gift,
   },
 ];
 
