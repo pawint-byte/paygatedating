@@ -1,4 +1,5 @@
-import { MapPin, Heart, Lock, Users } from "lucide-react";
+import { MapPin, Heart, Lock, Users, Instagram, Twitter, ExternalLink } from "lucide-react";
+import { SiTiktok, SiSnapchat } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +119,69 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Lock className="w-3 h-3" />
             <span>Interests visible after connecting</span>
+          </div>
+        )}
+
+        {profile.socialLinks && Object.values(profile.socialLinks).some(v => v) && (
+          <div className="flex items-center gap-2 py-2 px-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg" data-testid={`social-links-${profile.id}`}>
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <ExternalLink className="w-3 h-3" />
+              View more:
+            </span>
+            <div className="flex items-center gap-2">
+              {profile.socialLinks.instagram && (
+                <a 
+                  href={`https://instagram.com/${profile.socialLinks.instagram.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-pink-500 hover-elevate p-1 rounded"
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid={`link-instagram-${profile.id}`}
+                  title={`@${profile.socialLinks.instagram.replace('@', '')}`}
+                >
+                  <Instagram className="w-4 h-4" />
+                </a>
+              )}
+              {profile.socialLinks.tiktok && (
+                <a 
+                  href={`https://tiktok.com/@${profile.socialLinks.tiktok.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground hover-elevate p-1 rounded"
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid={`link-tiktok-${profile.id}`}
+                  title={`@${profile.socialLinks.tiktok.replace('@', '')}`}
+                >
+                  <SiTiktok className="w-4 h-4" />
+                </a>
+              )}
+              {profile.socialLinks.twitter && (
+                <a 
+                  href={`https://twitter.com/${profile.socialLinks.twitter.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover-elevate p-1 rounded"
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid={`link-twitter-${profile.id}`}
+                  title={`@${profile.socialLinks.twitter.replace('@', '')}`}
+                >
+                  <Twitter className="w-4 h-4" />
+                </a>
+              )}
+              {profile.socialLinks.snapchat && (
+                <a 
+                  href={`https://snapchat.com/add/${profile.socialLinks.snapchat.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-500 hover-elevate p-1 rounded"
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid={`link-snapchat-${profile.id}`}
+                  title={`@${profile.socialLinks.snapchat.replace('@', '')}`}
+                >
+                  <SiSnapchat className="w-4 h-4" />
+                </a>
+              )}
+            </div>
           </div>
         )}
 

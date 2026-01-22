@@ -296,7 +296,8 @@ export default function NearbyPage() {
                               href={getSocialLink("instagram", socialLinks.instagram)} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="p-1.5 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 text-white hover:opacity-80"
+                              className="p-1.5 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 text-white hover-elevate"
+                              data-testid={`link-instagram-nearby-${p.id}`}
                             >
                               <SiInstagram className="w-3.5 h-3.5" />
                             </a>
@@ -306,7 +307,8 @@ export default function NearbyPage() {
                               href={getSocialLink("tiktok", socialLinks.tiktok)} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="p-1.5 rounded-full bg-black text-white hover:opacity-80"
+                              className="p-1.5 rounded-full bg-black text-white hover-elevate"
+                              data-testid={`link-tiktok-nearby-${p.id}`}
                             >
                               <SiTiktok className="w-3.5 h-3.5" />
                             </a>
@@ -316,7 +318,8 @@ export default function NearbyPage() {
                               href={getSocialLink("twitter", socialLinks.twitter)} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="p-1.5 rounded-full bg-black text-white hover:opacity-80"
+                              className="p-1.5 rounded-full bg-black text-white hover-elevate"
+                              data-testid={`link-twitter-nearby-${p.id}`}
                             >
                               <SiX className="w-3.5 h-3.5" />
                             </a>
@@ -326,7 +329,8 @@ export default function NearbyPage() {
                               href={getSocialLink("snapchat", socialLinks.snapchat)} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="p-1.5 rounded-full bg-yellow-400 text-black hover:opacity-80"
+                              className="p-1.5 rounded-full bg-yellow-400 text-black hover-elevate"
+                              data-testid={`link-snapchat-nearby-${p.id}`}
                             >
                               <SiSnapchat className="w-3.5 h-3.5" />
                             </a>
