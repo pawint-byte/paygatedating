@@ -1131,9 +1131,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const hostname = urlObj.hostname.toLowerCase();
       const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
       const isEtsy = hostname.includes('etsy.com');
+      const isViator = hostname.includes('viator.com');
       
-      if (!isAmazon && !isEtsy) {
-        return { valid: false, error: "Only Amazon and Etsy links are supported for wishlist items" };
+      if (!isAmazon && !isEtsy && !isViator) {
+        return { valid: false, error: "Only Amazon, Etsy, and Viator links are supported for wishlist items" };
       }
       return { valid: true };
     } catch {
@@ -1158,6 +1159,16 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         const etsyMerchantId = '6220'; // Etsy's Awin merchant ID
         const encodedUrl = encodeURIComponent(url);
         return `https://www.awin1.com/cread.php?awinmid=${etsyMerchantId}&awinaffid=${awinPublisherId}&ued=${encodedUrl}`;
+      }
+      
+      // Viator via Travelpayouts affiliate network  
+      // Travelpayouts uses their white label domain (tp.st) for tracked links
+      // Since API call would be async, for now use direct Viator URL
+      // The Travelpayouts tracking pixel on the site will attribute conversions
+      if (urlObj.hostname.includes('viator.com')) {
+        // Viator URLs are accepted as-is - tracking relies on Travelpayouts site verification
+        // The verification script added to the site tracks referrals automatically
+        return url;
       }
       
     } catch (e) {

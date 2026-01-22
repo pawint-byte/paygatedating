@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2 } from "lucide-react";
+import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RegistryItem } from "@shared/schema";
@@ -137,6 +137,10 @@ export function WishlistManager() {
     window.open("https://www.etsy.com", "_blank");
   };
 
+  const handleBrowseViator = () => {
+    window.open("https://www.viator.com", "_blank");
+  };
+
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -149,18 +153,20 @@ export function WishlistManager() {
           const hostname = url.hostname.toLowerCase();
           const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
           const isEtsy = hostname.includes('etsy.com');
+          const isViator = hostname.includes('viator.com');
           
-          if (isAmazon || isEtsy) {
+          if (isAmazon || isEtsy || isViator) {
             setUrlPasted(true);
             setCurrentStep(2);
+            const source = isAmazon ? 'Amazon' : isEtsy ? 'Etsy' : 'Viator';
             toast({
               title: "URL Pasted",
-              description: `${isAmazon ? 'Amazon' : 'Etsy'} link detected. Now fill in the details.`,
+              description: `${source} link detected. Now fill in the details.`,
             });
           } else {
             toast({
               title: "Invalid Link",
-              description: "Only Amazon and Etsy links are supported.",
+              description: "Only Amazon, Etsy, and Viator links are supported.",
               variant: "destructive",
             });
           }
@@ -197,7 +203,8 @@ export function WishlistManager() {
         const hostname = url.hostname.toLowerCase();
         const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
         const isEtsy = hostname.includes('etsy.com');
-        if (isAmazon || isEtsy) {
+        const isViator = hostname.includes('viator.com');
+        if (isAmazon || isEtsy || isViator) {
           setUrlPasted(true);
           setCurrentStep(2);
         }
@@ -226,7 +233,7 @@ export function WishlistManager() {
               <DialogHeader>
                 <DialogTitle>Add Wishlist Item</DialogTitle>
                 <DialogDescription>
-                  Add an item you'd love to receive from Amazon or Etsy.
+                  Add items or experiences you'd love to receive.
                 </DialogDescription>
               </DialogHeader>
 
@@ -238,13 +245,13 @@ export function WishlistManager() {
                       How to add an item
                     </h4>
                     <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                      <li>Click a button below to browse Amazon or Etsy</li>
+                      <li>Click a button below to browse shopping or experiences</li>
                       <li>Find the item you want and copy its URL</li>
                       <li>Come back here and paste the URL</li>
                     </ol>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <Button
                       type="button"
                       variant="outline"
@@ -253,7 +260,7 @@ export function WishlistManager() {
                       data-testid="button-browse-amazon"
                     >
                       <SiAmazon className="w-6 h-6" />
-                      <span>Browse Amazon</span>
+                      <span className="text-xs">Amazon</span>
                     </Button>
                     <Button
                       type="button"
@@ -263,7 +270,17 @@ export function WishlistManager() {
                       data-testid="button-browse-etsy"
                     >
                       <SiEtsy className="w-6 h-6" />
-                      <span>Browse Etsy</span>
+                      <span className="text-xs">Etsy</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-auto py-4 flex-col gap-2"
+                      onClick={handleBrowseViator}
+                      data-testid="button-browse-viator"
+                    >
+                      <Plane className="w-6 h-6" />
+                      <span className="text-xs">Viator</span>
                     </Button>
                   </div>
 
@@ -293,7 +310,7 @@ export function WishlistManager() {
                       Or paste the URL manually below:
                     </p>
                     <Input
-                      placeholder="https://amazon.com/... or https://etsy.com/..."
+                      placeholder="Paste Amazon, Etsy, or Viator link..."
                       value={form.watch("affiliateUrl")}
                       onChange={(e) => {
                         form.setValue("affiliateUrl", e.target.value);
@@ -320,8 +337,9 @@ export function WishlistManager() {
                             const hostname = url.hostname.toLowerCase();
                             const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
                             const isEtsy = hostname.includes('etsy.com');
-                            if (!isAmazon && !isEtsy) {
-                              return "Only Amazon and Etsy links are supported";
+                            const isViator = hostname.includes('viator.com');
+                            if (!isAmazon && !isEtsy && !isViator) {
+                              return "Only Amazon, Etsy, and Viator links are supported";
                             }
                             return true;
                           } catch {
