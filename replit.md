@@ -138,8 +138,12 @@ Reminder preference: Always remind user to publish after making changes.
 ### Authentication
 - **Replit Auth**: OIDC-based authentication (requires `ISSUER_URL`, `REPL_ID`, `SESSION_SECRET`)
 
-### Payment Processing (Planned)
-- **Stripe**: Referenced in design docs for escrow payments and wallet funding
+### Payment Processing
+- **Stripe**: Integrated for wallet funding, subscriptions ($9.99/month or $99/year), and gift purchases
+- **stripe-replit-sync**: Automatic webhook management - no manual Stripe Dashboard configuration needed
+- **Webhook Endpoint**: /api/stripe/webhook (registered BEFORE express.json() for raw Buffer access)
+- **Stripe Schema**: Managed automatically by stripe-replit-sync in PostgreSQL `stripe` schema
+- **Custom Logic**: WebhookHandlers.ts processes wallet deposits, subscription activation/cancellation, and gift purchases with gate advancement
 
 ### Third-Party Integrations (Planned)
 - **E-commerce Affiliates**: Etsy/Amazon for anonymous gift purchasing

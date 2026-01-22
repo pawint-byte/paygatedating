@@ -3,7 +3,9 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
-import { getUncachableStripeClient } from "./stripeClient";
+import { runMigrations } from "stripe-replit-sync";
+import { getUncachableStripeClient, getStripeSync } from "./stripeClient";
+import { WebhookHandlers } from "./webhookHandlers";
 
 const app = express();
 const httpServer = createServer(app);
@@ -14,14 +16,98 @@ declare module "http" {
   }
 }
 
+// Initialize Stripe schema and managed webhook on startup
+// Uses stripe-replit-sync for automatic webhook management
+async function initStripe() {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    console.log('DATABASE_URL not found - Stripe sync will be limited');
+    return;
+  }
+
+  try {
+    console.log('Initializing Stripe schema...');
+    await runMigrations({ databaseUrl });
+    console.log('Stripe schema ready');
+
+    // Get StripeSync instance
+    const stripeSync = await getStripeSync();
+
+    // Set up managed webhook - no manual configuration needed!
+    console.log('Setting up managed webhook...');
+    const replitDomains = process.env.REPLIT_DOMAINS;
+    if (!replitDomains) {
+      console.warn('REPLIT_DOMAINS not set - webhook registration may fail');
+    }
+    const webhookBaseUrl = `https://${replitDomains?.split(',')[0] || 'localhost:5000'}`;
+    const webhookUrl = `${webhookBaseUrl}/api/stripe/webhook`;
+    
+    try {
+      let result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
+      
+      // If first call returns undefined (e.g., after cleaning up orphaned webhooks), try again
+      if (!result?.webhook) {
+        console.log('Retrying webhook registration...');
+        result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
+      }
+      
+      if (result?.webhook?.url) {
+        console.log(`Webhook configured: ${result.webhook.url}`);
+      } else if (result?.webhook) {
+        console.log(`Webhook setup completed for: ${webhookUrl}`);
+      } else {
+        console.warn('Webhook registration returned undefined - webhook events may not be received. Check Stripe Dashboard.');
+      }
+    } catch (webhookError) {
+      console.error('Failed to set up managed webhook:', webhookError);
+    }
+
+    // Sync all existing Stripe data in background
+    console.log('Starting Stripe data sync...');
+    stripeSync.syncBackfill()
+      .then(() => console.log('Stripe data synced'))
+      .catch((err: any) => console.error('Error syncing Stripe data:', err));
+  } catch (error) {
+    console.error('Failed to initialize Stripe:', error);
+  }
+}
+
 app.use(express.static(path.join(process.cwd(), "public")));
 
+// CRITICAL: Register Stripe webhook route BEFORE express.json()
+// This ensures we get the raw Buffer needed for signature verification
+app.post(
+  '/api/stripe/webhook',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const signature = req.headers['stripe-signature'];
+
+    if (!signature) {
+      return res.status(400).json({ error: 'Missing stripe-signature header' });
+    }
+
+    try {
+      const sig = Array.isArray(signature) ? signature[0] : signature;
+
+      if (!Buffer.isBuffer(req.body)) {
+        console.error('STRIPE WEBHOOK ERROR: req.body is not a Buffer');
+        return res.status(500).json({ error: 'Webhook processing error' });
+      }
+
+      await WebhookHandlers.processWebhook(req.body as Buffer, sig);
+      res.status(200).json({ received: true });
+    } catch (error: any) {
+      console.error('Webhook error:', error.message);
+      res.status(400).json({ error: 'Webhook processing error' });
+    }
+  }
+);
+
+// Now apply JSON middleware for all other routes
 app.use(
   express.json({
     limit: '50mb',
-    verify: (req, _res, buf) => {
-      req.rawBody = buf;
-    },
   }),
 );
 
@@ -65,8 +151,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize Stripe with automatic webhook management
   try {
-    await getUncachableStripeClient();
+    await initStripe();
     console.log('Stripe client initialized successfully');
   } catch (error) {
     console.log('Stripe not configured, payment features may be limited');

@@ -1,16 +1,34 @@
-import { getUncachableStripeClient } from './stripeClient';
+import { getStripeSync } from './stripeClient';
 import { storage } from './storage';
 import { emailService } from './lib/email';
 
 export class WebhookHandlers {
-  static async processWebhook(payload: Buffer, signature: string, webhookSecret: string): Promise<void> {
+  // Webhook handler that uses stripe-replit-sync for signature verification and DB sync
+  // Then processes custom business logic with the verified event
+  static async processWebhook(payload: Buffer, signature: string): Promise<void> {
     if (!Buffer.isBuffer(payload)) {
-      throw new Error('Payload must be a Buffer');
+      throw new Error(
+        'STRIPE WEBHOOK ERROR: Payload must be a Buffer. ' +
+        'Received type: ' + typeof payload + '. ' +
+        'This usually means express.json() parsed the body before reaching this handler. ' +
+        'FIX: Ensure webhook route is registered BEFORE app.use(express.json()).'
+      );
     }
 
-    const stripe = await getUncachableStripeClient();
-    const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    // stripe-replit-sync handles signature verification and syncs to database
+    // It returns the verified event object
+    const sync = await getStripeSync();
+    const verifiedEvent = await sync.processWebhook(payload, signature);
 
+    // Process our custom business logic with the verified event
+    if (verifiedEvent) {
+      await WebhookHandlers.processCustomLogic(verifiedEvent);
+    }
+  }
+
+  // Custom business logic for PayGate-specific webhook handling
+  // Uses the verified event object from stripe-replit-sync
+  static async processCustomLogic(event: any): Promise<void> {
     console.log(`Processing Stripe webhook: ${event.type}`);
 
     if (event.type === 'checkout.session.completed') {

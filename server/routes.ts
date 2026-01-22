@@ -20,7 +20,6 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { emailService } from "./lib/email";
-import { WebhookHandlers } from "./webhookHandlers";
 
 const depositSchema = z.object({
   amount: z.number().min(MINIMUM_WALLET_BALANCE, `Minimum deposit is $${MINIMUM_WALLET_BALANCE}`),
@@ -2082,35 +2081,8 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     }
   });
 
-  // Stripe Webhook endpoint for real-time payment notifications
-  app.post("/api/webhooks/stripe", async (req: any, res) => {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    
-    if (!webhookSecret) {
-      console.log("Stripe webhook secret not configured - skipping webhook processing");
-      return res.status(200).json({ received: true, message: "Webhook secret not configured" });
-    }
-
-    const signature = req.headers["stripe-signature"];
-    if (!signature) {
-      return res.status(400).json({ error: "Missing stripe-signature header" });
-    }
-
-    try {
-      // req.rawBody is set by the express.json middleware with verify option
-      const payload = req.rawBody as Buffer;
-      
-      if (!payload) {
-        return res.status(400).json({ error: "Missing raw body" });
-      }
-
-      await WebhookHandlers.processWebhook(payload, signature, webhookSecret);
-      res.status(200).json({ received: true });
-    } catch (error: any) {
-      console.error("Webhook error:", error.message);
-      res.status(400).json({ error: `Webhook Error: ${error.message}` });
-    }
-  });
+  // Note: Stripe webhook endpoint is now registered in index.ts BEFORE express.json()
+  // to ensure raw body buffer is available. Uses stripe-replit-sync for auto-management.
 
   return httpServer;
 }
