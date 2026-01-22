@@ -1142,6 +1142,51 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
   }
 
+  // Travelpayouts API for converting Viator URLs to affiliate links
+  async function convertViatorToAffiliate(url: string): Promise<string> {
+    const token = process.env.TRAVELPAYOUTS_API_TOKEN;
+    const projectId = process.env.TRAVELPAYOUTS_PROJECT_ID;
+    const markerId = process.env.TRAVELPAYOUTS_MARKER_ID;
+    
+    if (!token || !projectId || !markerId) {
+      console.log('Travelpayouts credentials not configured, returning original URL');
+      return url;
+    }
+    
+    try {
+      const response = await fetch('https://api.travelpayouts.com/links/v1/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Access-Token': token,
+        },
+        body: JSON.stringify({
+          trs: parseInt(projectId),
+          marker: parseInt(markerId),
+          shorten: true,
+          links: [{ url }]
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Travelpayouts API error:', response.status);
+        return url;
+      }
+      
+      const data = await response.json();
+      if (data.result?.links?.[0]?.code === 'success' && data.result.links[0].partner_url) {
+        console.log('Viator URL converted to affiliate link:', data.result.links[0].partner_url);
+        return data.result.links[0].partner_url;
+      }
+      
+      console.log('Travelpayouts conversion failed:', data.result?.links?.[0]?.message || 'Unknown error');
+      return url;
+    } catch (error) {
+      console.error('Error calling Travelpayouts API:', error);
+      return url;
+    }
+  }
+
   function addAffiliateTag(url: string): string {
     try {
       const urlObj = new URL(url);
@@ -1169,8 +1214,8 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return url;
       }
       
-      // Direct Viator URLs are accepted as-is
-      // Users can generate affiliate links via Travelpayouts dashboard for proper tracking
+      // Direct Viator URLs - return as-is for now
+      // The async API conversion happens in the POST handler
       if (urlObj.hostname.includes('viator.com')) {
         return url;
       }
@@ -1195,8 +1240,18 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         });
       }
       
-      // Add affiliate tags
+      // Add affiliate tags (sync for Amazon/Etsy)
       affiliateUrl = addAffiliateTag(affiliateUrl);
+      
+      // Convert Viator URLs via Travelpayouts API (async)
+      try {
+        const urlObj = new URL(affiliateUrl);
+        if (urlObj.hostname.includes('viator.com')) {
+          affiliateUrl = await convertViatorToAffiliate(affiliateUrl);
+        }
+      } catch (e) {
+        // Invalid URL, continue with original
+      }
       
       const validationResult = insertRegistryItemSchema.safeParse({
         ...req.body,
