@@ -743,10 +743,20 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       });
 
       if (payment_status === 'finished') {
+        // Robust idempotency: check credited flag to prevent double-crediting
+        if (cryptoPayment.credited) {
+          console.log(`Crypto payment already credited: invoice=${invoice_id}, skipping duplicate`);
+          return res.json({ success: true, message: "Already credited" });
+        }
+
         const wallet = await storage.getWallet(cryptoPayment.userId);
         if (wallet) {
           const depositAmount = parseFloat(cryptoPayment.priceAmount);
           const newBalance = (parseFloat(wallet.balance) + depositAmount).toFixed(2);
+          
+          // Mark as credited FIRST to prevent race conditions
+          await storage.markCryptoPaymentCredited(cryptoPayment.id);
+          
           await storage.updateWalletBalance(cryptoPayment.userId, newBalance);
 
           await storage.createTransaction({

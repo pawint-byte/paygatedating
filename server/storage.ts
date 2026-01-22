@@ -143,6 +143,7 @@ export interface IStorage {
   getCryptoPaymentsByUser(userId: string): Promise<CryptoPayment[]>;
   createCryptoPayment(payment: InsertCryptoPayment): Promise<CryptoPayment>;
   updateCryptoPayment(id: string, data: Partial<CryptoPayment>): Promise<CryptoPayment | undefined>;
+  markCryptoPaymentCredited(id: string): Promise<CryptoPayment | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -748,6 +749,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(cryptoPayments)
       .set({ ...data, updatedAt: new Date() })
+      .where(eq(cryptoPayments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async markCryptoPaymentCredited(id: string): Promise<CryptoPayment | undefined> {
+    const [updated] = await db
+      .update(cryptoPayments)
+      .set({ credited: true, creditedAt: new Date(), updatedAt: new Date() })
       .where(eq(cryptoPayments.id, id))
       .returning();
     return updated;

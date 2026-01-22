@@ -146,10 +146,19 @@ class NowPaymentsService {
     return response.json();
   }
 
+  hasIpnSecret(): boolean {
+    return !!this.ipnSecret;
+  }
+
   verifyIpnSignature(body: Record<string, any>, signature: string): boolean {
     if (!this.ipnSecret) {
-      console.warn('IPN secret not configured - skipping signature verification');
-      return true;
+      console.error('IPN secret not configured - rejecting webhook for security');
+      return false;
+    }
+
+    if (!signature) {
+      console.error('No signature provided in webhook');
+      return false;
     }
 
     const sortedParams = Object.keys(body)

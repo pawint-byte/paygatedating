@@ -457,6 +457,8 @@ export const cryptoPayments = pgTable("crypto_payments", {
   actuallyPaid: decimal("actually_paid", { precision: 18, scale: 8 }),
   invoiceUrl: text("invoice_url").notNull(),
   status: cryptoPaymentStatusEnum("status").default("waiting").notNull(),
+  credited: boolean("credited").default(false).notNull(),
+  creditedAt: timestamp("credited_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -469,6 +471,8 @@ export const insertCryptoPaymentSchema = createInsertSchema(cryptoPayments).omit
   paymentId: true,
   payCurrency: true,
   actuallyPaid: true,
+  credited: true,
+  creditedAt: true,
 });
 
 export type CryptoPayment = typeof cryptoPayments.$inferSelect;
