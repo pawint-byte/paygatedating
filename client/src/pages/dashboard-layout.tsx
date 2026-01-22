@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import type { Profile, Wallet, Transaction } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
+import type { ProfileCompleteness } from "@/lib/types";
 
 import Discover from "./discover";
 import Nearby from "./nearby";
@@ -29,6 +30,7 @@ export default function DashboardLayout() {
   const [location] = useLocation();
   const [addFundsOpen, setAddFundsOpen] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
+  const nudgeShownRef = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -85,6 +87,53 @@ export default function DashboardLayout() {
     queryKey: ["/api/wallet/transactions"],
   });
 
+  const { data: completeness } = useQuery<ProfileCompleteness>({
+    queryKey: ["/api/profile/completeness"],
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    if (!completeness || nudgeShownRef.current) return;
+    
+    const sessionKey = `nudge_shown_${new Date().toDateString()}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    
+    const timer = setTimeout(() => {
+      if (nudgeShownRef.current) return;
+      nudgeShownRef.current = true;
+      sessionStorage.setItem(sessionKey, "true");
+      
+      if (!completeness.hasPhotos) {
+        toast({
+          title: "Add photos to stand out",
+          description: "Profiles with photos get 10x more interest from potential matches.",
+        });
+      } else if (!completeness.hasBio) {
+        toast({
+          title: "Tell your story",
+          description: "A compelling bio helps you connect with the right people.",
+        });
+      } else if (!completeness.hasWishlistItems) {
+        toast({
+          title: "Create your wishlist",
+          description: "Add travel experiences or gifts you'd love to receive.",
+        });
+      } else if (!completeness.hasInterests) {
+        toast({
+          title: "Share your interests",
+          description: "Help matches find common ground with your hobbies.",
+        });
+      } else if (completeness.score < 80) {
+        toast({
+          title: "Complete your profile",
+          description: `Your profile is ${completeness.score}% complete. Add more details to attract more matches.`,
+        });
+      }
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, [completeness, toast]);
+
   const addFundsMutation = useMutation({
     mutationFn: async (amount: number) => {
       const response = await apiRequest("POST", "/api/wallet/deposit", { amount });
@@ -123,7 +172,7 @@ export default function DashboardLayout() {
   return (
     <SidebarProvider style={sidebarStyle}>
       <div className="flex h-screen w-full bg-background">
-        <AppSidebar user={user} profile={profile ?? null} />
+        <AppSidebar user={user ?? null} profile={profile ?? null} />
 
         <div className="flex flex-col flex-1 min-w-0">
           <header className="flex items-center justify-between gap-4 p-4 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-40">

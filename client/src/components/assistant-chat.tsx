@@ -8,23 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, X, Send, Sparkles, CheckCircle, Circle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { ProfileCompleteness } from "@/lib/types";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
-}
-
-interface ProfileCompleteness {
-  score: number;
-  suggestions: string[];
-  hasProfile: boolean;
-  hasDisplayName: boolean;
-  hasBio: boolean;
-  hasPhotos: boolean;
-  hasInterests: boolean;
-  hasLocation: boolean;
-  hasLookingFor: boolean;
-  hasWishlistItems: boolean;
 }
 
 export function AssistantChat() {

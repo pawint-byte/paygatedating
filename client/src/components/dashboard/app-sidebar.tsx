@@ -16,8 +16,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { VerifiedBadge } from "@/components/verified-badge";
+import { ProfileProgress } from "@/components/dashboard/profile-progress";
 import type { User as UserType } from "@shared/models/auth";
 import type { Profile } from "@shared/schema";
+import type { ProfileCompleteness } from "@/lib/types";
 
 interface AppSidebarProps {
   user: UserType | null;
@@ -76,6 +78,12 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
   const { data: adminStatus } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/status"],
     enabled: !!user,
+  });
+
+  const { data: completeness } = useQuery<ProfileCompleteness>({
+    queryKey: ["/api/profile/completeness"],
+    enabled: !!user,
+    refetchInterval: 60000,
   });
 
   const displayName = profile?.displayName || user?.firstName || "Member";
@@ -165,8 +173,15 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 mb-3">
+      <SidebarFooter className="p-4 border-t border-sidebar-border space-y-3">
+        {completeness && (
+          <ProfileProgress 
+            completeness={completeness} 
+            isVerified={profile?.verificationStatus === "verified"} 
+          />
+        )}
+
+        <div className="flex items-center gap-3">
           <div className="relative">
             <Avatar>
               <AvatarImage src={profile?.photos?.[0] || user?.profileImageUrl || undefined} />
