@@ -43,8 +43,16 @@ const faqs = [
     answer: "Share your unique referral code with friends. When they sign up and make their first gate payment, you both receive bonus credits in your wallet. It's our way of rewarding you for helping grow a community of serious daters."
   },
   {
+    question: "Can I pay with cryptocurrency?",
+    answer: "Yes! We accept cryptocurrency payments through Stripe's secure payment system. When you add funds to your wallet, you can choose to pay with stablecoins (USDC, USDT) or other cryptocurrencies like Bitcoin and Ethereum. Simply select the crypto option at checkout and complete your payment. Your wallet will be credited once the transaction is confirmed."
+  },
+  {
+    question: "What payment methods do you accept?",
+    answer: "We accept all major credit and debit cards, Apple Pay, Google Pay, and cryptocurrency (including Bitcoin, Ethereum, USDC, and USDT). All payments are processed securely through Stripe, the same trusted platform used by millions of businesses worldwide. Your payment details are encrypted and never stored on our servers."
+  },
+  {
     question: "Is my payment information secure?",
-    answer: "Absolutely. We use Stripe for all payment processing, the same trusted platform used by millions of businesses worldwide. Your payment details are encrypted and never stored on our servers. All transactions are secure and PCI-compliant."
+    answer: "Absolutely. We use Stripe for all payment processing, the industry-leading payment platform trusted by millions of businesses. Your payment details are encrypted end-to-end and never stored on our servers. All transactions are secure, PCI-compliant, and protected by fraud detection. Whether you pay by card or crypto, your financial information is always safe."
   }
 ];
 

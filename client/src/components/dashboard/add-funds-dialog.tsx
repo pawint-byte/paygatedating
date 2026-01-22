@@ -115,7 +115,7 @@ export function AddFundsDialog({
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Payments are securely processed by Stripe. Card, crypto, and other payment methods available at checkout.
+            Secure payments via Stripe. Pay with card, Apple Pay, Google Pay, or crypto (Bitcoin, Ethereum, USDC, USDT).
           </p>
         </form>
       </DialogContent>
