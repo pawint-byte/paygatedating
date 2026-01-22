@@ -39,7 +39,38 @@ const visibilityLabels = {
   after_gate1: { label: "After Gate 1", icon: Lock },
 };
 
-export function WishlistManager() {
+type CategoryFilter = "all" | "gifts" | "experiences";
+
+interface WishlistManagerProps {
+  categoryFilter?: CategoryFilter;
+}
+
+function getItemCategory(affiliateUrl: string | null | undefined): "gifts" | "experiences" {
+  if (!affiliateUrl) return "gifts";
+  try {
+    const url = new URL(affiliateUrl);
+    const hostname = url.hostname.toLowerCase();
+    const urlString = affiliateUrl.toLowerCase();
+    if (
+      hostname.includes('viator.com') || 
+      hostname.includes('klook.com') || 
+      hostname.includes('tp.st') || 
+      hostname.includes('travelpayouts.com') ||
+      urlString.includes('viator') ||
+      urlString.includes('klook')
+    ) {
+      return "experiences";
+    }
+  } catch {
+    const urlLower = affiliateUrl.toLowerCase();
+    if (urlLower.includes('viator') || urlLower.includes('klook')) {
+      return "experiences";
+    }
+  }
+  return "gifts";
+}
+
+export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps) {
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -577,15 +608,29 @@ export function WishlistManager() {
               <div key={i} className="h-20 animate-pulse bg-muted rounded-md" />
             ))}
           </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Gift className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No items in your wishlist yet</p>
-            <p className="text-sm">Add items to show potential matches what you'd love to receive</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {items.map((item) => (
+        ) : (() => {
+          const filteredItems = categoryFilter === "all" 
+            ? items 
+            : items.filter(item => getItemCategory(item.affiliateUrl) === categoryFilter);
+          
+          return filteredItems.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Gift className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              {items.length === 0 ? (
+                <>
+                  <p>No items in your wishlist yet</p>
+                  <p className="text-sm">Add items to show potential matches what you'd love to receive</p>
+                </>
+              ) : (
+                <>
+                  <p>No {categoryFilter} in this category</p>
+                  <p className="text-sm">Try a different category or add new items</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredItems.map((item) => (
               <div 
                 key={item.id}
                 className="flex items-start gap-3 p-3 border rounded-lg"
@@ -652,8 +697,9 @@ export function WishlistManager() {
                 </Button>
               </div>
             ))}
-          </div>
-        )}
+            </div>
+          );
+        })()}
       </CardContent>
     </Card>
   );

@@ -46,6 +46,14 @@ Reminder preference: Always remind user to publish after making changes.
 - **Gate Progression**: Match states tracked via `gate_stage` enum (gate1 through completed)
 - **Gift Purchase Flow**: Users can purchase gifts from match wishlists via Stripe checkout, platform takes 10% service fee, then redirects to affiliate link for product purchase
 
+### Wishlist Page (/wishlist)
+- **Dedicated Page**: Users manage their wishlist from a dedicated sidebar menu item
+- **Category Filters**: Filter by All, Gifts (Amazon/Etsy/Net-a-Porter), or Experiences (Viator/Klook)
+- **Guided Onboarding**: First-time users see a 4-step walkthrough explaining wishlist best practices
+- **Tips System**: Each step includes pro tips to help users create appealing wishlists
+- **Dismissible Guide**: Users can skip/dismiss the guide, stored in localStorage
+- **View Guide Button**: Returning users can revisit the guide anytime
+
 ### Gift Purchasing System
 - **Wishlist Items**: Users add items from Amazon, Etsy, Viator, Klook, or Net-a-Porter (validated on frontend + backend)
 - **Affiliate Integration**: URLs auto-tagged with affiliate codes:
