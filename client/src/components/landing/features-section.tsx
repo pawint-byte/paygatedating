@@ -32,8 +32,8 @@ const features = [
   },
   {
     icon: Gift,
-    title: "Thoughtful Gifting",
-    description: "Send gifts from wishlists to show genuine interest. Gifts unlock gates and create meaningful gestures.",
+    title: "Gift Experiences & Luxury",
+    description: "Send gifts from Amazon, Etsy, Net-a-Porter, or book travel experiences from Viator and Klook. Meaningful gestures that unlock gates.",
     category: "connection"
   },
   {

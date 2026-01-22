@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane } from "lucide-react";
+import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Gem } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RegistryItem } from "@shared/schema";
@@ -141,6 +141,14 @@ export function WishlistManager() {
     window.open("https://www.viator.com", "_blank");
   };
 
+  const handleBrowseKlook = () => {
+    window.open("https://www.klook.com", "_blank");
+  };
+
+  const handleBrowseNetAPorter = () => {
+    window.open("https://www.net-a-porter.com", "_blank");
+  };
+
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -153,12 +161,13 @@ export function WishlistManager() {
           const hostname = url.hostname.toLowerCase();
           const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
           const isEtsy = hostname.includes('etsy.com');
-          const isViator = hostname.includes('viator.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
+          const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
+          const isLuxury = hostname.includes('net-a-porter.com');
           
-          if (isAmazon || isEtsy || isViator) {
+          if (isAmazon || isEtsy || isTravel || isLuxury) {
             setUrlPasted(true);
             setCurrentStep(2);
-            const source = isAmazon ? 'Amazon' : isEtsy ? 'Etsy' : 'Viator';
+            const source = isAmazon ? 'Amazon' : isEtsy ? 'Etsy' : isLuxury ? 'Net-a-Porter' : 'Travel experience';
             toast({
               title: "URL Pasted",
               description: `${source} link detected. Now fill in the details.`,
@@ -166,7 +175,7 @@ export function WishlistManager() {
           } else {
             toast({
               title: "Invalid Link",
-              description: "Only Amazon, Etsy, and Viator links are supported.",
+              description: "Only Amazon, Etsy, Viator, Klook, and Net-a-Porter links are supported.",
               variant: "destructive",
             });
           }
@@ -203,8 +212,9 @@ export function WishlistManager() {
         const hostname = url.hostname.toLowerCase();
         const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
         const isEtsy = hostname.includes('etsy.com');
-        const isViator = hostname.includes('viator.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-        if (isAmazon || isEtsy || isViator) {
+        const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
+        const isLuxury = hostname.includes('net-a-porter.com');
+        if (isAmazon || isEtsy || isTravel || isLuxury) {
           setUrlPasted(true);
           setCurrentStep(2);
         }
@@ -251,37 +261,67 @@ export function WishlistManager() {
                     </ol>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-auto py-4 flex-col gap-2"
-                      onClick={handleBrowseAmazon}
-                      data-testid="button-browse-amazon"
-                    >
-                      <SiAmazon className="w-6 h-6" />
-                      <span className="text-xs">Amazon</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-auto py-4 flex-col gap-2"
-                      onClick={handleBrowseEtsy}
-                      data-testid="button-browse-etsy"
-                    >
-                      <SiEtsy className="w-6 h-6" />
-                      <span className="text-xs">Etsy</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-auto py-4 flex-col gap-2"
-                      onClick={handleBrowseViator}
-                      data-testid="button-browse-viator"
-                    >
-                      <Plane className="w-6 h-6" />
-                      <span className="text-xs">Viator</span>
-                    </Button>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Shopping</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={handleBrowseAmazon}
+                          data-testid="button-browse-amazon"
+                        >
+                          <SiAmazon className="w-5 h-5" />
+                          <span className="text-xs">Amazon</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={handleBrowseEtsy}
+                          data-testid="button-browse-etsy"
+                        >
+                          <SiEtsy className="w-5 h-5" />
+                          <span className="text-xs">Etsy</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={handleBrowseNetAPorter}
+                          data-testid="button-browse-netaporter"
+                        >
+                          <Gem className="w-5 h-5" />
+                          <span className="text-xs">Luxury</span>
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Travel Experiences</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={handleBrowseViator}
+                          data-testid="button-browse-viator"
+                        >
+                          <Plane className="w-5 h-5" />
+                          <span className="text-xs">Viator</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={handleBrowseKlook}
+                          data-testid="button-browse-klook"
+                        >
+                          <Plane className="w-5 h-5" />
+                          <span className="text-xs">Klook</span>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="relative">
@@ -310,7 +350,7 @@ export function WishlistManager() {
                       Or paste the URL manually below:
                     </p>
                     <Input
-                      placeholder="Paste Amazon, Etsy, or Viator link..."
+                      placeholder="Paste product or experience link..."
                       value={form.watch("affiliateUrl")}
                       onChange={(e) => {
                         form.setValue("affiliateUrl", e.target.value);
@@ -337,9 +377,10 @@ export function WishlistManager() {
                             const hostname = url.hostname.toLowerCase();
                             const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
                             const isEtsy = hostname.includes('etsy.com');
-                            const isViator = hostname.includes('viator.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-                            if (!isAmazon && !isEtsy && !isViator) {
-                              return "Only Amazon, Etsy, and Viator links are supported";
+                            const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
+                            const isLuxury = hostname.includes('net-a-porter.com');
+                            if (!isAmazon && !isEtsy && !isTravel && !isLuxury) {
+                              return "Only Amazon, Etsy, Viator, Klook, and Net-a-Porter links are supported";
                             }
                             return true;
                           } catch {

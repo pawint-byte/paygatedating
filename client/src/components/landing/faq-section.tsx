@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     question: "How does the gift registry feature work?",
-    answer: "Users can create wishlists with items from Amazon or Etsy. When someone wants to show genuine interest, they can purchase a gift from your wishlist. Gifts unlock additional gates based on their value ($25 unlocks 1 gate, $50 unlocks 2 gates, $100 unlocks 3 gates). It's a meaningful way to express interest beyond just swiping."
+    answer: "Create your wishlist with items from Amazon, Etsy, Net-a-Porter (luxury fashion), or travel experiences from Viator and Klook. When someone wants to show genuine interest, they can purchase a gift from your wishlist. Gifts unlock additional gates based on their value ($25 unlocks 1 gate, $50 unlocks 2 gates, $100 unlocks 3 gates). From designer bags to sunset cruises, show your personality through your wishlist."
   },
   {
     question: "What is the friends-of-friends network?",

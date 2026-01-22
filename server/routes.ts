@@ -1131,10 +1131,11 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const hostname = urlObj.hostname.toLowerCase();
       const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
       const isEtsy = hostname.includes('etsy.com');
-      const isViator = hostname.includes('viator.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
+      const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
+      const isLuxury = hostname.includes('net-a-porter.com');
       
-      if (!isAmazon && !isEtsy && !isViator) {
-        return { valid: false, error: "Only Amazon, Etsy, and Viator links are supported for wishlist items" };
+      if (!isAmazon && !isEtsy && !isTravel && !isLuxury) {
+        return { valid: false, error: "Only Amazon, Etsy, Viator, Klook, and Net-a-Porter links are supported for wishlist items" };
       }
       return { valid: true };
     } catch {
@@ -1243,10 +1244,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       // Add affiliate tags (sync for Amazon/Etsy)
       affiliateUrl = addAffiliateTag(affiliateUrl);
       
-      // Convert Viator URLs via Travelpayouts API (async)
+      // Convert Viator/Klook URLs via Travelpayouts API (async)
       try {
         const urlObj = new URL(affiliateUrl);
-        if (urlObj.hostname.includes('viator.com')) {
+        if (urlObj.hostname.includes('viator.com') || urlObj.hostname.includes('klook.com')) {
           affiliateUrl = await convertViatorToAffiliate(affiliateUrl);
         }
       } catch (e) {

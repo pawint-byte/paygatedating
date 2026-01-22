@@ -47,11 +47,12 @@ Reminder preference: Always remind user to publish after making changes.
 - **Gift Purchase Flow**: Users can purchase gifts from match wishlists via Stripe checkout, platform takes 10% service fee, then redirects to affiliate link for product purchase
 
 ### Gift Purchasing System
-- **Wishlist Items**: Users add items from Amazon, Etsy, or Viator (validated on frontend + backend)
+- **Wishlist Items**: Users add items from Amazon, Etsy, Viator, Klook, or Net-a-Porter (validated on frontend + backend)
 - **Affiliate Integration**: URLs auto-tagged with affiliate codes:
   - Amazon: AMAZON_ASSOCIATE_TAG parameter
   - Etsy: Awin affiliate network via AWIN_PUBLISHER_ID
-  - Viator: Travelpayouts affiliate network (8% commission on travel experiences) - auto-converts via API using TRAVELPAYOUTS_API_TOKEN, TRAVELPAYOUTS_PROJECT_ID, and TRAVELPAYOUTS_MARKER_ID
+  - Viator/Klook: Travelpayouts affiliate network (8% commission on travel experiences) - auto-converts via API using TRAVELPAYOUTS_API_TOKEN, TRAVELPAYOUTS_PROJECT_ID, and TRAVELPAYOUTS_MARKER_ID
+  - Net-a-Porter: Links accepted as-is (users can use FlexOffers/Rakuten affiliate links)
 - **Revenue Capture**: 10% platform fee charged via Stripe + affiliate commissions on product/experience purchases
 - **Gate Unlocking**: Gifts unlock gates based on value ($25=1, $50=2, $100=3 gates)
 - **Reservation System**: Items reserved during checkout, released on cancel or 14-day timeout
