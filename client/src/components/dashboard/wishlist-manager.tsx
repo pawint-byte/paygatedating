@@ -308,15 +308,42 @@ export function WishlistManager() {
               {(currentStep === 2 || urlPasted) && (
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                      <div className="text-sm">
-                        <p className="font-medium text-green-700 dark:text-green-400">URL Added</p>
-                        <p className="text-muted-foreground truncate text-xs">
-                          {form.watch("affiliateUrl")}
-                        </p>
-                      </div>
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="affiliateUrl"
+                      rules={{ 
+                        required: "Product URL is required",
+                        validate: (value) => {
+                          if (!value) return "Product URL is required";
+                          try {
+                            const url = new URL(value);
+                            const hostname = url.hostname.toLowerCase();
+                            const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
+                            const isEtsy = hostname.includes('etsy.com');
+                            if (!isAmazon && !isEtsy) {
+                              return "Only Amazon and Etsy links are supported";
+                            }
+                            return true;
+                          } catch {
+                            return "Please enter a valid URL";
+                          }
+                        }
+                      }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
+                            <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                            <div className="text-sm flex-1 min-w-0">
+                              <p className="font-medium text-green-700 dark:text-green-400">URL Added</p>
+                              <p className="text-muted-foreground truncate text-xs">
+                                {field.value}
+                              </p>
+                            </div>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <FormField
                       control={form.control}
@@ -460,7 +487,7 @@ export function WishlistManager() {
                         onClick={() => {
                           setCurrentStep(1);
                           setUrlPasted(false);
-                          form.setValue("affiliateUrl", "");
+                          form.reset();
                         }}
                         data-testid="button-back-step1"
                       >
