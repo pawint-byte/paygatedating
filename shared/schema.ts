@@ -7,7 +7,9 @@ export * from "./models/auth";
 
 export const subscriptionTierEnum = pgEnum("subscription_tier", ["free", "premium"]);
 export const gateStageEnum = pgEnum("gate_stage", ["gate1", "gate2", "gate3", "gate4", "gate5", "completed"]);
-export const transactionTypeEnum = pgEnum("transaction_type", ["deposit", "gate_payment", "refund", "subscription", "trial_bonus", "referral_bonus"]);
+export const transactionTypeEnum = pgEnum("transaction_type", ["deposit", "gate_payment", "refund", "subscription", "trial_bonus", "referral_bonus", "crypto_deposit"]);
+
+export const cryptoPaymentStatusEnum = pgEnum("crypto_payment_status", ["waiting", "confirming", "confirmed", "sending", "partially_paid", "finished", "failed", "refunded", "expired"]);
 export const matchStatusEnum = pgEnum("match_status", ["pending", "active", "declined", "completed"]);
 export const verificationStatusEnum = pgEnum("verification_status", ["none", "pending", "verified", "rejected"]);
 
@@ -441,6 +443,36 @@ export const MINIMUM_WALLET_BALANCE = 20;
 export const GIFT_MINIMUM_VALUE = 25;
 export const GIFT_PLATFORM_FEE_PERCENT = 10;
 export const GIFT_AFFILIATE_COMMISSION_PERCENT = 10;
+
+export const cryptoPayments = pgTable("crypto_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  walletId: varchar("wallet_id").notNull(),
+  invoiceId: varchar("invoice_id").notNull().unique(),
+  paymentId: varchar("payment_id"),
+  orderId: varchar("order_id").notNull(),
+  priceAmount: decimal("price_amount", { precision: 10, scale: 2 }).notNull(),
+  priceCurrency: varchar("price_currency", { length: 10 }).default("usd").notNull(),
+  payCurrency: varchar("pay_currency", { length: 20 }),
+  actuallyPaid: decimal("actually_paid", { precision: 18, scale: 8 }),
+  invoiceUrl: text("invoice_url").notNull(),
+  status: cryptoPaymentStatusEnum("status").default("waiting").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCryptoPaymentSchema = createInsertSchema(cryptoPayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true,
+  paymentId: true,
+  payCurrency: true,
+  actuallyPaid: true,
+});
+
+export type CryptoPayment = typeof cryptoPayments.$inferSelect;
+export type InsertCryptoPayment = z.infer<typeof insertCryptoPaymentSchema>;
 
 export const aiConversations = pgTable("ai_conversations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

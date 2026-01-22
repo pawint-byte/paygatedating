@@ -39,6 +39,9 @@ import {
   datePlans,
   type DatePlan,
   type InsertDatePlan,
+  cryptoPayments,
+  type CryptoPayment,
+  type InsertCryptoPayment,
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
 } from "@shared/schema";
@@ -132,6 +135,14 @@ export interface IStorage {
   getDatePlansByMatch(matchId: string): Promise<DatePlan[]>;
   getDatePlanById(id: string): Promise<DatePlan | undefined>;
   updateDatePlanStatus(id: string, status: string): Promise<DatePlan | undefined>;
+  
+  // Crypto Payments
+  getCryptoPayment(id: string): Promise<CryptoPayment | undefined>;
+  getCryptoPaymentByInvoiceId(invoiceId: string): Promise<CryptoPayment | undefined>;
+  getCryptoPaymentByOrderId(orderId: string): Promise<CryptoPayment | undefined>;
+  getCryptoPaymentsByUser(userId: string): Promise<CryptoPayment[]>;
+  createCryptoPayment(payment: InsertCryptoPayment): Promise<CryptoPayment>;
+  updateCryptoPayment(id: string, data: Partial<CryptoPayment>): Promise<CryptoPayment | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -705,6 +716,39 @@ export class DatabaseStorage implements IStorage {
       .update(datePlans)
       .set({ status: status as any, updatedAt: new Date() })
       .where(eq(datePlans.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getCryptoPayment(id: string): Promise<CryptoPayment | undefined> {
+    const [payment] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.id, id));
+    return payment;
+  }
+
+  async getCryptoPaymentByInvoiceId(invoiceId: string): Promise<CryptoPayment | undefined> {
+    const [payment] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.invoiceId, invoiceId));
+    return payment;
+  }
+
+  async getCryptoPaymentByOrderId(orderId: string): Promise<CryptoPayment | undefined> {
+    const [payment] = await db.select().from(cryptoPayments).where(eq(cryptoPayments.orderId, orderId));
+    return payment;
+  }
+
+  async getCryptoPaymentsByUser(userId: string): Promise<CryptoPayment[]> {
+    return await db.select().from(cryptoPayments).where(eq(cryptoPayments.userId, userId)).orderBy(desc(cryptoPayments.createdAt));
+  }
+
+  async createCryptoPayment(payment: InsertCryptoPayment): Promise<CryptoPayment> {
+    const [newPayment] = await db.insert(cryptoPayments).values(payment).returning();
+    return newPayment;
+  }
+
+  async updateCryptoPayment(id: string, data: Partial<CryptoPayment>): Promise<CryptoPayment | undefined> {
+    const [updated] = await db
+      .update(cryptoPayments)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(cryptoPayments.id, id))
       .returning();
     return updated;
   }
