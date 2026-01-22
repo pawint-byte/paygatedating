@@ -145,15 +145,13 @@ Reminder preference: Always remind user to publish after making changes.
 - **Stripe Schema**: Managed automatically by stripe-replit-sync in PostgreSQL `stripe` schema
 - **Custom Logic**: WebhookHandlers.ts processes wallet deposits, subscription activation/cancellation, and gift purchases with gate advancement
 
-### Cryptocurrency Payments (NOWPayments)
-- **Integration**: NOWPayments API for 300+ cryptocurrency support (Bitcoin, Ethereum, etc.)
-- **API Endpoints**: /api/wallet/crypto/status (availability check), /api/wallet/crypto/deposit (create invoice), /api/wallet/crypto/ipn (webhook)
-- **IPN Webhook**: Handles payment status updates, credits wallet on "finished" status
-- **Security**: HMAC-SHA512 signature verification required (NOWPAYMENTS_IPN_SECRET env var)
-- **Idempotency**: crypto_payments.credited flag prevents duplicate wallet crediting
-- **Schema**: crypto_payments table with invoiceId (unique), paymentId, status enum (waiting/confirming/confirmed/sending/partially_paid/finished/failed/refunded/expired)
-- **Environment Variables**: NOWPAYMENTS_API_KEY (required), NOWPAYMENTS_IPN_SECRET (required for security)
-- **User Flow**: Select crypto in Add Funds dialog → redirected to NOWPayments checkout → pay with chosen cryptocurrency → wallet credited after blockchain confirmation
+### Cryptocurrency Payments (via Stripe)
+- **Integration**: Stripe's native crypto support (stablecoins USDC/USDT) + optional Crypto.com partnership for BTC/ETH
+- **Setup**: Enable crypto payments in Stripe Dashboard → Settings → Payment methods → Crypto
+- **How It Works**: Users click "Add Funds" → Stripe Checkout shows crypto option automatically if enabled
+- **Crypto.com Partnership**: For Bitcoin/Ethereum support, enable Crypto.com in Stripe Dashboard (400+ cryptocurrencies)
+- **No Extra API Keys**: Uses existing Stripe integration, no separate crypto service needed
+- **User Flow**: Add Funds → Stripe Checkout → Select Card or Crypto → Complete payment → Wallet credited via standard Stripe webhook
 
 ### Third-Party Integrations (Planned)
 - **E-commerce Affiliates**: Etsy/Amazon for anonymous gift purchasing

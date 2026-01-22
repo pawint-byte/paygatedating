@@ -35,31 +35,11 @@ export default function DashboardLayout() {
     const success = params.get('success');
     const sessionId = params.get('session_id');
     const canceled = params.get('canceled');
-    const crypto = params.get('crypto');
 
     if (canceled) {
       toast({
         title: "Payment Canceled",
         description: "Your payment was canceled. No funds were added.",
-        variant: "destructive",
-      });
-      window.history.replaceState({}, '', location.split('?')[0]);
-    }
-
-    if (crypto === 'success') {
-      toast({
-        title: "Crypto Payment Initiated",
-        description: "Your wallet will be updated once payment is confirmed on the blockchain.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
-      window.history.replaceState({}, '', location.split('?')[0]);
-    }
-
-    if (crypto === 'cancelled') {
-      toast({
-        title: "Crypto Payment Cancelled",
-        description: "Your crypto payment was cancelled.",
         variant: "destructive",
       });
       window.history.replaceState({}, '', location.split('?')[0]);
@@ -135,41 +115,6 @@ export default function DashboardLayout() {
     },
   });
 
-  const addFundsCryptoMutation = useMutation({
-    mutationFn: async (amount: number) => {
-      const response = await apiRequest("POST", "/api/wallet/crypto/deposit", { amount });
-      return await response.json();
-    },
-    onSuccess: (data: { invoiceUrl: string }) => {
-      if (data.invoiceUrl) {
-        setAddFundsOpen(false);
-        window.open(data.invoiceUrl, '_blank');
-        toast({
-          title: "Crypto Payment",
-          description: "Complete your payment in the new tab. Your wallet will update once confirmed.",
-        });
-      }
-    },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create crypto payment. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const sidebarStyle = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
@@ -219,9 +164,7 @@ export default function DashboardLayout() {
           open={addFundsOpen}
           onOpenChange={setAddFundsOpen}
           onAddFunds={(amount) => addFundsMutation.mutate(amount)}
-          onAddFundsCrypto={(amount) => addFundsCryptoMutation.mutate(amount)}
           isPending={addFundsMutation.isPending}
-          isCryptoPending={addFundsCryptoMutation.isPending}
         />
       </div>
     </SidebarProvider>
