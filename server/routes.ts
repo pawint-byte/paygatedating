@@ -620,6 +620,153 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
   });
 
+  // Crypto payment routes
+  app.get("/api/wallet/crypto/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const { nowPaymentsService } = await import("./nowPayments");
+      res.json({ 
+        available: nowPaymentsService.isConfigured(),
+        message: nowPaymentsService.isConfigured() 
+          ? "Crypto payments are available" 
+          : "Crypto payments require NOWPAYMENTS_API_KEY"
+      });
+    } catch (error) {
+      res.json({ available: false, message: "Crypto payments not configured" });
+    }
+  });
+
+  app.post("/api/wallet/crypto/deposit", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { nowPaymentsService } = await import("./nowPayments");
+
+      if (!nowPaymentsService.isConfigured()) {
+        return res.status(400).json({ message: "Crypto payments not configured" });
+      }
+
+      const validationResult = depositSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: validationResult.error.errors[0]?.message || "Invalid amount",
+        });
+      }
+
+      const { amount } = validationResult.data;
+
+      let wallet = await storage.getWallet(userId);
+      if (!wallet) {
+        wallet = await storage.createWallet({ userId });
+      }
+
+      const orderId = `crypto_${userId}_${Date.now()}`;
+      const replitDomains = process.env.REPLIT_DOMAINS;
+      const baseUrl = replitDomains 
+        ? `https://${replitDomains.split(',')[0]}`
+        : 'http://localhost:5000';
+
+      const invoice = await nowPaymentsService.createInvoice({
+        priceAmount: amount,
+        priceCurrency: 'usd',
+        orderId,
+        orderDescription: `Add $${amount} to PayGate wallet`,
+        successUrl: `${baseUrl}/wallet?crypto=success`,
+        cancelUrl: `${baseUrl}/wallet?crypto=cancelled`,
+        ipnCallbackUrl: `${baseUrl}/api/wallet/crypto/ipn`,
+      });
+
+      await storage.createCryptoPayment({
+        userId,
+        walletId: wallet.id,
+        invoiceId: invoice.id,
+        orderId,
+        priceAmount: amount.toFixed(2),
+        priceCurrency: 'usd',
+        invoiceUrl: invoice.invoice_url,
+      });
+
+      res.json({ 
+        invoiceUrl: invoice.invoice_url,
+        invoiceId: invoice.id,
+        orderId,
+      });
+    } catch (error) {
+      console.error("Error creating crypto invoice:", error);
+      res.status(500).json({ message: "Failed to create crypto payment" });
+    }
+  });
+
+  app.get("/api/wallet/crypto/payments", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const payments = await storage.getCryptoPaymentsByUser(userId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching crypto payments:", error);
+      res.status(500).json({ message: "Failed to fetch crypto payments" });
+    }
+  });
+
+  // NOWPayments IPN webhook (no auth - called by NOWPayments)
+  app.post("/api/wallet/crypto/ipn", async (req, res) => {
+    try {
+      const { nowPaymentsService } = await import("./nowPayments");
+      const signature = req.headers['x-nowpayments-sig'] as string;
+
+      if (!nowPaymentsService.verifyIpnSignature(req.body, signature)) {
+        console.warn('Invalid IPN signature');
+        return res.status(401).json({ message: "Invalid signature" });
+      }
+
+      const {
+        payment_id,
+        invoice_id,
+        payment_status,
+        pay_currency,
+        actually_paid,
+        price_amount,
+        order_id,
+      } = req.body;
+
+      console.log(`Crypto IPN received: invoice=${invoice_id}, status=${payment_status}`);
+
+      const cryptoPayment = await storage.getCryptoPaymentByInvoiceId(String(invoice_id));
+      if (!cryptoPayment) {
+        console.warn(`Crypto payment not found for invoice: ${invoice_id}`);
+        return res.status(404).json({ message: "Payment not found" });
+      }
+
+      await storage.updateCryptoPayment(cryptoPayment.id, {
+        paymentId: String(payment_id),
+        payCurrency: pay_currency,
+        actuallyPaid: actually_paid?.toString(),
+        status: payment_status as any,
+      });
+
+      if (payment_status === 'finished') {
+        const wallet = await storage.getWallet(cryptoPayment.userId);
+        if (wallet) {
+          const depositAmount = parseFloat(cryptoPayment.priceAmount);
+          const newBalance = (parseFloat(wallet.balance) + depositAmount).toFixed(2);
+          await storage.updateWalletBalance(cryptoPayment.userId, newBalance);
+
+          await storage.createTransaction({
+            walletId: wallet.id,
+            amount: depositAmount.toFixed(2),
+            type: "crypto_deposit",
+            description: `Added $${depositAmount} via ${pay_currency?.toUpperCase() || 'crypto'}`,
+          });
+
+          console.log(`Wallet funded: user=${cryptoPayment.userId}, amount=$${depositAmount}`);
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error processing crypto IPN:", error);
+      res.status(500).json({ message: "Failed to process IPN" });
+    }
+  });
+
   app.get("/api/matches", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
