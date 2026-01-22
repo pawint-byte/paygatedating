@@ -9,9 +9,15 @@ import {
   User, MapPin, Heart, Sparkles, FileText, Camera, Video, Phone, X, Upload, 
   ThumbsUp, ThumbsDown, Ruler, Dumbbell, Wine, Cigarette, Briefcase, 
   GraduationCap, DollarSign, Church, Vote, Globe, Baby, Star, Eye, Gift, 
-  Lightbulb, ChevronDown, ChevronUp, Share2
+  Lightbulb, ChevronDown, ChevronUp, Share2, CheckCircle2
 } from "lucide-react";
 import { SiInstagram, SiTiktok, SiX, SiSnapchat } from "react-icons/si";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 import manPhoto1 from "@assets/stock_images/professional_headsho_c2f05730.jpg";
 import manPhoto2 from "@assets/stock_images/professional_headsho_c85690d1.jpg";
@@ -373,17 +379,140 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
           </Alert>
         )}
         
-        {/* Basic Info Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <User className="w-5 h-5 text-primary" />
-            <span>Basic Info</span>
-          </div>
+        <Accordion type="multiple" defaultValue={["photos", "basic-info"]} className="space-y-4">
+          {/* Photos & Videos Section - First for visibility */}
+          <AccordionItem value="photos" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-photos">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Camera className="w-5 h-5 text-primary" />
+                <span>Photos & Videos</span>
+                {photos.length > 0 && (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <div>
+                  <FormLabel>Profile Photos</FormLabel>
+                  <FormDescription className="mb-3">
+                    Add up to 6 photos to your profile
+                  </FormDescription>
+                  <div className="grid grid-cols-3 gap-3">
+                    {photos.map((photo, index) => (
+                      <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                        <img src={photo} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          onClick={() => removePhoto(index)}
+                          data-testid={`button-remove-photo-${index}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    {photos.length < 6 && (
+                      <button
+                        type="button"
+                        onClick={() => photoInputRef.current?.click()}
+                        className="aspect-square rounded-lg border-2 border-dashed border-border hover-elevate flex flex-col items-center justify-center gap-2 text-muted-foreground"
+                        data-testid="button-add-photo"
+                      >
+                        {uploadingPhoto ? (
+                          <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5" />
+                            <span className="text-xs">Add Photo</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                    data-testid="input-photo-upload"
+                  />
+                </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="displayName"
+                <div>
+                  <FormLabel>Profile Videos</FormLabel>
+                  <FormDescription className="mb-3">
+                    Add up to 2 short intro videos
+                  </FormDescription>
+                  <div className="grid grid-cols-2 gap-3">
+                    {videos.map((video, index) => (
+                      <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border">
+                        <video src={video} className="w-full h-full object-cover" controls />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          onClick={() => removeVideo(index)}
+                          data-testid={`button-remove-video-${index}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    {videos.length < 2 && (
+                      <button
+                        type="button"
+                        onClick={() => videoInputRef.current?.click()}
+                        className="aspect-video rounded-lg border-2 border-dashed border-border hover-elevate flex flex-col items-center justify-center gap-2 text-muted-foreground"
+                        data-testid="button-add-video"
+                      >
+                        {uploadingVideo ? (
+                          <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+                        ) : (
+                          <>
+                            <Video className="w-5 h-5" />
+                            <span className="text-xs">Add Video</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleVideoUpload}
+                    data-testid="input-video-upload"
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Basic Info Section */}
+          <AccordionItem value="basic-info" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-basic-info">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <User className="w-5 h-5 text-primary" />
+                <span>Basic Info</span>
+                {form.watch("displayName") && form.watch("age") && (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="displayName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Display Name</FormLabel>
@@ -467,15 +596,24 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 </FormItem>
               )}
             />
-          </div>
-        </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* About You Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <span>About You</span>
-          </div>
+          {/* About You Section */}
+          <AccordionItem value="about-you" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-about-you">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <span>About You</span>
+                {(form.watch("bio") || form.watch("tagline")) && (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
 
           <FormField
             control={form.control}
@@ -558,19 +696,27 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
               </FormItem>
             )}
           />
-        </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Physical Attributes Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <Ruler className="w-5 h-5 text-primary" />
-            <span>Physical Attributes</span>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="height"
+          {/* Physical Attributes Section */}
+          <AccordionItem value="physical" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-physical">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Ruler className="w-5 h-5 text-primary" />
+                <span>Physical Attributes</span>
+                {(form.watch("height") || form.watch("bodyType")) && (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="height"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Height</FormLabel>
@@ -721,20 +867,28 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 </FormItem>
               )}
             />
-          </div>
-        </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Lifestyle Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <Wine className="w-5 h-5 text-primary" />
-            <span>Lifestyle</span>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="smoking"
+          {/* Lifestyle Section */}
+          <AccordionItem value="lifestyle" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-lifestyle">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Wine className="w-5 h-5 text-primary" />
+                <span>Lifestyle</span>
+                {(form.watch("smoking") || form.watch("drinking") || form.watch("exercise")) && (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="smoking"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
@@ -843,20 +997,28 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 </FormItem>
               )}
             />
-          </div>
-        </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Background Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <Briefcase className="w-5 h-5 text-primary" />
-            <span>Background</span>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="education"
+          {/* Background Section */}
+          <AccordionItem value="background" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-background">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Briefcase className="w-5 h-5 text-primary" />
+                <span>Background</span>
+                {(form.watch("education") || form.watch("occupation")) && (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="education"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
@@ -1028,20 +1190,28 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 </FormItem>
               )}
             />
-          </div>
-        </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Relationship Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <Heart className="w-5 h-5 text-primary" />
-            <span>Relationship</span>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="relationshipStatus"
+          {/* Relationship Section */}
+          <AccordionItem value="relationship" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-relationship">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Heart className="w-5 h-5 text-primary" />
+                <span>Relationship</span>
+                {form.watch("relationshipStatus") && (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
+                )}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="relationshipStatus"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Relationship Status</FormLabel>
@@ -1253,132 +1423,31 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
               </FormItem>
             )}
           />
-        </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Photos & Videos Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <Camera className="w-5 h-5 text-primary" />
-            <span>Photos & Videos</span>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <FormLabel>Profile Photos</FormLabel>
-              <FormDescription className="mb-3">
-                Add up to 6 photos to your profile
-              </FormDescription>
-              <div className="grid grid-cols-3 gap-3">
-                {photos.map((photo, index) => (
-                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
-                    <img src={photo} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="destructive"
-                      className="absolute top-1 right-1 h-6 w-6"
-                      onClick={() => removePhoto(index)}
-                      data-testid={`button-remove-photo-${index}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-                {photos.length < 6 && (
-                  <button
-                    type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    className="aspect-square rounded-lg border-2 border-dashed border-border hover-elevate flex flex-col items-center justify-center gap-2 text-muted-foreground"
-                    data-testid="button-add-photo"
-                  >
-                    {uploadingPhoto ? (
-                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
-                    ) : (
-                      <>
-                        <Upload className="w-5 h-5" />
-                        <span className="text-xs">Add Photo</span>
-                      </>
-                    )}
-                  </button>
+          {/* Social Media Links Section */}
+          <AccordionItem value="social-links" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-social-links">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Share2 className="w-5 h-5 text-primary" />
+                <span>Social Media Links</span>
+                {(form.watch("instagramUsername") || form.watch("tiktokUsername") || form.watch("twitterUsername")) && (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
                 )}
               </div>
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handlePhotoUpload}
-                data-testid="input-photo-upload"
-              />
-            </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <p className="text-sm text-muted-foreground">
+                  Connect your social media profiles so others can find you. These are optional and visible on your profile.
+                </p>
 
-            <div>
-              <FormLabel>Profile Videos</FormLabel>
-              <FormDescription className="mb-3">
-                Add up to 2 short intro videos
-              </FormDescription>
-              <div className="grid grid-cols-2 gap-3">
-                {videos.map((video, index) => (
-                  <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border">
-                    <video src={video} className="w-full h-full object-cover" controls />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="destructive"
-                      className="absolute top-1 right-1 h-6 w-6"
-                      onClick={() => removeVideo(index)}
-                      data-testid={`button-remove-video-${index}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-                {videos.length < 2 && (
-                  <button
-                    type="button"
-                    onClick={() => videoInputRef.current?.click()}
-                    className="aspect-video rounded-lg border-2 border-dashed border-border hover-elevate flex flex-col items-center justify-center gap-2 text-muted-foreground"
-                    data-testid="button-add-video"
-                  >
-                    {uploadingVideo ? (
-                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
-                    ) : (
-                      <>
-                        <Video className="w-5 h-5" />
-                        <span className="text-xs">Add Video</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-              <input
-                ref={videoInputRef}
-                type="file"
-                accept="video/*"
-                multiple
-                className="hidden"
-                onChange={handleVideoUpload}
-                data-testid="input-video-upload"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Social Media Links Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <Share2 className="w-5 h-5 text-primary" />
-            <span>Social Media Links</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Connect your social media profiles so others can find you. These are optional and visible on your profile.
-          </p>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="instagramUsername"
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="instagramUsername"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
@@ -1459,21 +1528,28 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 </FormItem>
               )}
             />
-          </div>
-        </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Privacy Controls Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-medium">
-            <Eye className="w-5 h-5 text-primary" />
-            <span>Privacy Controls</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Choose what information is visible to others before they progress through the gates. 
-            More details become visible as connections advance through each gate.
-          </p>
+          {/* Privacy Controls Section */}
+          <AccordionItem value="privacy" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-privacy">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Eye className="w-5 h-5 text-primary" />
+                <span>Privacy Controls</span>
+                <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <p className="text-sm text-muted-foreground">
+                  Choose what information is visible to others before they progress through the gates. 
+                  More details become visible as connections advance through each gate.
+                </p>
 
-          <div className="space-y-3">
+                <div className="space-y-3">
             <FormField
               control={form.control}
               name="showPhotoPublicly"
@@ -1620,11 +1696,14 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 </FormItem>
               )}
             />
-          </div>
-        </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
-        {/* Terms & Privacy Section */}
-        <div className="space-y-4">
+        {/* Terms & Privacy Section - Always visible */}
+        <div className="space-y-4 mt-6">
           <div className="flex items-center gap-2 text-lg font-medium">
             <FileText className="w-5 h-5 text-primary" />
             <span>Terms & Privacy</span>
