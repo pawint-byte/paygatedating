@@ -26,7 +26,7 @@ import AdminFeedback from "./admin-feedback";
 export default function DashboardLayout() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const [addFundsOpen, setAddFundsOpen] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
 
