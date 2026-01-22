@@ -288,6 +288,30 @@ export default function Discover() {
             {seedDemoMutation.isPending ? "Adding Demo Profiles..." : "Add Demo Profiles to Explore"}
           </Button>
         </div>
+      ) : profiles.length < 5 ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {profiles.map((profile) => (
+              <MatchCard
+                key={profile.id}
+                profile={profile}
+                onSendInterest={handleSendInterest}
+                isPending={sendInterestMutation.isPending}
+                mutualConnections={profile.userId ? mutualCounts?.[profile.userId] : undefined}
+              />
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <Button 
+              onClick={() => seedDemoMutation.mutate()}
+              disabled={seedDemoMutation.isPending}
+              variant="outline"
+              data-testid="button-seed-demo-more"
+            >
+              {seedDemoMutation.isPending ? "Adding Demo Profiles..." : "Add More Demo Profiles to Explore"}
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {profiles.map((profile) => (
