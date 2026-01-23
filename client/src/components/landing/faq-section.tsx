@@ -57,6 +57,18 @@ const faqs = [
   {
     question: "Is my payment information secure?",
     answer: "Absolutely. We use Stripe for all payment processing, the industry-leading payment platform trusted by millions of businesses. Your payment details are encrypted end-to-end and never stored on our servers. All transactions are secure, PCI-compliant, and protected by fraud detection. Whether you pay by card or crypto, your financial information is always safe."
+  },
+  {
+    question: "What are Smart Notifications?",
+    answer: "Our smart notification system keeps you in the loop without overwhelming you. You'll receive emails when someone expresses interest in your profile, when potential matches are nearby (within 10km of your location), and friendly reminders if you haven't been active for a while. All notifications include seasonal-themed messaging to keep things fresh and engaging."
+  },
+  {
+    question: "What are the seasonal themes and promotions?",
+    answer: "PayGate Dating features dynamic seasonal content that changes throughout the year. From Valentine's Day specials and spring renewal themes to summer love campaigns and cozy winter promotions, our platform evolves to match the season. Each theme brings fresh messaging, special promotions, and seasonal tips for making connections. It's like the app dresses up for every occasion!"
+  },
+  {
+    question: "Will I be notified when someone is nearby?",
+    answer: "Yes! When you enable the 'Go Live' feature on the Nearby Map, you'll appear to other users within your area. If someone goes live near you (within 10km), you may receive an email alert letting you know there are active singles nearby. This helps you connect with people in your area at the right moment."
   }
 ];
 

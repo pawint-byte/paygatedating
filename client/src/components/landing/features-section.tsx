@@ -8,7 +8,9 @@ import {
   BadgeCheck, 
   Share2,
   Lock,
-  UserPlus
+  UserPlus,
+  Bell,
+  Sparkles
 } from "lucide-react";
 
 const features = [
@@ -47,6 +49,18 @@ const features = [
     title: "AI Dating Coach",
     description: "Get personalized help writing your bio, understanding the gate system, and making great first impressions.",
     category: "support"
+  },
+  {
+    icon: Bell,
+    title: "Smart Notifications",
+    description: "Get notified when someone expresses interest, when matches are nearby, and gentle reminders to stay active on the platform.",
+    category: "engagement"
+  },
+  {
+    icon: Sparkles,
+    title: "Seasonal Themes",
+    description: "Enjoy fresh, seasonal content and promotions throughout the year. From Valentine's specials to summer love campaigns.",
+    category: "experience"
   },
   {
     icon: Share2,
