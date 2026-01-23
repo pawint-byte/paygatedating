@@ -45,6 +45,16 @@ Reminder preference: Always remind user to publish after making changes.
 - **Friends-of-Friends Network**: Displays mutual connections to build trust.
 - **Date Planning System**: For completed matches, users can propose dates with activity details, locations, and payment preferences.
 - **Date Preferences System**: Users can set general date preferences and budget constraints in their profile.
+- **Profile Sharing System**: Users can share their profile via QR code, downloadable profile cards, and one-tap sharing to SMS/WhatsApp/social media. Referral links store referrer info for "Interested in Me" flow.
+- **Promotional Rewards System**: Comprehensive rewards engine with:
+  - **Login Streak**: 7 consecutive days = $5 credits (tracked daily)
+  - **Referral Tiers**: 3 referrals = 1 week Premium, 10 referrals = 1 month Premium, 5 this month = Lifetime
+  - **Free Trial**: 7 days (14 days during Cuffing Season Sept-Nov)
+  - **First Match Free**: Gate 1 free on first match
+  - **Profile Completion Bonus**: 100% profile = 1 week Premium
+  - **Weekend Boost**: 2x visibility on weekends for Premium users
+  - **Seasonal Offers**: Valentine's Day 50% off, Cuffing Season extended trial
+  - **Couples Discount**: Both partners upgrade = 20% off
 
 ## External Dependencies
 

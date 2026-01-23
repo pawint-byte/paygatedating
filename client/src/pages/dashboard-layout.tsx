@@ -24,6 +24,7 @@ import Settings from "./settings";
 import Wishlist from "./wishlist";
 import Help from "./help";
 import AdminFeedback from "./admin-feedback";
+import { RewardsDashboard } from "@/components/dashboard/rewards-dashboard";
 
 export default function DashboardLayout() {
   const { user } = useAuth();
@@ -114,6 +115,33 @@ export default function DashboardLayout() {
     
     return () => clearInterval(interval);
   }, [user]);
+
+  // Record login streak on mount
+  useEffect(() => {
+    if (!user) return;
+    
+    const recordStreak = async () => {
+      try {
+        const response = await apiRequest("POST", "/api/rewards/login-streak");
+        const data = await response.json();
+        
+        if (data.rewardEarned) {
+          toast({
+            title: "Streak Reward Earned!",
+            description: `You earned $5 for your ${data.newStreak}-day login streak!`,
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+        } else if (data.streakUpdated && data.newStreak === 1) {
+          // Streak was reset, notify user
+        }
+      } catch (e) {
+        // Silently fail - not critical
+      }
+    };
+    
+    recordStreak();
+  }, [user, toast]);
 
   useEffect(() => {
     if (!completeness || nudgeShownRef.current) return;
@@ -225,6 +253,7 @@ export default function DashboardLayout() {
               <Route path="/settings" component={Settings} />
               <Route path="/wishlist" component={Wishlist} />
               <Route path="/help" component={Help} />
+              <Route path="/rewards" component={RewardsDashboard} />
               <Route path="/admin/feedback" component={AdminFeedback} />
               <Route>
                 <Redirect to="/discover" />

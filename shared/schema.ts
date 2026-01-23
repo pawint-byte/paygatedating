@@ -335,8 +335,9 @@ export const messagesRelations = relations(messages, ({ one }) => ({
 export const insertProfileSchema = createInsertSchema(profiles).omit({
   id: true,
   createdAt: true,
-  isPremiumSince: true,
 });
+
+export type UpdateProfile = Partial<typeof profiles.$inferInsert>;
 
 export const insertWalletSchema = createInsertSchema(wallets).omit({
   id: true,
@@ -510,3 +511,111 @@ export type AiConversation = typeof aiConversations.$inferSelect;
 export type InsertAiConversation = z.infer<typeof insertAiConversationSchema>;
 export type AiMessage = typeof aiMessages.$inferSelect;
 export type InsertAiMessage = z.infer<typeof insertAiMessageSchema>;
+
+// Promotional Rewards System
+export const rewardTypeEnum = pgEnum("reward_type", [
+  "trial_signup",           // Initial free trial
+  "profile_completion",     // 100% profile = 1 week premium
+  "login_streak",           // 7 days = $5 credits
+  "referral_tier_1",        // 3 referrals = 1 week premium
+  "referral_tier_2",        // 10 referrals = 1 month premium
+  "referral_milestone",     // 5 this month = lifetime premium
+  "first_match_free",       // Gate 1 free on first match
+  "weekend_boost",          // Weekend visibility boost
+  "couples_discount",       // Both partners upgrade = 20% off
+  "seasonal_valentine",     // February signup discount
+  "seasonal_cuffing",       // Fall extended trial
+]);
+
+export const userRewards = pgTable("user_rewards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  
+  // Login Streak Tracking
+  loginStreak: integer("login_streak").default(0).notNull(),
+  lastLoginDate: timestamp("last_login_date"),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  
+  // Referral Progress
+  totalReferrals: integer("total_referrals").default(0).notNull(),
+  monthlyReferrals: integer("monthly_referrals").default(0).notNull(),
+  monthlyReferralsResetAt: timestamp("monthly_referrals_reset_at"),
+  
+  // Premium/Trial Status
+  premiumExpiresAt: timestamp("premium_expires_at"),
+  hasLifetimePremium: boolean("has_lifetime_premium").default(false).notNull(),
+  trialDays: integer("trial_days").default(7).notNull(),
+  trialStartedAt: timestamp("trial_started_at"),
+  
+  // Rewards Claimed
+  profileCompletionRewardClaimed: boolean("profile_completion_reward_claimed").default(false).notNull(),
+  firstMatchFreeUsed: boolean("first_match_free_used").default(false).notNull(),
+  streakRewardsClaimedCount: integer("streak_rewards_claimed_count").default(0).notNull(),
+  
+  // Weekend Boost
+  weekendBoostActive: boolean("weekend_boost_active").default(false).notNull(),
+  
+  // Couples Discount
+  couplesDiscountPartnerId: varchar("couples_discount_partner_id"),
+  couplesDiscountApplied: boolean("couples_discount_applied").default(false).notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const rewardHistory = pgTable("reward_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  rewardType: rewardTypeEnum("reward_type").notNull(),
+  description: text("description").notNull(),
+  creditsAwarded: decimal("credits_awarded", { precision: 10, scale: 2 }),
+  premiumDaysAwarded: integer("premium_days_awarded"),
+  discountPercent: integer("discount_percent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertUserRewardsSchema = createInsertSchema(userRewards).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRewardHistorySchema = createInsertSchema(rewardHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type UserRewards = typeof userRewards.$inferSelect;
+export type InsertUserRewards = z.infer<typeof insertUserRewardsSchema>;
+export type RewardHistory = typeof rewardHistory.$inferSelect;
+export type InsertRewardHistory = z.infer<typeof insertRewardHistorySchema>;
+
+// Promotional Constants
+export const PROMO_CONSTANTS = {
+  // Login Streak
+  STREAK_DAYS_FOR_REWARD: 7,
+  STREAK_CREDITS_REWARD: 5,
+  
+  // Referral Tiers
+  REFERRAL_TIER_1_COUNT: 3,
+  REFERRAL_TIER_1_PREMIUM_DAYS: 7,
+  REFERRAL_TIER_2_COUNT: 10,
+  REFERRAL_TIER_2_PREMIUM_DAYS: 30,
+  REFERRAL_MONTHLY_MILESTONE: 5,
+  
+  // Trial Periods
+  DEFAULT_TRIAL_DAYS: 7,
+  CUFFING_SEASON_TRIAL_DAYS: 14,
+  
+  // Seasonal Dates (month numbers, 1-indexed)
+  VALENTINE_MONTH: 2,
+  CUFFING_SEASON_START: 9,  // September
+  CUFFING_SEASON_END: 11,   // November
+  
+  // Discounts
+  VALENTINE_DISCOUNT_PERCENT: 50,
+  COUPLES_DISCOUNT_PERCENT: 20,
+  
+  // Profile Completion
+  PROFILE_COMPLETION_PREMIUM_DAYS: 7,
+} as const;

@@ -113,6 +113,12 @@ export async function registerRoutes(
             });
 
             await storage.markReferralBonusPaid(referral.id);
+            
+            // Increment referral count and check for tier rewards
+            const tierResult = await storage.incrementReferralCount(referrerWallet.userId);
+            if (tierResult.tierReached) {
+              console.log(`Referrer ${referrerWallet.userId} reached ${tierResult.tierReached} tier!`);
+            }
           }
         }
       }
@@ -665,27 +671,49 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(403).json({ message: "Premium subscription required to send interest" });
       }
 
+      // Check for first match free eligibility (don't consume yet)
+      const rewards = await storage.getUserRewards(userId);
+      const eligibleForFirstMatchFree = rewards && !rewards.firstMatchFreeUsed;
+      
       const wallet = await storage.getWallet(userId);
-      if (!wallet || parseFloat(wallet.balance) < GATE_COSTS.gate1) {
-        return res.status(400).json({ message: "Insufficient wallet balance" });
+      if (!eligibleForFirstMatchFree) {
+        // Only check balance if not eligible for first match free
+        if (!wallet || parseFloat(wallet.balance) < GATE_COSTS.gate1) {
+          return res.status(400).json({ message: "Insufficient wallet balance" });
+        }
       }
 
-      const newBalance = (parseFloat(wallet.balance) - GATE_COSTS.gate1).toFixed(2);
-      await storage.updateWalletBalance(userId, newBalance);
-
-      await storage.createTransaction({
-        walletId: wallet.id,
-        amount: (-GATE_COSTS.gate1).toFixed(2),
-        type: "gate_payment",
-        description: "Gate 1: Interest request sent",
-      });
-
+      // Create the match first
       const match = await storage.createMatch({
         initiatorId: userId,
         recipientId,
         message,
         lastActionBy: userId,
       });
+
+      // Now process payment or use first match free (after successful match creation)
+      if (eligibleForFirstMatchFree) {
+        // Use the first match free reward
+        await storage.useFirstMatchFree(userId);
+        if (wallet) {
+          await storage.createTransaction({
+            walletId: wallet.id,
+            amount: "0.00",
+            type: "gate_payment",
+            description: "Gate 1: Interest request sent (First Match Free!)",
+          });
+        }
+      } else if (wallet) {
+        // Charge the user
+        const newBalance = (parseFloat(wallet.balance) - GATE_COSTS.gate1).toFixed(2);
+        await storage.updateWalletBalance(userId, newBalance);
+        await storage.createTransaction({
+          walletId: wallet.id,
+          amount: (-GATE_COSTS.gate1).toFixed(2),
+          type: "gate_payment",
+          description: "Gate 1: Interest request sent",
+        });
+      }
 
       // Send email notification to recipient about interest
       try {
@@ -1042,6 +1070,168 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     } catch (error) {
       console.error("Error fetching public profile:", error);
       res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  // =================
+  // REWARDS SYSTEM
+  // =================
+
+  // Get user rewards status
+  app.get("/api/rewards", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      let rewards = await storage.getUserRewards(userId);
+      
+      if (!rewards) {
+        rewards = await storage.createUserRewards(userId);
+      }
+
+      // Check and update premium status
+      await storage.checkAndUpdatePremiumStatus(userId);
+
+      res.json(rewards);
+    } catch (error) {
+      console.error("Error fetching rewards:", error);
+      res.status(500).json({ message: "Failed to fetch rewards" });
+    }
+  });
+
+  // Record login streak (called on each page load)
+  app.post("/api/rewards/login-streak", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const result = await storage.recordLoginStreak(userId);
+      
+      if (result.rewardEarned) {
+        // Send reward notification email
+        const profile = await storage.getProfile(userId);
+        const user = await authStorage.getUser(userId);
+        if (profile && user?.email) {
+          await emailService.sendLoginStreakReward(
+            user.email,
+            profile.displayName?.split(' ')[0] || 'there',
+            result.newStreak
+          );
+        }
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error recording login streak:", error);
+      res.status(500).json({ message: "Failed to record login streak" });
+    }
+  });
+
+  // Get reward history
+  app.get("/api/rewards/history", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const history = await storage.getRewardHistory(userId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching reward history:", error);
+      res.status(500).json({ message: "Failed to fetch reward history" });
+    }
+  });
+
+  // Claim profile completion reward
+  app.post("/api/rewards/claim-profile-completion", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const profile = await storage.getProfile(userId);
+      
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      // Check profile completion (basic check for required fields)
+      const requiredFields = [
+        profile.displayName,
+        profile.age,
+        profile.bio,
+        profile.photos?.length,
+        profile.interests?.length,
+        profile.location || profile.city,
+      ];
+      
+      const completedFields = requiredFields.filter(Boolean).length;
+      const completionPercent = Math.round((completedFields / requiredFields.length) * 100);
+      
+      if (completionPercent < 100) {
+        return res.status(400).json({ 
+          message: "Profile not 100% complete",
+          completionPercent,
+        });
+      }
+
+      const claimed = await storage.claimProfileCompletionReward(userId);
+      
+      if (!claimed) {
+        return res.status(400).json({ message: "Reward already claimed" });
+      }
+
+      res.json({ success: true, message: "Profile completion reward claimed!" });
+    } catch (error) {
+      console.error("Error claiming profile completion reward:", error);
+      res.status(500).json({ message: "Failed to claim reward" });
+    }
+  });
+
+  // Check first match free eligibility
+  app.get("/api/rewards/first-match-free", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      let rewards = await storage.getUserRewards(userId);
+      
+      if (!rewards) {
+        rewards = await storage.createUserRewards(userId);
+      }
+
+      res.json({ 
+        eligible: !rewards.firstMatchFreeUsed,
+        used: rewards.firstMatchFreeUsed,
+      });
+    } catch (error) {
+      console.error("Error checking first match free:", error);
+      res.status(500).json({ message: "Failed to check eligibility" });
+    }
+  });
+
+  // Get seasonal discount info
+  app.get("/api/rewards/seasonal-offers", async (req: any, res) => {
+    try {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      
+      const offers = [];
+      
+      // Valentine's Day (February)
+      if (month === 2) {
+        offers.push({
+          type: "valentine",
+          title: "Valentine's Day Special",
+          description: "50% off annual subscription!",
+          discountPercent: 50,
+          expiresAt: new Date(now.getFullYear(), 2, 1).toISOString(),
+        });
+      }
+      
+      // Cuffing Season (Sept-Nov)
+      if (month >= 9 && month <= 11) {
+        offers.push({
+          type: "cuffing_season",
+          title: "Cuffing Season Extended Trial",
+          description: "14 days free Premium trial (normally 7 days)",
+          trialDays: 14,
+          expiresAt: new Date(now.getFullYear(), 11, 1).toISOString(),
+        });
+      }
+
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching seasonal offers:", error);
+      res.status(500).json({ message: "Failed to fetch offers" });
     }
   });
 

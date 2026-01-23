@@ -51,6 +51,7 @@ function Router() {
             <Route path="/wallet" component={DashboardLayout} />
             <Route path="/wishlist" component={DashboardLayout} />
             <Route path="/help" component={DashboardLayout} />
+            <Route path="/rewards" component={DashboardLayout} />
             <Route path="/admin/feedback" component={DashboardLayout} />
             <Route path="/gift-success" component={GiftSuccess} />
             <Route path="/gift-cancel" component={GiftCancel} />

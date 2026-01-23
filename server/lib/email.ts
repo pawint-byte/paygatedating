@@ -241,6 +241,26 @@ const templates = {
         </p>
       </div>
     `
+  }),
+
+  loginStreakReward: (firstName: string, streakDays: number) => ({
+    subject: `You earned $5 for your ${streakDays}-day streak!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">Streak Reward Earned!</h1>
+        <p>Hey ${firstName},</p>
+        <p>Congratulations! You've logged in for <strong>${streakDays} consecutive days</strong>!</p>
+        <p>As a reward for your dedication, we've added <strong style="color: #10b981;">$5.00</strong> to your wallet.</p>
+        <p>Keep logging in daily to earn more rewards - you'll get $5 for every 7 days!</p>
+        <a href="https://pay-gate-dating--pawint.replit.app/rewards" 
+           style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+          View Your Rewards
+        </a>
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">
+          Your streak is currently at ${streakDays} days. Don't break it!
+        </p>
+      </div>
+    `
   })
 };
 
@@ -288,6 +308,9 @@ export async function sendEmail(
         break;
       case 'inactivityReminder':
         emailContent = templates.inactivityReminder(data.firstName, data.daysSinceActive, data.seasonalMessage);
+        break;
+      case 'loginStreakReward':
+        emailContent = templates.loginStreakReward(data.firstName, data.streakDays);
         break;
       default:
         throw new Error(`Unknown template: ${template}`);
@@ -341,5 +364,8 @@ export const emailService = {
     sendEmail(to, 'nearbyAlert', { firstName, nearbyCount }),
   
   sendInactivityReminder: (to: string, firstName: string, daysSinceActive: number, seasonalMessage: string) => 
-    sendEmail(to, 'inactivityReminder', { firstName, daysSinceActive, seasonalMessage })
+    sendEmail(to, 'inactivityReminder', { firstName, daysSinceActive, seasonalMessage }),
+  
+  sendLoginStreakReward: (to: string, firstName: string, streakDays: number) => 
+    sendEmail(to, 'loginStreakReward', { firstName, streakDays })
 };

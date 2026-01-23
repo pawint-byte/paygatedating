@@ -42,8 +42,16 @@ import {
   cryptoPayments,
   type CryptoPayment,
   type InsertCryptoPayment,
+  userRewards,
+  rewardHistory,
+  type UserRewards,
+  type InsertUserRewards,
+  type RewardHistory,
+  type InsertRewardHistory,
+  type UpdateProfile,
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
+  PROMO_CONSTANTS,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, gte, lte, lt, ne, inArray } from "drizzle-orm";
@@ -61,7 +69,7 @@ export interface IStorage {
   getProfile(userId: string): Promise<Profile | undefined>;
   getProfileById(id: string): Promise<Profile | undefined>;
   createProfile(profile: InsertProfile): Promise<Profile>;
-  updateProfile(userId: string, data: Partial<InsertProfile>): Promise<Profile | undefined>;
+  updateProfile(userId: string, data: UpdateProfile): Promise<Profile | undefined>;
   getDiscoverProfiles(userId: string): Promise<Profile[]>;
 
   getWallet(userId: string): Promise<Wallet | undefined>;
@@ -148,6 +156,19 @@ export interface IStorage {
   createCryptoPayment(payment: InsertCryptoPayment): Promise<CryptoPayment>;
   updateCryptoPayment(id: string, data: Partial<CryptoPayment>): Promise<CryptoPayment | undefined>;
   markCryptoPaymentCredited(id: string): Promise<CryptoPayment | undefined>;
+  
+  // Rewards System
+  getUserRewards(userId: string): Promise<UserRewards | undefined>;
+  createUserRewards(userId: string): Promise<UserRewards>;
+  updateUserRewards(userId: string, data: Partial<UserRewards>): Promise<UserRewards | undefined>;
+  recordLoginStreak(userId: string): Promise<{ streakUpdated: boolean; newStreak: number; rewardEarned: boolean }>;
+  incrementReferralCount(referrerUserId: string): Promise<{ tierReached: string | null; premiumDays: number }>;
+  claimProfileCompletionReward(userId: string): Promise<boolean>;
+  useFirstMatchFree(userId: string): Promise<boolean>;
+  getRewardHistory(userId: string): Promise<RewardHistory[]>;
+  addRewardHistory(reward: InsertRewardHistory): Promise<RewardHistory>;
+  checkAndUpdatePremiumStatus(userId: string): Promise<boolean>;
+  applySeasonalTrial(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -166,7 +187,7 @@ export class DatabaseStorage implements IStorage {
     return newProfile;
   }
 
-  async updateProfile(userId: string, data: Partial<InsertProfile>): Promise<Profile | undefined> {
+  async updateProfile(userId: string, data: UpdateProfile): Promise<Profile | undefined> {
     const [updated] = await db
       .update(profiles)
       .set(data)
@@ -802,6 +823,281 @@ export class DatabaseStorage implements IStorage {
       .where(eq(cryptoPayments.id, id))
       .returning();
     return updated;
+  }
+
+  // Rewards System Implementation
+  async getUserRewards(userId: string): Promise<UserRewards | undefined> {
+    const [rewards] = await db.select().from(userRewards).where(eq(userRewards.userId, userId));
+    return rewards;
+  }
+
+  async createUserRewards(userId: string): Promise<UserRewards> {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    
+    // Determine trial days based on season
+    let trialDays: number = PROMO_CONSTANTS.DEFAULT_TRIAL_DAYS;
+    if (month >= PROMO_CONSTANTS.CUFFING_SEASON_START && month <= PROMO_CONSTANTS.CUFFING_SEASON_END) {
+      trialDays = PROMO_CONSTANTS.CUFFING_SEASON_TRIAL_DAYS;
+    }
+    
+    const [newRewards] = await db.insert(userRewards).values({
+      userId,
+      trialDays: trialDays as any,
+      trialStartedAt: now,
+      premiumExpiresAt: new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000),
+      monthlyReferralsResetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+    }).returning();
+    
+    return newRewards;
+  }
+
+  async updateUserRewards(userId: string, data: Partial<UserRewards>): Promise<UserRewards | undefined> {
+    const [updated] = await db
+      .update(userRewards)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(userRewards.userId, userId))
+      .returning();
+    return updated;
+  }
+
+  async recordLoginStreak(userId: string): Promise<{ streakUpdated: boolean; newStreak: number; rewardEarned: boolean }> {
+    let rewards = await this.getUserRewards(userId);
+    if (!rewards) {
+      rewards = await this.createUserRewards(userId);
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastLogin = rewards.lastLoginDate ? new Date(rewards.lastLoginDate) : null;
+    const lastLoginDay = lastLogin ? new Date(lastLogin.getFullYear(), lastLogin.getMonth(), lastLogin.getDate()) : null;
+
+    // Check if already logged in today
+    if (lastLoginDay && lastLoginDay.getTime() === today.getTime()) {
+      return { streakUpdated: false, newStreak: rewards.loginStreak, rewardEarned: false };
+    }
+
+    // Check if streak continues (logged in yesterday)
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    let newStreak = 1;
+    if (lastLoginDay && lastLoginDay.getTime() === yesterday.getTime()) {
+      newStreak = rewards.loginStreak + 1;
+    }
+
+    // Check if streak reward earned
+    let rewardEarned = false;
+    if (newStreak >= PROMO_CONSTANTS.STREAK_DAYS_FOR_REWARD && 
+        newStreak % PROMO_CONSTANTS.STREAK_DAYS_FOR_REWARD === 0) {
+      // Award credits for each 7-day streak completion
+      const wallet = await this.getWallet(userId);
+      if (wallet) {
+        const newBalance = (parseFloat(wallet.balance) + PROMO_CONSTANTS.STREAK_CREDITS_REWARD).toFixed(2);
+        await this.updateWalletBalance(userId, newBalance);
+        await this.createTransaction({
+          walletId: wallet.id,
+          amount: PROMO_CONSTANTS.STREAK_CREDITS_REWARD.toString(),
+          type: "referral_bonus",
+          description: `7-day login streak reward`,
+        });
+        rewardEarned = true;
+        
+        await this.addRewardHistory({
+          userId,
+          rewardType: "login_streak",
+          description: `Completed ${newStreak}-day login streak`,
+          creditsAwarded: PROMO_CONSTANTS.STREAK_CREDITS_REWARD.toString(),
+        });
+      }
+    }
+
+    // Update streak
+    const longestStreak = Math.max(rewards.longestStreak, newStreak);
+    await this.updateUserRewards(userId, {
+      loginStreak: newStreak,
+      lastLoginDate: now,
+      longestStreak,
+      streakRewardsClaimedCount: rewardEarned ? rewards.streakRewardsClaimedCount + 1 : rewards.streakRewardsClaimedCount,
+    });
+
+    return { streakUpdated: true, newStreak, rewardEarned };
+  }
+
+  async incrementReferralCount(referrerUserId: string): Promise<{ tierReached: string | null; premiumDays: number }> {
+    let rewards = await this.getUserRewards(referrerUserId);
+    if (!rewards) {
+      rewards = await this.createUserRewards(referrerUserId);
+    }
+
+    const now = new Date();
+    
+    // Reset monthly if needed
+    let monthlyReferrals = rewards.monthlyReferrals;
+    if (rewards.monthlyReferralsResetAt && new Date(rewards.monthlyReferralsResetAt) <= now) {
+      monthlyReferrals = 0;
+    }
+
+    const newTotalReferrals = rewards.totalReferrals + 1;
+    const newMonthlyReferrals = monthlyReferrals + 1;
+
+    let tierReached: string | null = null;
+    let premiumDays = 0;
+
+    // Check milestone (5 this month = lifetime)
+    if (newMonthlyReferrals >= PROMO_CONSTANTS.REFERRAL_MONTHLY_MILESTONE && !rewards.hasLifetimePremium) {
+      tierReached = "lifetime";
+      await this.updateUserRewards(referrerUserId, {
+        totalReferrals: newTotalReferrals,
+        monthlyReferrals: newMonthlyReferrals,
+        hasLifetimePremium: true,
+        monthlyReferralsResetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+      });
+      
+      await this.addRewardHistory({
+        userId: referrerUserId,
+        rewardType: "referral_milestone",
+        description: `Referred ${PROMO_CONSTANTS.REFERRAL_MONTHLY_MILESTONE} users this month - Lifetime Premium earned!`,
+      });
+      
+      // Update profile to premium
+      await this.updateProfile(referrerUserId, { subscriptionTier: "premium", isPremiumSince: now });
+      
+      return { tierReached: "lifetime", premiumDays: 0 };
+    }
+
+    // Check tier 2 (10 total = 1 month)
+    if (newTotalReferrals === PROMO_CONSTANTS.REFERRAL_TIER_2_COUNT) {
+      tierReached = "tier_2";
+      premiumDays = PROMO_CONSTANTS.REFERRAL_TIER_2_PREMIUM_DAYS;
+    }
+    // Check tier 1 (3 total = 1 week)
+    else if (newTotalReferrals === PROMO_CONSTANTS.REFERRAL_TIER_1_COUNT) {
+      tierReached = "tier_1";
+      premiumDays = PROMO_CONSTANTS.REFERRAL_TIER_1_PREMIUM_DAYS;
+    }
+
+    // Apply premium days if earned
+    if (premiumDays > 0) {
+      const currentExpiry = rewards.premiumExpiresAt ? new Date(rewards.premiumExpiresAt) : now;
+      const baseDate = currentExpiry > now ? currentExpiry : now;
+      const newExpiry = new Date(baseDate.getTime() + premiumDays * 24 * 60 * 60 * 1000);
+      
+      await this.updateUserRewards(referrerUserId, {
+        totalReferrals: newTotalReferrals,
+        monthlyReferrals: newMonthlyReferrals,
+        premiumExpiresAt: newExpiry,
+        monthlyReferralsResetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+      });
+      
+      await this.addRewardHistory({
+        userId: referrerUserId,
+        rewardType: tierReached === "tier_2" ? "referral_tier_2" : "referral_tier_1",
+        description: `Reached ${newTotalReferrals} referrals - ${premiumDays} days Premium earned!`,
+        premiumDaysAwarded: premiumDays,
+      });
+      
+      // Ensure profile is premium
+      await this.updateProfile(referrerUserId, { subscriptionTier: "premium", isPremiumSince: now });
+    } else {
+      await this.updateUserRewards(referrerUserId, {
+        totalReferrals: newTotalReferrals,
+        monthlyReferrals: newMonthlyReferrals,
+        monthlyReferralsResetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+      });
+    }
+
+    return { tierReached, premiumDays };
+  }
+
+  async claimProfileCompletionReward(userId: string): Promise<boolean> {
+    let rewards = await this.getUserRewards(userId);
+    if (!rewards) {
+      rewards = await this.createUserRewards(userId);
+    }
+
+    if (rewards.profileCompletionRewardClaimed) {
+      return false;
+    }
+
+    const now = new Date();
+    const currentExpiry = rewards.premiumExpiresAt ? new Date(rewards.premiumExpiresAt) : now;
+    const baseDate = currentExpiry > now ? currentExpiry : now;
+    const newExpiry = new Date(baseDate.getTime() + PROMO_CONSTANTS.PROFILE_COMPLETION_PREMIUM_DAYS * 24 * 60 * 60 * 1000);
+
+    await this.updateUserRewards(userId, {
+      profileCompletionRewardClaimed: true,
+      premiumExpiresAt: newExpiry,
+    });
+
+    await this.addRewardHistory({
+      userId,
+      rewardType: "profile_completion",
+      description: `100% profile completion - ${PROMO_CONSTANTS.PROFILE_COMPLETION_PREMIUM_DAYS} days Premium earned!`,
+      premiumDaysAwarded: PROMO_CONSTANTS.PROFILE_COMPLETION_PREMIUM_DAYS,
+    });
+
+    await this.updateProfile(userId, { subscriptionTier: "premium", isPremiumSince: now });
+
+    return true;
+  }
+
+  async useFirstMatchFree(userId: string): Promise<boolean> {
+    let rewards = await this.getUserRewards(userId);
+    if (!rewards) {
+      rewards = await this.createUserRewards(userId);
+    }
+
+    if (rewards.firstMatchFreeUsed) {
+      return false;
+    }
+
+    await this.updateUserRewards(userId, { firstMatchFreeUsed: true });
+
+    await this.addRewardHistory({
+      userId,
+      rewardType: "first_match_free",
+      description: "First match Gate 1 free!",
+    });
+
+    return true;
+  }
+
+  async getRewardHistory(userId: string): Promise<RewardHistory[]> {
+    return await db.select().from(rewardHistory).where(eq(rewardHistory.userId, userId)).orderBy(desc(rewardHistory.createdAt));
+  }
+
+  async addRewardHistory(reward: InsertRewardHistory): Promise<RewardHistory> {
+    const [newReward] = await db.insert(rewardHistory).values(reward).returning();
+    return newReward;
+  }
+
+  async checkAndUpdatePremiumStatus(userId: string): Promise<boolean> {
+    const rewards = await this.getUserRewards(userId);
+    if (!rewards) return false;
+
+    if (rewards.hasLifetimePremium) {
+      return true;
+    }
+
+    const now = new Date();
+    if (rewards.premiumExpiresAt && new Date(rewards.premiumExpiresAt) > now) {
+      return true;
+    }
+
+    // Premium expired, downgrade to free
+    await this.updateProfile(userId, { subscriptionTier: "free" });
+    return false;
+  }
+
+  async applySeasonalTrial(userId: string): Promise<number> {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    
+    let trialDays: number = PROMO_CONSTANTS.DEFAULT_TRIAL_DAYS;
+    if (month >= PROMO_CONSTANTS.CUFFING_SEASON_START && month <= PROMO_CONSTANTS.CUFFING_SEASON_END) {
+      trialDays = PROMO_CONSTANTS.CUFFING_SEASON_TRIAL_DAYS;
+    }
+    
+    return trialDays;
   }
 }
 
