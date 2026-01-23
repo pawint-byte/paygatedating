@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { MatchCard } from "@/components/dashboard/match-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { ReferrerHighlight } from "@/components/dashboard/referrer-highlight";
+import { SharePromoBanner } from "@/components/dashboard/share-promo-banner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -16,12 +19,17 @@ import { isUnauthorizedError } from "@/lib/auth-utils";
 
 export default function Discover() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [filterOpen, setFilterOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState({
     minAge: 18,
     maxAge: 60,
     maxDistance: 100,
     genderPreference: [] as string[],
+  });
+
+  const { data: myProfile } = useQuery<Profile>({
+    queryKey: ["/api/profile"],
   });
 
   const { data: searchPrefs } = useQuery<SearchPreferences>({
@@ -170,8 +178,22 @@ export default function Discover() {
     }));
   };
 
+  const handleShareClick = () => {
+    setLocation("/profile");
+  };
+
   return (
     <div className="p-6">
+      {myProfile && (
+        <div className="space-y-4 mb-6">
+          <ReferrerHighlight currentUserId={myProfile.userId} />
+          <SharePromoBanner 
+            onShareClick={handleShareClick} 
+            displayName={myProfile.displayName || "there"} 
+          />
+        </div>
+      )}
+
       <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Discover</h1>

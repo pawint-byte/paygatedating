@@ -69,6 +69,10 @@ const faqs = [
   {
     question: "Will I be notified when someone is nearby?",
     answer: "Yes! When you enable the 'Go Live' feature on the Nearby Map, you'll appear to other users within your area. If someone goes live near you (within 10km), you may receive an email alert letting you know there are active singles nearby. This helps you connect with people in your area at the right moment."
+  },
+  {
+    question: "How can I become a 'walking billboard' to attract more matches?",
+    answer: "Every member gets a personal QR code and shareable profile link. Share it anywhere - on your dating app bios, Instagram stories, or print it on pocket cards to hand out at events. When someone scans your QR code, they see your profile preview and wishlist. If they sign up through your link, you earn $5 in referral credits! It's the easiest way to attract quality suitors who are ready to invest in connecting with you."
   }
 ];
 

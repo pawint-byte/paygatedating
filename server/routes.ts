@@ -967,6 +967,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       // Return only public-safe information
       const publicProfile = {
+        userId: wallet.userId,
         displayName: profile.showFirstNamePublicly ? profile.displayName : "PayGate User",
         age: profile.showAgePublicly ? profile.age : undefined,
         location: profile.showLocationPublicly ? profile.location : undefined,

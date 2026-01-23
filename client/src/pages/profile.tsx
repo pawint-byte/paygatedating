@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ProfileSetupForm } from "@/components/dashboard/profile-setup-form";
+import { ShareProfileCard } from "@/components/dashboard/share-profile-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -211,6 +212,17 @@ export default function Profile() {
             />
           </CardContent>
         </Card>
+      )}
+
+      {profile && referralInfo && (
+        <div className="mt-6">
+          <ShareProfileCard 
+            userId={profile.userId}
+            displayName={profile.displayName}
+            photoUrl={profile.photos?.[0]}
+            referralCode={referralInfo.referralCode}
+          />
+        </div>
       )}
     </div>
   );

@@ -10,7 +10,8 @@ import {
   Lock,
   UserPlus,
   Bell,
-  Sparkles
+  Sparkles,
+  QrCode
 } from "lucide-react";
 
 const features = [
@@ -61,6 +62,12 @@ const features = [
     title: "Seasonal Themes",
     description: "Enjoy fresh, seasonal content and promotions throughout the year. From Valentine's specials to summer love campaigns.",
     category: "experience"
+  },
+  {
+    icon: QrCode,
+    title: "Personal QR Code",
+    description: "Your unique QR code lets anyone view your profile and wishlist. Share on social media, dating apps, or print on cards - become a walking billboard!",
+    category: "discovery"
   },
   {
     icon: Share2,

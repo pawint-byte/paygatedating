@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, MapPin, Sparkles, Shield, CheckCircle } from "lucide-react";
 
 interface PublicProfileData {
+  userId: string;
   displayName: string;
   age?: number;
   location?: string;
@@ -32,6 +33,9 @@ export default function InvitePage() {
 
   const handleSignUp = () => {
     localStorage.setItem("referralCode", referralCode || "");
+    if (profile?.userId) {
+      localStorage.setItem("referrerUserId", profile.userId);
+    }
     setLocation("/");
   };
 
