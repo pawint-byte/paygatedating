@@ -46,7 +46,7 @@ import {
   REFERRAL_BONUS_AMOUNT,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql, gte, lte, ne, inArray } from "drizzle-orm";
+import { eq, and, or, desc, sql, gte, lte, lt, ne, inArray } from "drizzle-orm";
 
 function generateReferralCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -120,6 +120,10 @@ export interface IStorage {
   createConnectionIfNotExists(userId: string, connectedUserId: string, matchId: string): Promise<Connection | undefined>;
   getMutualConnections(userId: string, otherUserId: string): Promise<Profile[]>;
   getFriendsOfFriends(userId: string): Promise<{ profile: Profile; mutualCount: number; throughUsers: string[] }[]>;
+  
+  // Activity Tracking
+  updateLastActive(userId: string): Promise<Profile | undefined>;
+  getInactiveProfiles(daysSinceActive: number): Promise<Profile[]>;
   
   // Feedback / Support
   createFeedback(feedbackData: InsertFeedback): Promise<Feedback>;
@@ -657,6 +661,43 @@ export class DatabaseStorage implements IStorage {
       mutualCount: secondDegree.get(profile.userId)?.length || 0,
       throughUsers: secondDegree.get(profile.userId) || [],
     }));
+  }
+
+  // Activity Tracking
+  async updateLastActive(userId: string): Promise<Profile | undefined> {
+    const [updated] = await db
+      .update(profiles)
+      .set({ lastActiveAt: new Date() })
+      .where(eq(profiles.userId, userId))
+      .returning();
+    return updated;
+  }
+
+  async getInactiveProfiles(daysSinceActive: number): Promise<Profile[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysSinceActive);
+    
+    // Get profiles that are either:
+    // 1. Never been active (lastActiveAt is null) and created more than X days ago
+    // 2. Last active more than X days ago
+    const inactiveProfiles = await db
+      .select()
+      .from(profiles)
+      .where(
+        and(
+          eq(profiles.isVisible, true),
+          or(
+            and(
+              sql`${profiles.lastActiveAt} IS NULL`,
+              lt(profiles.createdAt, cutoffDate)
+            ),
+            lt(profiles.lastActiveAt, cutoffDate)
+          )
+        )
+      )
+      .limit(100);
+    
+    return inactiveProfiles;
   }
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

@@ -93,6 +93,28 @@ export default function DashboardLayout() {
     enabled: !!user,
   });
 
+  // Activity heartbeat - updates lastActiveAt on the backend
+  useEffect(() => {
+    if (!user) return;
+    
+    const sendHeartbeat = async () => {
+      try {
+        await fetch("/api/activity/heartbeat", { 
+          method: "POST",
+          credentials: "include" 
+        });
+      } catch (e) {
+        // Silently fail - not critical
+      }
+    };
+    
+    // Send heartbeat on mount and every 5 minutes
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
   useEffect(() => {
     if (!completeness || nudgeShownRef.current) return;
     

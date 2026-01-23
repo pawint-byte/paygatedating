@@ -79,6 +79,9 @@ export const profiles = pgTable("profiles", {
   isLive: boolean("is_live").default(false).notNull(),
   locationUpdatedAt: timestamp("location_updated_at"),
   
+  // Activity Tracking
+  lastActiveAt: timestamp("last_active_at"),
+  
   // Social Media Links
   socialLinks: jsonb("social_links").$type<{
     instagram?: string;

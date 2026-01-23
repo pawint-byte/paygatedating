@@ -182,6 +182,65 @@ const templates = {
         </a>
       </div>
     `
+  }),
+
+  interestReceived: (firstName: string, senderName: string, message?: string) => ({
+    subject: `Someone is interested in you on PayGate!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">You've Caught Someone's Eye!</h1>
+        <p>Hey ${firstName},</p>
+        <p><strong>${senderName}</strong> has expressed interest in connecting with you!</p>
+        ${message ? `<p style="background: #f3f4f6; padding: 12px; border-radius: 6px; font-style: italic;">"${message}"</p>` : ''}
+        <p>They've invested in getting to know you. Check out their profile and decide if you'd like to connect!</p>
+        <a href="https://pay-gate-dating--pawint.replit.app/matches" 
+           style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+          View Their Profile
+        </a>
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">
+          Remember: PayGate uses a unique gate system - their investment shows they're serious about connecting!
+        </p>
+      </div>
+    `
+  }),
+
+  nearbyAlert: (firstName: string, nearbyCount: number) => ({
+    subject: `${nearbyCount} singles are near you right now!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">Singles Nearby!</h1>
+        <p>Hey ${firstName},</p>
+        <p>Good news! <strong>${nearbyCount} ${nearbyCount === 1 ? 'person is' : 'people are'}</strong> currently live and looking near your area.</p>
+        <p>Open the app now to see who's around and express your interest!</p>
+        <a href="https://pay-gate-dating--pawint.replit.app/nearby" 
+           style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+          See Who's Nearby
+        </a>
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">
+          Go live yourself to appear on others' maps and increase your chances of meeting someone special!
+        </p>
+      </div>
+    `
+  }),
+
+  inactivityReminder: (firstName: string, daysSinceActive: number, seasonalMessage: string) => ({
+    subject: `We miss you, ${firstName}! ${seasonalMessage}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">We Miss You!</h1>
+        <p>Hey ${firstName},</p>
+        <p>It's been ${daysSinceActive} days since we last saw you on PayGate Dating.</p>
+        <p>${seasonalMessage}</p>
+        <p>While you've been away, new singles have joined looking for meaningful connections. Don't miss out!</p>
+        <a href="https://pay-gate-dating--pawint.replit.app/discover" 
+           style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+          See New Profiles
+        </a>
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">
+          Staying active on PayGate increases your visibility and chances of finding that special someone.
+        </p>
+      </div>
+    `
   })
 };
 
@@ -220,6 +279,15 @@ export async function sendEmail(
         break;
       case 'walletDeposit':
         emailContent = templates.walletDeposit(data.firstName, data.amount);
+        break;
+      case 'interestReceived':
+        emailContent = templates.interestReceived(data.firstName, data.senderName, data.message);
+        break;
+      case 'nearbyAlert':
+        emailContent = templates.nearbyAlert(data.firstName, data.nearbyCount);
+        break;
+      case 'inactivityReminder':
+        emailContent = templates.inactivityReminder(data.firstName, data.daysSinceActive, data.seasonalMessage);
         break;
       default:
         throw new Error(`Unknown template: ${template}`);
@@ -264,5 +332,14 @@ export const emailService = {
     sendEmail(to, 'verificationApproved', { firstName }),
   
   sendWalletDeposit: (to: string, firstName: string, amount: string) => 
-    sendEmail(to, 'walletDeposit', { firstName, amount })
+    sendEmail(to, 'walletDeposit', { firstName, amount }),
+  
+  sendInterestReceived: (to: string, firstName: string, senderName: string, message?: string) => 
+    sendEmail(to, 'interestReceived', { firstName, senderName, message }),
+  
+  sendNearbyAlert: (to: string, firstName: string, nearbyCount: number) => 
+    sendEmail(to, 'nearbyAlert', { firstName, nearbyCount }),
+  
+  sendInactivityReminder: (to: string, firstName: string, daysSinceActive: number, seasonalMessage: string) => 
+    sendEmail(to, 'inactivityReminder', { firstName, daysSinceActive, seasonalMessage })
 };

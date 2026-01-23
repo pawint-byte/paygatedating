@@ -687,6 +687,27 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         lastActionBy: userId,
       });
 
+      // Send email notification to recipient about interest
+      try {
+        const recipientProfile = await storage.getProfile(recipientId);
+        const senderProfile = await storage.getProfile(userId);
+        const recipientUser = await authStorage.getUser(recipientId);
+        
+        if (recipientProfile && senderProfile && recipientUser?.email) {
+          const recipientName = recipientProfile.displayName?.split(' ')[0] || 'there';
+          const senderName = senderProfile.displayName || 'Someone';
+          
+          emailService.sendInterestReceived(
+            recipientUser.email,
+            recipientName,
+            senderName,
+            message
+          ).catch(err => console.error("Failed to send interest email:", err));
+        }
+      } catch (emailError) {
+        console.error("Error sending interest notification email:", emailError);
+      }
+
       res.status(201).json(match);
     } catch (error) {
       console.error("Error creating match:", error);
@@ -1067,6 +1088,37 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         latitude ? parseFloat(latitude) : undefined, 
         longitude ? parseFloat(longitude) : undefined
       );
+      
+      // If user just went live, check for nearby users to notify
+      if (isLive && latitude && longitude) {
+        try {
+          const lat = parseFloat(latitude);
+          const lng = parseFloat(longitude);
+          
+          // Get live profiles within 10km radius (already filtered by distance)
+          const nearbyProfiles = await storage.getLiveProfiles(userId, lat, lng, 10);
+          
+          // Send nearby alert email to each nearby user (limit to 5 to avoid spam)
+          const toNotify = nearbyProfiles.slice(0, 5);
+          for (const profile of toNotify) {
+            try {
+              const profileUser = await authStorage.getUser(profile.userId);
+              if (profileUser?.email) {
+                const firstName = profile.displayName?.split(' ')[0] || 'there';
+                emailService.sendNearbyAlert(
+                  profileUser.email,
+                  firstName,
+                  1 // Just notifying about this one user going live
+                ).catch(err => console.error("Failed to send nearby alert:", err));
+              }
+            } catch (emailError) {
+              console.error("Error sending nearby notification:", emailError);
+            }
+          }
+        } catch (nearbyError) {
+          console.error("Error notifying nearby users:", nearbyError);
+        }
+      }
       
       res.json(updated);
     } catch (error) {
@@ -2619,6 +2671,89 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     } catch (error) {
       console.error("Error seeding demo profiles:", error);
       res.status(500).json({ message: "Failed to seed demo profiles" });
+    }
+  });
+
+  // =================
+  // ACTIVITY TRACKING
+  // =================
+
+  // Update last active timestamp (called on app activity)
+  app.post("/api/activity/heartbeat", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.updateLastActive(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating activity:", error);
+      res.status(500).json({ message: "Failed to update activity" });
+    }
+  });
+
+  // Check and notify inactive users (admin/cron endpoint)
+  app.post("/api/admin/notify-inactive", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const isAdmin = await storage.isUserAdmin(userId);
+      
+      if (!isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { days = 7 } = req.body;
+      
+      // Get inactive profiles
+      const inactiveProfiles = await storage.getInactiveProfiles(days);
+      
+      // Seasonal message based on current date
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      let seasonalMessage = "New connections are waiting for you!";
+      
+      if (month === 2) {
+        seasonalMessage = "Valentine's Day is coming up! Find your perfect match before Feb 14th.";
+      } else if (month === 12) {
+        seasonalMessage = "Make this holiday season magical - find someone special to share it with!";
+      } else if (month >= 3 && month <= 5) {
+        seasonalMessage = "Spring is in the air! Perfect time for new beginnings and fresh connections.";
+      } else if (month >= 6 && month <= 8) {
+        seasonalMessage = "Summer adventures await! Find your adventure partner today.";
+      } else if (month >= 9 && month <= 11) {
+        seasonalMessage = "Cuffing season is here! Don't miss out on finding your cozy companion.";
+      }
+
+      let notified = 0;
+      for (const profile of inactiveProfiles) {
+        try {
+          const profileUser = await authStorage.getUser(profile.userId);
+          if (profileUser?.email) {
+            const firstName = profile.displayName?.split(' ')[0] || 'there';
+            
+            // Calculate days since last active
+            const lastActive = profile.lastActiveAt || profile.createdAt;
+            const daysSince = Math.floor((now.getTime() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24));
+            
+            await emailService.sendInactivityReminder(
+              profileUser.email,
+              firstName,
+              daysSince,
+              seasonalMessage
+            );
+            notified++;
+          }
+        } catch (emailError) {
+          console.error("Failed to send inactivity email:", emailError);
+        }
+      }
+
+      res.json({ 
+        message: "Inactive users notified", 
+        totalInactive: inactiveProfiles.length,
+        notified 
+      });
+    } catch (error) {
+      console.error("Error notifying inactive users:", error);
+      res.status(500).json({ message: "Failed to notify inactive users" });
     }
   });
 

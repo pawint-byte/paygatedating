@@ -1,6 +1,6 @@
 import { NavHeader } from "@/components/landing/nav-header";
-import { ValentinesBanner } from "@/components/landing/valentines-banner";
-import { HeroSection } from "@/components/landing/hero-section";
+import { SeasonalBanner } from "@/components/landing/seasonal-banner";
+import { SeasonalHero } from "@/components/landing/seasonal-hero";
 import { GateTimeline } from "@/components/landing/gate-timeline";
 import { ValueProps } from "@/components/landing/value-props";
 import { FeaturesSection } from "@/components/landing/features-section";
@@ -15,10 +15,10 @@ import { Chatbot } from "@/components/chatbot";
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
-      <ValentinesBanner />
+      <SeasonalBanner />
       <NavHeader />
       <main>
-        <HeroSection />
+        <SeasonalHero />
         <GateTimeline />
         <ValueProps />
         <FeaturesSection />
