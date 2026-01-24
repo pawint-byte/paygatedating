@@ -24,7 +24,7 @@ const categories = [
     icon: ShoppingBag,
     description: "Jewelry, fashion, home goods",
     color: "text-pink-500",
-    platforms: ["Amazon", "Etsy", "Net-a-Porter"],
+    platforms: ["Amazon", "Net-a-Porter"],
   },
   {
     id: "experiences" as const,
@@ -45,7 +45,7 @@ const guidedSteps = [
   },
   {
     title: "Add Thoughtful Gifts",
-    description: "Browse Amazon, Etsy, or Net-a-Porter for items you'd love to receive. Copy the product link and paste it here.",
+    description: "Browse Amazon or Net-a-Porter for items you'd love to receive. Copy the product link and paste it here.",
     tip: "Start with a few affordable items ($25-50) so admirers can easily make a first move.",
     icon: ShoppingBag,
   },

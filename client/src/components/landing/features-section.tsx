@@ -36,7 +36,7 @@ const features = [
   {
     icon: Gift,
     title: "Gift Experiences & Luxury",
-    description: "Send gifts from Amazon, Etsy, Net-a-Porter, or book travel experiences from Viator and Klook. Meaningful gestures that unlock gates.",
+    description: "Send gifts from Amazon, Net-a-Porter, or book travel experiences from Viator and Klook. Meaningful gestures that unlock gates.",
     category: "connection"
   },
   {

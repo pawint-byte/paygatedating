@@ -1059,7 +1059,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
           imageUrl: item.imageUrl,
           description: item.description,
           platform: item.affiliateUrl?.includes('amazon') ? 'Amazon' :
-                    item.affiliateUrl?.includes('etsy') ? 'Etsy' :
                     item.affiliateUrl?.includes('viator') ? 'Viator' :
                     item.affiliateUrl?.includes('klook') ? 'Klook' :
                     item.affiliateUrl?.includes('net-a-porter') ? 'Net-a-Porter' : 'Other',
@@ -1432,12 +1431,11 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const urlObj = new URL(url);
       const hostname = urlObj.hostname.toLowerCase();
       const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
-      const isEtsy = hostname.includes('etsy.com');
       const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
       const isLuxury = hostname.includes('net-a-porter.com');
       
-      if (!isAmazon && !isEtsy && !isTravel && !isLuxury) {
-        return { valid: false, error: "Only Amazon, Etsy, Viator, Klook, and Net-a-Porter links are supported for wishlist items" };
+      if (!isAmazon && !isTravel && !isLuxury) {
+        return { valid: false, error: "Only Amazon, Viator, Klook, and Net-a-Porter links are supported for wishlist items" };
       }
       return { valid: true };
     } catch {
@@ -1501,14 +1499,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return urlObj.toString();
       }
       
-      // Etsy via Awin affiliate network
-      const awinPublisherId = process.env.AWIN_PUBLISHER_ID;
-      if (awinPublisherId && urlObj.hostname.includes('etsy.com')) {
-        const etsyMerchantId = '6220'; // Etsy's Awin merchant ID
-        const encodedUrl = encodeURIComponent(url);
-        return `https://www.awin1.com/cread.php?awinmid=${etsyMerchantId}&awinaffid=${awinPublisherId}&ued=${encodedUrl}`;
-      }
-      
       // Viator via Travelpayouts affiliate network  
       // Travelpayouts uses their white label domain (tp.st) for tracked links
       // If user pastes a tp.st or travelpayouts.com link, it's already an affiliate link
@@ -1543,7 +1533,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         });
       }
       
-      // Add affiliate tags (sync for Amazon/Etsy)
+      // Add affiliate tags (sync for Amazon)
       affiliateUrl = addAffiliateTag(affiliateUrl);
       
       // Convert Viator/Klook URLs via Travelpayouts API (async)
@@ -2131,7 +2121,7 @@ User Profile:
 
 2. **Gate System**: Explain PayGate's unique 5-gate progression system where users pay incrementally ($5-$20) to advance through interaction stages. This filters out low-effort matches and creates more meaningful connections.
 
-3. **Wishlist/Registry**: Help users add items from Amazon or Etsy to their wishlist. Gifts from matches can unlock gates. Explain that only Amazon and Etsy links are allowed.
+3. **Wishlist/Registry**: Help users add items from Amazon or Net-a-Porter to their wishlist, or travel experiences from Viator and Klook. Gifts from matches can unlock gates.
 
 4. **Match Tips**: Provide conversation starters, dating advice, and tips for advancing through gates successfully.
 
@@ -2663,7 +2653,7 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     return [
       { title: "Kindle Paperwhite", price: "139.99", priceTier: "impressive", affiliateUrl: "https://www.amazon.com/dp/B09TMN58KL" },
       { title: "Wine Tasting Experience", price: "89.00", priceTier: "impressive", affiliateUrl: "https://www.viator.com/tours/Napa-Valley" },
-      { title: "Artisan Jewelry Set", price: "45.00", priceTier: "starter", affiliateUrl: "https://www.etsy.com/listing/jewelry" },
+      { title: "Artisan Jewelry Set", price: "45.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/jewelry" },
       { title: "Cooking Class for Two", price: "150.00", priceTier: "vip", affiliateUrl: "https://www.klook.com/activity/cooking-class" },
       { title: "Designer Sunglasses", price: "195.00", priceTier: "vip", affiliateUrl: "https://www.net-a-porter.com/sunglasses" },
       { title: "Scented Candle Set", price: "35.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/candles" },
@@ -2794,7 +2784,7 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
       const wishlistItems = [
         { title: "Kindle Paperwhite", price: "139.99", priceTier: "impressive", affiliateUrl: "https://www.amazon.com/dp/B09TMN58KL" },
         { title: "Wine Tasting Experience", price: "89.00", priceTier: "impressive", affiliateUrl: "https://www.viator.com/tours/Napa-Valley" },
-        { title: "Artisan Jewelry Set", price: "45.00", priceTier: "starter", affiliateUrl: "https://www.etsy.com/listing/jewelry" },
+        { title: "Artisan Jewelry Set", price: "45.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/jewelry" },
         { title: "Cooking Class for Two", price: "150.00", priceTier: "vip", affiliateUrl: "https://www.klook.com/activity/cooking-class" },
         { title: "Designer Sunglasses", price: "195.00", priceTier: "vip", affiliateUrl: "https://www.net-a-porter.com/sunglasses" },
         { title: "Scented Candle Set", price: "35.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/candles" },

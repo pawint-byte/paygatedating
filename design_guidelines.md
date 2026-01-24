@@ -67,7 +67,7 @@
 
 **How Gifting Works:**
 - 2-column split: Left = explanation text, Right = sample gift catalog preview
-- Show Amazon/Etsy integration visually
+- Show Amazon/Net-a-Porter integration visually
 
 **Security & Trust:**
 - Icons grid: "Stripe Secure Payments" / "Anonymous Shipping" / "Escrow Protected"
@@ -117,7 +117,7 @@
 
 **Layout:**
 - Search bar at top
-- 4-column product grid from Amazon/Etsy
+- 4-column product grid from Amazon/Net-a-Porter
 - Each product card: Image, title, price, "Send Gift ($X)" button
 - Filter sidebar: Category, price range
 
@@ -141,7 +141,7 @@
 
 **Profile Photos:** High-quality portrait photography style, well-lit, authentic (not stock feeling)
 
-**Gift Catalog:** Actual product images from Amazon/Etsy APIs
+**Gift Catalog:** Actual product images from Amazon/Net-a-Porter
 
 **Trust Badges:** Stripe logo, security shield icons, payment method logos in footer
 

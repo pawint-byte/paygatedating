@@ -15,7 +15,7 @@ import { useState } from "react";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { SiAmazon, SiEtsy } from "react-icons/si";
+import { SiAmazon } from "react-icons/si";
 
 interface AddItemFormData {
   title: string;
@@ -164,10 +164,6 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
     window.open("https://www.amazon.com", "_blank");
   };
 
-  const handleBrowseEtsy = () => {
-    window.open("https://www.etsy.com", "_blank");
-  };
-
   const handleBrowseViator = () => {
     window.open("https://www.viator.com", "_blank");
   };
@@ -191,14 +187,13 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
           const url = new URL(text);
           const hostname = url.hostname.toLowerCase();
           const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
-          const isEtsy = hostname.includes('etsy.com');
           const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
           const isLuxury = hostname.includes('net-a-porter.com');
           
-          if (isAmazon || isEtsy || isTravel || isLuxury) {
+          if (isAmazon || isTravel || isLuxury) {
             setUrlPasted(true);
             setCurrentStep(2);
-            const source = isAmazon ? 'Amazon' : isEtsy ? 'Etsy' : isLuxury ? 'Net-a-Porter' : 'Travel experience';
+            const source = isAmazon ? 'Amazon' : isLuxury ? 'Net-a-Porter' : 'Travel experience';
             toast({
               title: "URL Pasted",
               description: `${source} link detected. Now fill in the details.`,
@@ -206,7 +201,7 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
           } else {
             toast({
               title: "Invalid Link",
-              description: "Only Amazon, Etsy, Viator, Klook, and Net-a-Porter links are supported.",
+              description: "Only Amazon, Viator, Klook, and Net-a-Porter links are supported.",
               variant: "destructive",
             });
           }
@@ -242,10 +237,9 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
         const url = new URL(value);
         const hostname = url.hostname.toLowerCase();
         const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
-        const isEtsy = hostname.includes('etsy.com');
         const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
         const isLuxury = hostname.includes('net-a-porter.com');
-        if (isAmazon || isEtsy || isTravel || isLuxury) {
+        if (isAmazon || isTravel || isLuxury) {
           setUrlPasted(true);
           setCurrentStep(2);
         }
@@ -295,7 +289,7 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Shopping</p>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -305,16 +299,6 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
                         >
                           <SiAmazon className="w-5 h-5" />
                           <span className="text-xs">Amazon</span>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-auto py-3 flex-col gap-1"
-                          onClick={handleBrowseEtsy}
-                          data-testid="button-browse-etsy"
-                        >
-                          <SiEtsy className="w-5 h-5" />
-                          <span className="text-xs">Etsy</span>
                         </Button>
                         <Button
                           type="button"
@@ -407,11 +391,10 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
                             const url = new URL(value);
                             const hostname = url.hostname.toLowerCase();
                             const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
-                            const isEtsy = hostname.includes('etsy.com');
                             const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
                             const isLuxury = hostname.includes('net-a-porter.com');
-                            if (!isAmazon && !isEtsy && !isTravel && !isLuxury) {
-                              return "Only Amazon, Etsy, Viator, Klook, and Net-a-Porter links are supported";
+                            if (!isAmazon && !isTravel && !isLuxury) {
+                              return "Only Amazon, Viator, Klook, and Net-a-Porter links are supported";
                             }
                             return true;
                           } catch {
