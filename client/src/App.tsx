@@ -15,6 +15,7 @@ import InvitePage from "@/pages/invite";
 import PublicProfile from "@/pages/public-profile";
 import Terms from "@/pages/terms";
 import Privacy from "@/pages/privacy";
+import GiftDemo from "@/pages/gift-demo";
 import NotFound from "@/pages/not-found";
 import { AssistantChat } from "@/components/assistant-chat";
 
@@ -34,6 +35,7 @@ function Router() {
       <Switch>
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/gift-demo" component={GiftDemo} />
         <Route path="/invite/:referralCode" component={InvitePage} />
         <Route path="/p/:userId" component={PublicProfile} />
         {!user ? (

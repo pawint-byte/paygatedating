@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Gift, Send, ArrowDownLeft, ExternalLink, Clock } from "lucide-react";
+import { Gift, Send, ArrowDownLeft, ExternalLink, Clock, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { GiftDeliveryModal, getPriceTier } from "@/components/3d/GiftDeliveryModal";
 import type { GiftPurchase, RegistryItem } from "@shared/schema";
 
 interface GiftWithItem extends GiftPurchase {
@@ -21,6 +23,14 @@ const statusLabels: Record<string, { label: string; variant: "default" | "second
 };
 
 export function GiftHistory() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedGift, setSelectedGift] = useState<{
+    title: string;
+    senderName: string;
+    tier: 'starter' | 'impressive' | 'vip';
+    price?: number;
+  } | null>(null);
+
   const { data: sentGifts = [], isLoading: loadingSent } = useQuery<GiftWithItem[]>({
     queryKey: ["/api/gifts/sent"],
   });
@@ -28,6 +38,16 @@ export function GiftHistory() {
   const { data: receivedGifts = [], isLoading: loadingReceived } = useQuery<GiftWithItem[]>({
     queryKey: ["/api/gifts/received"],
   });
+
+  const handleOpenGift3D = (gift: GiftWithItem) => {
+    setSelectedGift({
+      title: gift.item?.title || `Gift worth $${gift.giftValue}`,
+      senderName: "A Secret Admirer",
+      tier: getPriceTier(Number(gift.giftValue)),
+      price: Number(gift.giftValue),
+    });
+    setModalOpen(true);
+  };
 
   const formatDate = (date: string | Date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -77,6 +97,19 @@ export function GiftHistory() {
             </span>
           )}
         </div>
+
+        {type === "received" && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full mt-2"
+            onClick={() => handleOpenGift3D(gift)}
+            data-testid={`button-view-gift-3d-${gift.id}`}
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            View Gift in 3D
+          </Button>
+        )}
       </div>
     );
   };
@@ -144,6 +177,12 @@ export function GiftHistory() {
           </Tabs>
         )}
       </CardContent>
+
+      <GiftDeliveryModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        gift={selectedGift}
+      />
     </Card>
   );
 }

@@ -37,6 +37,7 @@ Reminder preference: Always remind user to publish after making changes.
 ### Key Features
 - **Gate Progression**: Matches track states via a `gate_stage` enum.
 - **Gift Purchasing System**: Users can purchase items from wishlists; platform charges a 10% fee and earns affiliate commissions. Gifts can unlock gates based on value.
+- **3D Gift Delivery Experience**: Immersive 3D animations when receiving gifts, with tier-based visual effects (Starter/Impressive/VIP). Uses React Three Fiber with WebGL fallback for unsupported browsers. Demo available at `/gift-demo`.
 - **AI Onboarding Assistant**: A floating chatbot (OpenAI gpt-4o-mini) provides personalized guidance on profile setup, gate system, and wishlist suggestions.
 - **ID Verification**: AI (OpenAI Vision gpt-4o-mini) compares selfies to profile photos to prevent catfishing.
 - **Nearby Map**: A Leaflet/OpenStreetMap-based feature allowing users to discover other singles nearby, with location fuzzing for privacy.
