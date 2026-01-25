@@ -11,6 +11,7 @@ import type { GiftPurchase, RegistryItem } from "@shared/schema";
 
 interface GiftWithItem extends GiftPurchase {
   item?: RegistryItem;
+  senderName?: string;
 }
 
 const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
@@ -42,7 +43,7 @@ export function GiftHistory() {
   const handleOpenGift3D = (gift: GiftWithItem) => {
     setSelectedGift({
       title: gift.item?.title || `Gift worth $${gift.giftValue}`,
-      senderName: "A Secret Admirer",
+      senderName: gift.senderName || "Your Match",
       tier: getPriceTier(Number(gift.giftValue)),
       price: Number(gift.giftValue),
     });

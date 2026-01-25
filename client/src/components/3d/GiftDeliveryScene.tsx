@@ -8,8 +8,15 @@ import { Gift, Sparkles, Heart } from 'lucide-react';
 function checkWebGLSupport(): boolean {
   try {
     const canvas = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && 
-      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return false;
+    const glContext = gl as WebGLRenderingContext;
+    const debugInfo = glContext.getExtension('WEBGL_debug_renderer_info');
+    if (debugInfo) {
+      const renderer = glContext.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      if (renderer && typeof renderer === 'string' && renderer.includes('SwiftShader')) return false;
+    }
+    return true;
   } catch (e) {
     return false;
   }
@@ -193,11 +200,6 @@ export function GiftDeliveryScene({ tier, giftTitle, senderName, onComplete }: G
           camera={{ position: [0, 1.5, 4], fov: 45 }}
           style={{ cursor: isOpened ? 'default' : 'pointer' }}
           onClick={handleOpen}
-          onCreated={({ gl }) => {
-            if (!gl.getContext()) {
-              setWebGLSupported(false);
-            }
-          }}
         >
           <Suspense fallback={<LoadingFallback />}>
             <Scene tier={tier} isOpening={isOpening} onOpenComplete={handleOpenComplete} />

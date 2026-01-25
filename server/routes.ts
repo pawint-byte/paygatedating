@@ -1804,7 +1804,20 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     try {
       const userId = req.user.claims.sub;
       const purchases = await storage.getGiftPurchasesByRecipient(userId);
-      res.json(purchases);
+      
+      const enrichedPurchases = await Promise.all(
+        purchases.map(async (purchase) => {
+          const senderProfile = await storage.getProfile(purchase.buyerUserId);
+          const registryItem = await storage.getRegistryItem(purchase.registryItemId);
+          return {
+            ...purchase,
+            senderName: senderProfile?.displayName?.split(' ')[0] || "Your Match",
+            item: registryItem,
+          };
+        })
+      );
+      
+      res.json(enrichedPurchases);
     } catch (error) {
       console.error("Error fetching received gifts:", error);
       res.status(500).json({ message: "Failed to fetch received gifts" });
