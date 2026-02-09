@@ -52,6 +52,13 @@ import {
   TRIAL_CREDITS_AMOUNT,
   REFERRAL_BONUS_AMOUNT,
   PROMO_CONSTANTS,
+  callLogs,
+  ghostReports,
+  type CallLog,
+  type InsertCallLog,
+  type GhostReport,
+  type InsertGhostReport,
+  GIFT_PROTECTION,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, gte, lte, lt, ne, inArray } from "drizzle-orm";
@@ -169,6 +176,18 @@ export interface IStorage {
   addRewardHistory(reward: InsertRewardHistory): Promise<RewardHistory>;
   checkAndUpdatePremiumStatus(userId: string): Promise<boolean>;
   applySeasonalTrial(userId: string): Promise<number>;
+
+  // Call Logs
+  createCallLog(log: InsertCallLog): Promise<CallLog>;
+  getCallLog(id: string): Promise<CallLog | undefined>;
+  getCallLogsByMatch(matchId: string): Promise<CallLog[]>;
+  getConfirmedCallBetweenUsers(userId1: string, userId2: string): Promise<CallLog | undefined>;
+  updateCallLog(id: string, data: Partial<CallLog>): Promise<CallLog | undefined>;
+
+  // Ghost Reports
+  createGhostReport(report: InsertGhostReport): Promise<GhostReport>;
+  getGhostReportsByReported(userId: string): Promise<GhostReport[]>;
+  getGhostReportCount(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1098,6 +1117,57 @@ export class DatabaseStorage implements IStorage {
     }
     
     return trialDays;
+  }
+
+  async createCallLog(log: InsertCallLog): Promise<CallLog> {
+    const [created] = await db.insert(callLogs).values(log).returning();
+    return created;
+  }
+
+  async getCallLog(id: string): Promise<CallLog | undefined> {
+    const [log] = await db.select().from(callLogs).where(eq(callLogs.id, id));
+    return log;
+  }
+
+  async getCallLogsByMatch(matchId: string): Promise<CallLog[]> {
+    return db.select().from(callLogs).where(eq(callLogs.matchId, matchId)).orderBy(desc(callLogs.createdAt));
+  }
+
+  async getConfirmedCallBetweenUsers(userId1: string, userId2: string): Promise<CallLog | undefined> {
+    const [log] = await db.select().from(callLogs).where(
+      and(
+        eq(callLogs.status, "confirmed"),
+        or(
+          and(eq(callLogs.initiatorId, userId1), eq(callLogs.recipientId, userId2)),
+          and(eq(callLogs.initiatorId, userId2), eq(callLogs.recipientId, userId1))
+        )
+      )
+    );
+    return log;
+  }
+
+  async updateCallLog(id: string, data: Partial<CallLog>): Promise<CallLog | undefined> {
+    const [updated] = await db.update(callLogs).set(data).where(eq(callLogs.id, id)).returning();
+    return updated;
+  }
+
+  async createGhostReport(report: InsertGhostReport): Promise<GhostReport> {
+    const [created] = await db.insert(ghostReports).values(report).returning();
+    return created;
+  }
+
+  async getGhostReportsByReported(userId: string): Promise<GhostReport[]> {
+    return db.select().from(ghostReports).where(eq(ghostReports.reportedUserId, userId)).orderBy(desc(ghostReports.createdAt));
+  }
+
+  async getGhostReportCount(userId: string): Promise<number> {
+    const reports = await db.select().from(ghostReports).where(
+      and(
+        eq(ghostReports.reportedUserId, userId),
+        eq(ghostReports.status, "open")
+      )
+    );
+    return reports.length;
   }
 }
 

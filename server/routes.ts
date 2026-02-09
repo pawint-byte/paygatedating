@@ -16,6 +16,8 @@ import {
   REFERRAL_BONUS_AMOUNT,
   GIFT_MINIMUM_VALUE,
   GIFT_PLATFORM_FEE_PERCENT,
+  GIFT_PROTECTION,
+  type CallLog,
 } from "@shared/schema";
 import { z } from "zod";
 import OpenAI from "openai";
@@ -1805,6 +1807,30 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         }
       }
 
+      const confirmedCall = await storage.getConfirmedCallBetweenUsers(buyerUserId, recipientUserId);
+      if (!confirmedCall) {
+        return res.status(400).json({ 
+          message: "A confirmed voice or video call is required before sending a gift. This protects both you and the recipient.",
+          code: "CALL_REQUIRED"
+        });
+      }
+
+      const recipientProfile = await storage.getProfile(recipientUserId);
+      if (!recipientProfile || recipientProfile.verificationStatus !== "verified") {
+        return res.status(400).json({ 
+          message: "The recipient must complete ID verification before they can receive gifts.",
+          code: "ID_VERIFICATION_REQUIRED"
+        });
+      }
+
+      const ghostReportCount = await storage.getGhostReportCount(recipientUserId);
+      if (ghostReportCount >= GIFT_PROTECTION.MAX_GHOST_REPORTS_BEFORE_SUSPEND) {
+        return res.status(400).json({ 
+          message: "This user is currently suspended from receiving gifts due to engagement reports.",
+          code: "RECIPIENT_SUSPENDED"
+        });
+      }
+
       const platformFee = giftValue * GIFT_PLATFORM_FEE_PERCENT / 100;
       const totalCharge = giftValue + platformFee;
       
@@ -2031,6 +2057,246 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     } catch (error) {
       console.error("Error claiming gift:", error);
       res.status(500).json({ message: "Failed to claim gift" });
+    }
+  });
+
+  // === CALL VERIFICATION SYSTEM ===
+
+  app.post("/api/calls/log", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { matchId, callType } = req.body;
+
+      if (!matchId || !callType || !["voice", "video"].includes(callType)) {
+        return res.status(400).json({ message: "Match ID and valid call type (voice/video) required" });
+      }
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized for this match" });
+      }
+
+      const recipientId = match.initiatorId === userId ? match.recipientId : match.initiatorId;
+
+      const callLog = await storage.createCallLog({
+        matchId,
+        initiatorId: userId,
+        recipientId,
+        callType,
+      });
+
+      await storage.updateCallLog(callLog.id, { confirmedByInitiator: true });
+
+      res.json(callLog);
+    } catch (error) {
+      console.error("Error logging call:", error);
+      res.status(500).json({ message: "Failed to log call" });
+    }
+  });
+
+  app.post("/api/calls/:id/confirm", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const callId = req.params.id;
+
+      const callLog = await storage.getCallLog(callId);
+      if (!callLog) {
+        return res.status(404).json({ message: "Call log not found" });
+      }
+
+      if (callLog.initiatorId !== userId && callLog.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const updateData: Partial<CallLog> = {};
+      if (callLog.initiatorId === userId) {
+        updateData.confirmedByInitiator = true;
+      } else {
+        updateData.confirmedByRecipient = true;
+      }
+
+      const willBeFullyConfirmed = 
+        (callLog.initiatorId === userId ? true : callLog.confirmedByInitiator) &&
+        (callLog.recipientId === userId ? true : callLog.confirmedByRecipient);
+      
+      if (willBeFullyConfirmed) {
+        updateData.status = "confirmed";
+      }
+
+      const updated = await storage.updateCallLog(callId, updateData);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error confirming call:", error);
+      res.status(500).json({ message: "Failed to confirm call" });
+    }
+  });
+
+  app.get("/api/calls/:matchId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.matchId;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const logs = await storage.getCallLogsByMatch(matchId);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching call logs:", error);
+      res.status(500).json({ message: "Failed to fetch call logs" });
+    }
+  });
+
+  app.get("/api/calls/verified/:otherUserId", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const otherUserId = req.params.otherUserId;
+
+      const confirmedCall = await storage.getConfirmedCallBetweenUsers(userId, otherUserId);
+      res.json({ verified: !!confirmedCall, call: confirmedCall || null });
+    } catch (error) {
+      console.error("Error checking call verification:", error);
+      res.status(500).json({ message: "Failed to check call verification" });
+    }
+  });
+
+  // === GHOST REPORTS ===
+
+  app.post("/api/ghost-reports", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { giftPurchaseId, reason } = req.body;
+
+      if (!giftPurchaseId) {
+        return res.status(400).json({ message: "Gift purchase ID required" });
+      }
+
+      const purchase = await storage.getGiftPurchase(giftPurchaseId);
+      if (!purchase) {
+        return res.status(404).json({ message: "Gift purchase not found" });
+      }
+
+      if (purchase.buyerUserId !== userId) {
+        return res.status(403).json({ message: "Only the gift buyer can file a report" });
+      }
+
+      if (purchase.status !== "claimed") {
+        return res.status(400).json({ message: "Can only report after gift has been claimed" });
+      }
+
+      const report = await storage.createGhostReport({
+        reporterUserId: userId,
+        reportedUserId: purchase.recipientUserId,
+        giftPurchaseId,
+        reason: reason || null,
+      });
+
+      const reportCount = await storage.getGhostReportCount(purchase.recipientUserId);
+      
+      res.json({ report, totalReports: reportCount });
+    } catch (error) {
+      console.error("Error creating ghost report:", error);
+      res.status(500).json({ message: "Failed to create report" });
+    }
+  });
+
+  app.get("/api/gift-eligibility/:userId", isAuthenticated, async (req: any, res) => {
+    try {
+      const targetUserId = req.params.userId;
+      
+      const profile = await storage.getProfile(targetUserId);
+      if (!profile) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const isIdVerified = profile.verificationStatus === "verified";
+      
+      const ghostReportCount = await storage.getGhostReportCount(targetUserId);
+      const isSuspended = ghostReportCount >= GIFT_PROTECTION.MAX_GHOST_REPORTS_BEFORE_SUSPEND;
+
+      res.json({
+        eligible: isIdVerified && !isSuspended,
+        isIdVerified,
+        isSuspended,
+        ghostReportCount,
+      });
+    } catch (error) {
+      console.error("Error checking gift eligibility:", error);
+      res.status(500).json({ message: "Failed to check eligibility" });
+    }
+  });
+
+  // === GIFT REVOCATION ===
+
+  app.post("/api/gifts/:id/revoke", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const giftId = req.params.id;
+
+      const purchase = await storage.getGiftPurchase(giftId);
+      if (!purchase) {
+        return res.status(404).json({ message: "Gift not found" });
+      }
+
+      if (purchase.buyerUserId !== userId) {
+        return res.status(403).json({ message: "Only the buyer can revoke a gift" });
+      }
+
+      if (purchase.status === "claimed") {
+        return res.status(400).json({ message: "Cannot revoke a gift that has already been claimed" });
+      }
+
+      if (purchase.status === "refunded") {
+        return res.status(400).json({ message: "Gift has already been refunded" });
+      }
+
+      if (purchase.stripeSessionId) {
+        try {
+          const stripe = await getUncachableStripeClient();
+          const session = await stripe.checkout.sessions.retrieve(purchase.stripeSessionId);
+          if (session.payment_intent) {
+            await stripe.refunds.create({
+              payment_intent: session.payment_intent as string,
+            });
+          }
+        } catch (stripeError) {
+          console.error("Stripe refund failed:", stripeError);
+          return res.status(500).json({ message: "Failed to process refund. Please contact support." });
+        }
+      }
+
+      if (purchase.matchId && purchase.gatesUnlocked > 0) {
+        const match = await storage.getMatch(purchase.matchId);
+        if (match) {
+          const gateOrder = ["gate1", "gate2", "gate3", "gate4", "gate5", "completed"];
+          const currentIndex = gateOrder.indexOf(match.currentGate);
+          if (currentIndex > 0) {
+            const newIndex = Math.max(currentIndex - purchase.gatesUnlocked, 0);
+            await storage.updateMatch(purchase.matchId, {
+              currentGate: gateOrder[newIndex] as any,
+            });
+          }
+        }
+      }
+
+      await storage.updateRegistryItem(purchase.registryItemId, { isPurchased: false, isReserved: false });
+
+      const updated = await storage.updateGiftPurchase(giftId, { status: "refunded" });
+      
+      res.json({ purchase: updated, message: "Gift revoked and refund processed" });
+    } catch (error) {
+      console.error("Error revoking gift:", error);
+      res.status(500).json({ message: "Failed to revoke gift" });
     }
   });
 

@@ -455,6 +455,33 @@ export const GIFT_MINIMUM_VALUE = 25;
 export const GIFT_PLATFORM_FEE_PERCENT = 10;
 export const GIFT_AFFILIATE_COMMISSION_PERCENT = 10;
 
+export const callTypeEnum = pgEnum("call_type", ["voice", "video"]);
+export const callStatusEnum = pgEnum("call_status", ["pending", "confirmed", "disputed"]);
+
+export const callLogs = pgTable("call_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  matchId: varchar("match_id").notNull(),
+  initiatorId: varchar("initiator_id").notNull(),
+  recipientId: varchar("recipient_id").notNull(),
+  callType: callTypeEnum("call_type").notNull(),
+  status: callStatusEnum("call_status").default("pending").notNull(),
+  confirmedByInitiator: boolean("confirmed_by_initiator").default(false).notNull(),
+  confirmedByRecipient: boolean("confirmed_by_recipient").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const ghostReportStatusEnum = pgEnum("ghost_report_status", ["open", "resolved", "dismissed"]);
+
+export const ghostReports = pgTable("ghost_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reporterUserId: varchar("reporter_user_id").notNull(),
+  reportedUserId: varchar("reported_user_id").notNull(),
+  giftPurchaseId: varchar("gift_purchase_id").notNull(),
+  reason: text("reason"),
+  status: ghostReportStatusEnum("ghost_report_status").default("open").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const cryptoPayments = pgTable("crypto_payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
@@ -596,6 +623,35 @@ export type UserRewards = typeof userRewards.$inferSelect;
 export type InsertUserRewards = z.infer<typeof insertUserRewardsSchema>;
 export type RewardHistory = typeof rewardHistory.$inferSelect;
 export type InsertRewardHistory = z.infer<typeof insertRewardHistorySchema>;
+
+// Call Logs
+export const insertCallLogSchema = createInsertSchema(callLogs).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  confirmedByInitiator: true,
+  confirmedByRecipient: true,
+});
+
+export type CallLog = typeof callLogs.$inferSelect;
+export type InsertCallLog = z.infer<typeof insertCallLogSchema>;
+
+// Ghost Reports
+export const insertGhostReportSchema = createInsertSchema(ghostReports).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
+export type GhostReport = typeof ghostReports.$inferSelect;
+export type InsertGhostReport = z.infer<typeof insertGhostReportSchema>;
+
+// Gift Protection Constants
+export const GIFT_PROTECTION = {
+  CLAIM_ENGAGEMENT_DAYS: 7,
+  MAX_GHOST_REPORTS_BEFORE_SUSPEND: 3,
+  GIFT_CLAIM_DEADLINE_DAYS: 14,
+} as const;
 
 // Promotional Constants
 export const PROMO_CONSTANTS = {
