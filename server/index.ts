@@ -75,6 +75,16 @@ async function initStripe() {
 
 app.use(express.static(path.join(process.cwd(), "public")));
 
+app.use((req, res, next) => {
+  if (process.env.MAINTENANCE_MODE === "true") {
+    if (req.path.startsWith("/api") || req.path === "/maintenance.html") {
+      return next();
+    }
+    return res.sendFile(path.join(process.cwd(), "public", "maintenance.html"));
+  }
+  next();
+});
+
 // CRITICAL: Register Stripe webhook route BEFORE express.json()
 // This ensures we get the raw Buffer needed for signature verification
 app.post(
