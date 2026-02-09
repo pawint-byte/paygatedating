@@ -1878,19 +1878,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const existingPurchase = await storage.getGiftPurchaseBySessionId(session_id as string);
       if (existingPurchase) {
         const item = await storage.getRegistryItem(existingPurchase.registryItemId);
-        const recipientProfile = await storage.getProfile(existingPurchase.recipientUserId);
-        const hasShippingAddress = !!(recipientProfile?.shippingStreet && recipientProfile?.shippingCity);
         return res.json({ 
           purchase: existingPurchase,
-          affiliateUrl: item?.affiliateUrl,
           itemTitle: item?.title,
-          recipientShipping: hasShippingAddress ? {
-            street: recipientProfile!.shippingStreet,
-            city: recipientProfile!.shippingCity,
-            state: recipientProfile!.shippingState,
-            zip: recipientProfile!.shippingZip,
-            country: recipientProfile!.shippingCountry,
-          } : null,
         });
       }
 
@@ -1938,20 +1928,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       }
 
       const item = await storage.getRegistryItem(registryItemId);
-      const recipientProfile = await storage.getProfile(recipientUserId);
-      const hasShippingAddress = !!(recipientProfile?.shippingStreet && recipientProfile?.shippingCity);
       res.json({ 
         purchase,
-        affiliateUrl: item?.affiliateUrl,
         itemTitle: item?.title,
         gatesUnlocked,
-        recipientShipping: hasShippingAddress ? {
-          street: recipientProfile!.shippingStreet,
-          city: recipientProfile!.shippingCity,
-          state: recipientProfile!.shippingState,
-          zip: recipientProfile!.shippingZip,
-          country: recipientProfile!.shippingCountry,
-        } : null,
       });
     } catch (error) {
       console.error("Error processing gift checkout success:", error);
@@ -1999,10 +1979,18 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         purchases.map(async (purchase) => {
           const senderProfile = await storage.getProfile(purchase.buyerUserId);
           const registryItem = await storage.getRegistryItem(purchase.registryItemId);
+          const safeItem = registryItem ? {
+            id: registryItem.id,
+            title: registryItem.title,
+            price: registryItem.price,
+            imageUrl: registryItem.imageUrl,
+            source: registryItem.source,
+            ...(purchase.status === "claimed" ? { affiliateUrl: registryItem.affiliateUrl } : {}),
+          } : null;
           return {
             ...purchase,
             senderName: senderProfile?.displayName?.split(' ')[0] || "Your Match",
-            item: registryItem,
+            item: safeItem,
           };
         })
       );
@@ -2028,12 +2016,18 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      if (purchase.status !== "delivered" && purchase.status !== "shipped") {
+      if (purchase.status === "claimed") {
+        const item = await storage.getRegistryItem(purchase.registryItemId);
+        return res.json({ purchase, affiliateUrl: item?.affiliateUrl, itemTitle: item?.title });
+      }
+
+      if (purchase.status !== "purchased" && purchase.status !== "delivered" && purchase.status !== "shipped") {
         return res.status(400).json({ message: "Gift cannot be claimed yet" });
       }
 
       const updatedPurchase = await storage.updateGiftPurchase(giftId, { status: "claimed" });
-      res.json(updatedPurchase);
+      const item = await storage.getRegistryItem(purchase.registryItemId);
+      res.json({ purchase: updatedPurchase, affiliateUrl: item?.affiliateUrl, itemTitle: item?.title });
     } catch (error) {
       console.error("Error claiming gift:", error);
       res.status(500).json({ message: "Failed to claim gift" });

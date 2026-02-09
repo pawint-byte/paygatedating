@@ -28,11 +28,11 @@ const faqs = [
   },
   {
     question: "How does gift delivery work? Do I need to share my address?",
-    answer: "You add your shipping address privately in your profile settings. It is never visible on your profile, in discovery, or to anyone browsing. When someone purchases a gift for you through PayGate, your address is only revealed to the buyer on the payment confirmation page so they can complete the purchase on the retailer's site and ship it to you. They can copy your address with one tap. If you haven't added an address yet, the buyer will be notified and you can add it anytime in your profile settings."
+    answer: "No! Your address is never shared with anyone. When someone buys you a gift through PayGate, you'll see a notification in your 'My Gifts' inbox. Just tap 'Claim & Purchase' and you'll be taken to the retailer's website where you can order the item and ship it to your own address. The sender never sees where you live."
   },
   {
-    question: "Is my shipping address safe?",
-    answer: "Absolutely. Your shipping address is stored privately and is never shown on your public profile, in discovery feeds, or to anyone casually browsing. It is only shared with a gift buyer after they have completed a verified payment through PayGate's secure Stripe checkout. This means only someone who has genuinely invested in sending you a gift will ever see your address. You are always in control and can update or remove your address at any time in your profile settings."
+    question: "Is my personal information safe?",
+    answer: "Absolutely. PayGate is designed with privacy first. Your shipping address and personal details are never shared with other users. When you receive a gift, you claim it yourself and enter your own shipping details directly on the retailer's site. The gift sender only knows that you received and claimed their gift — nothing more."
   },
   {
     question: "What is the friends-of-friends network?",

@@ -24,6 +24,7 @@ import Settings from "./settings";
 import Wishlist from "./wishlist";
 import Help from "./help";
 import AdminFeedback from "./admin-feedback";
+import GiftClaim from "./gift-claim";
 import { RewardsDashboard } from "@/components/dashboard/rewards-dashboard";
 
 export default function DashboardLayout() {
@@ -252,6 +253,7 @@ export default function DashboardLayout() {
               <Route path="/verification" component={Verification} />
               <Route path="/settings" component={Settings} />
               <Route path="/wishlist" component={Wishlist} />
+              <Route path="/gifts" component={GiftClaim} />
               <Route path="/help" component={Help} />
               <Route path="/rewards" component={RewardsDashboard} />
               <Route path="/admin/feedback" component={AdminFeedback} />

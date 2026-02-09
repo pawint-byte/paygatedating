@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio, HelpCircle, Shield, Gift, Trophy } from "lucide-react";
+import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio, HelpCircle, Shield, Gift, Trophy, Package } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -51,6 +51,11 @@ const mainMenuItems = [
     title: "My Wishlist",
     url: "/wishlist",
     icon: Gift,
+  },
+  {
+    title: "My Gifts",
+    url: "/gifts",
+    icon: Package,
   },
 ];
 

@@ -5,17 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Gift, ExternalLink, CheckCircle, Lock, Info, Copy, Check, MapPin, AlertTriangle } from "lucide-react";
+import { Gift, CheckCircle, Lock, Info, Heart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-
-interface RecipientShipping {
-  street: string;
-  city: string;
-  state: string;
-  zip: string;
-  country: string;
-}
 
 interface GiftSuccessResponse {
   purchase: {
@@ -24,17 +15,13 @@ interface GiftSuccessResponse {
     platformFee: string;
     gatesUnlocked: number;
   };
-  affiliateUrl: string;
   itemTitle: string;
   gatesUnlocked: number;
-  recipientShipping: RecipientShipping | null;
 }
 
 export default function GiftSuccess() {
   const [, setLocation] = useLocation();
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -56,17 +43,6 @@ export default function GiftSuccess() {
     enabled: !!sessionId,
     retry: false,
   });
-
-  const handleCopyAddress = () => {
-    if (!data?.recipientShipping) return;
-    const { street, city, state, zip, country } = data.recipientShipping;
-    const fullAddress = [street, city, state, zip, country].filter(Boolean).join(", ");
-    navigator.clipboard.writeText(fullAddress).then(() => {
-      setCopied(true);
-      toast({ title: "Address copied", description: "Paste it at checkout on the retailer site." });
-      setTimeout(() => setCopied(false), 3000);
-    });
-  };
 
   if (!sessionId) {
     return (
@@ -117,10 +93,6 @@ export default function GiftSuccess() {
     );
   }
 
-  const handlePurchaseProduct = () => {
-    window.open(data.affiliateUrl, "_blank", "noopener,noreferrer");
-  };
-
   return (
     <div className="container max-w-2xl mx-auto py-12 px-4">
       <Card>
@@ -160,89 +132,44 @@ export default function GiftSuccess() {
             )}
           </div>
 
-          {data.recipientShipping ? (
-            <div className="rounded-lg border border-border p-4 space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="w-5 h-5 text-primary" />
-                <span className="font-medium" data-testid="text-shipping-label">Ship To</span>
-              </div>
-              <div className="bg-muted rounded-md p-3 text-sm space-y-1" data-testid="section-shipping-address">
-                <p data-testid="text-shipping-street">{data.recipientShipping.street}</p>
-                <p data-testid="text-shipping-city-state">
-                  {data.recipientShipping.city}{data.recipientShipping.state ? `, ${data.recipientShipping.state}` : ""} {data.recipientShipping.zip}
-                </p>
-                {data.recipientShipping.country && (
-                  <p className="text-muted-foreground" data-testid="text-shipping-country">{data.recipientShipping.country}</p>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyAddress}
-                className="w-full"
-                data-testid="button-copy-address"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy Address for Checkout
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                Use this address when completing your purchase on the retailer site.
-              </p>
+          <div className="rounded-lg border border-border p-4 space-y-3 text-center">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+              <Gift className="w-6 h-6 text-primary" />
             </div>
-          ) : (
-            <Alert data-testid="alert-no-address">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Shipping Address Not Available</AlertTitle>
-              <AlertDescription>
-                The recipient hasn't added a shipping address yet. They'll be notified about your gift
-                and can update their address in their profile settings. You can return here later or
-                reach out through your match conversation to coordinate delivery.
-              </AlertDescription>
-            </Alert>
-          )}
+            <p className="font-medium" data-testid="text-gift-sent-confirmation">Your gift is on its way!</p>
+            <p className="text-sm text-muted-foreground" data-testid="text-recipient-notified">
+              The recipient will be notified and can claim the gift to complete the purchase 
+              with their own shipping details. Your address information stays private for both of you.
+            </p>
+          </div>
 
           <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Complete Your Gift Purchase</AlertTitle>
+            <Heart className="h-4 w-4" />
+            <AlertTitle>What happens next?</AlertTitle>
             <AlertDescription>
-              Click the button below to purchase the item from our retail partner.
-              {data.recipientShipping ? " Use the shipping address above at checkout." : ""}
-              {" "}Your match will be notified of your thoughtful gift!
+              The recipient will see your gift in their inbox and can claim it at any time. 
+              Once claimed, they'll purchase the item directly from the retailer and have it 
+              shipped to their own address. No personal addresses are ever shared between users.
             </AlertDescription>
           </Alert>
 
-          <Button 
-            className="w-full" 
-            size="lg"
-            onClick={handlePurchaseProduct}
-            data-testid="button-purchase-product"
-          >
-            <Gift className="w-5 h-5 mr-2" />
-            Purchase Gift on Retailer Site
-            <ExternalLink className="w-4 h-4 ml-2" />
-          </Button>
-
-          <p className="text-xs text-center text-muted-foreground">
-            You'll be redirected to complete the purchase. PayGate earns a small commission from our retail partners.
-          </p>
-
-          <div className="pt-4 border-t">
+          <div className="flex flex-col gap-3 pt-2">
             <Button 
-              variant="outline" 
-              className="w-full"
+              className="w-full" 
+              size="lg"
               onClick={() => setLocation("/matches")}
               data-testid="button-back-to-matches"
             >
+              <Info className="w-5 h-5 mr-2" />
               Back to Matches
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setLocation("/discover")}
+              data-testid="button-continue-discovering"
+            >
+              Continue Discovering
             </Button>
           </div>
         </CardContent>

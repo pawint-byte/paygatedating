@@ -1559,7 +1559,7 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                   <Shield className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <div className="text-sm text-muted-foreground">
                     <p className="font-medium text-foreground mb-1">Your address is private</p>
-                    <p>Your shipping address is never shown on your profile or to other users browsing. It is only shared with a gift buyer after they have completed payment through PayGate, so they can ship your gift to you.</p>
+                    <p>Your shipping address is stored privately and is never shared with other users. When someone sends you a gift, you'll claim it yourself and use your own address at checkout on the retailer's site.</p>
                   </div>
                 </div>
 
