@@ -1546,6 +1546,133 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     return url;
   }
 
+  app.post("/api/registry/scrape-url", isAuthenticated, async (req: any, res) => {
+    try {
+      const { url } = req.body;
+      if (!url) {
+        return res.status(400).json({ message: "URL is required" });
+      }
+
+      try {
+        new URL(url);
+      } catch {
+        return res.status(400).json({ message: "Invalid URL" });
+      }
+
+      const urlValidation = isValidAffiliateUrl(url);
+      if (!urlValidation.valid) {
+        return res.status(400).json({ message: urlValidation.error });
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; PayGateDating/1.0)",
+            "Accept": "text/html,application/xhtml+xml",
+            "Accept-Language": "en-US,en;q=0.9",
+          },
+          redirect: "follow",
+        });
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          return res.json({ title: "", price: "", imageUrl: "", platform: "", error: "scrape_failed" });
+        }
+
+        const html = await response.text();
+
+        const getMetaContent = (html: string, property: string): string => {
+          const patterns = [
+            new RegExp(`<meta[^>]*property=["']${property}["'][^>]*content=["']([^"']*)["']`, "i"),
+            new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*property=["']${property}["']`, "i"),
+            new RegExp(`<meta[^>]*name=["']${property}["'][^>]*content=["']([^"']*)["']`, "i"),
+            new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*name=["']${property}["']`, "i"),
+          ];
+          for (const pattern of patterns) {
+            const match = html.match(pattern);
+            if (match && match[1]) return match[1].trim();
+          }
+          return "";
+        };
+
+        let title = getMetaContent(html, "og:title") 
+          || getMetaContent(html, "twitter:title")
+          || "";
+        
+        if (!title) {
+          const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+          if (titleMatch) title = titleMatch[1].trim();
+        }
+
+        let imageUrl = getMetaContent(html, "og:image")
+          || getMetaContent(html, "twitter:image")
+          || "";
+
+        let price = getMetaContent(html, "product:price:amount")
+          || getMetaContent(html, "og:price:amount")
+          || "";
+
+        if (!price) {
+          const pricePatterns = [
+            /"price"\s*:\s*"?([\d,.]+)"?/i,
+            /"amount"\s*:\s*"?([\d,.]+)"?/i,
+            /class=["'][^"']*price[^"']*["'][^>]*>[\s$]*(\d[\d,.]*)/i,
+            /\$\s*(\d[\d,.]*)/,
+          ];
+          for (const pattern of pricePatterns) {
+            const match = html.match(pattern);
+            if (match && match[1]) {
+              const parsed = parseFloat(match[1].replace(/,/g, ""));
+              if (!isNaN(parsed) && parsed > 0 && parsed < 100000) {
+                price = parsed.toFixed(2);
+                break;
+              }
+            }
+          }
+        }
+
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname.toLowerCase();
+        let platform = "Other";
+        if (hostname.includes("amazon.com") || hostname.includes("amzn.to")) platform = "Amazon";
+        else if (hostname.includes("viator.com")) platform = "Viator";
+        else if (hostname.includes("klook.com")) platform = "Klook";
+        else if (hostname.includes("net-a-porter.com")) platform = "Net-a-Porter";
+
+        title = title
+          .replace(/\s*[-|]\s*(Amazon|Viator|Klook|NET-A-PORTER|Net-a-Porter).*$/i, "")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&#39;/g, "'")
+          .replace(/&quot;/g, '"')
+          .substring(0, 200);
+
+        let priceTier: "starter" | "impressive" | "vip" = "starter";
+        if (price) {
+          const numPrice = parseFloat(price);
+          if (numPrice >= 100) priceTier = "vip";
+          else if (numPrice >= 50) priceTier = "impressive";
+        }
+
+        return res.json({ title, price, imageUrl, platform, priceTier });
+      } catch (fetchError: any) {
+        clearTimeout(timeout);
+        if (fetchError.name === "AbortError") {
+          return res.json({ title: "", price: "", imageUrl: "", platform: "", error: "timeout" });
+        }
+        return res.json({ title: "", price: "", imageUrl: "", platform: "", error: "scrape_failed" });
+      }
+    } catch (error) {
+      console.error("URL scrape error:", error);
+      return res.status(500).json({ message: "Failed to scrape URL" });
+    }
+  });
+
   app.post("/api/registry", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

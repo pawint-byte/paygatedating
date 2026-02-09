@@ -6,12 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Gem } from "lucide-react";
+import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Gem, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RegistryItem } from "@shared/schema";
 import { GIFT_MINIMUM_VALUE } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -43,6 +43,8 @@ type CategoryFilter = "all" | "gifts" | "experiences";
 
 interface WishlistManagerProps {
   categoryFilter?: CategoryFilter;
+  openAddDialog?: boolean;
+  onAddDialogChange?: (open: boolean) => void;
 }
 
 function getItemCategory(affiliateUrl: string | null | undefined): "gifts" | "experiences" {
@@ -70,11 +72,18 @@ function getItemCategory(affiliateUrl: string | null | undefined): "gifts" | "ex
   return "gifts";
 }
 
-export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps) {
+export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDialogChange }: WishlistManagerProps) {
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [urlPasted, setUrlPasted] = useState(false);
+  const [isScraping, setIsScraping] = useState(false);
+
+  useEffect(() => {
+    if (openAddDialog && !isAddDialogOpen) {
+      setIsAddDialogOpen(true);
+    }
+  }, [openAddDialog]);
 
   const form = useForm<AddItemFormData>({
     defaultValues: {
@@ -176,13 +185,72 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
     window.open("https://www.net-a-porter.com", "_blank");
   };
 
+  const scrapeAbortRef = useRef<AbortController | null>(null);
+
+  const scrapeUrl = async (url: string) => {
+    if (scrapeAbortRef.current) {
+      scrapeAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    scrapeAbortRef.current = controller;
+
+    setIsScraping(true);
+    try {
+      const response = await apiRequest("POST", "/api/registry/scrape-url", { url });
+      if (controller.signal.aborted) return;
+      
+      const data = await response.json();
+      if (controller.signal.aborted) return;
+
+      if (data.error) {
+        toast({
+          title: "Link Added",
+          description: data.error === "scrape_failed" 
+            ? "Couldn't load the page. Please fill in details manually."
+            : "Please fill in the product details manually.",
+        });
+        return;
+      }
+
+      if (data.title) form.setValue("title", data.title);
+      if (data.price) form.setValue("price", data.price);
+      if (data.imageUrl) form.setValue("imageUrl", data.imageUrl);
+      if (data.priceTier) form.setValue("priceTier", data.priceTier);
+      
+      const filledFields = [data.title, data.price, data.imageUrl].filter(Boolean).length;
+      if (filledFields > 0) {
+        toast({
+          title: "Product Details Found",
+          description: `Auto-filled ${filledFields} field${filledFields > 1 ? "s" : ""} from ${data.platform || "the link"}. Review and adjust as needed.`,
+        });
+      } else {
+        toast({
+          title: "Link Added",
+          description: "Couldn't auto-detect product details. Please fill them in manually.",
+        });
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError" || controller.signal.aborted) return;
+      toast({
+        title: "Link Added",
+        description: "Please fill in the product details manually.",
+      });
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsScraping(false);
+      }
+      if (scrapeAbortRef.current === controller) {
+        scrapeAbortRef.current = null;
+      }
+    }
+  };
+
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
         form.setValue("affiliateUrl", text);
         
-        // Validate URL
         try {
           const url = new URL(text);
           const hostname = url.hostname.toLowerCase();
@@ -193,11 +261,7 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
           if (isAmazon || isTravel || isLuxury) {
             setUrlPasted(true);
             setCurrentStep(2);
-            const source = isAmazon ? 'Amazon' : isLuxury ? 'Net-a-Porter' : 'Travel experience';
-            toast({
-              title: "URL Pasted",
-              description: `${source} link detected. Now fill in the details.`,
-            });
+            scrapeUrl(text);
           } else {
             toast({
               title: "Invalid Link",
@@ -229,9 +293,16 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
       form.reset();
     }
     setIsAddDialogOpen(open);
+    onAddDialogChange?.(open);
   };
 
+  const scrapeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleUrlChange = (value: string) => {
+    if (scrapeTimerRef.current) {
+      clearTimeout(scrapeTimerRef.current);
+      scrapeTimerRef.current = null;
+    }
     if (value) {
       try {
         const url = new URL(value);
@@ -242,6 +313,9 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
         if (isAmazon || isTravel || isLuxury) {
           setUrlPasted(true);
           setCurrentStep(2);
+          scrapeTimerRef.current = setTimeout(() => {
+            scrapeUrl(value);
+          }, 500);
         }
       } catch {
         // Invalid URL, don't advance
@@ -405,9 +479,15 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
                       render={({ field }) => (
                         <FormItem>
                           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                            {isScraping ? (
+                              <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
+                            ) : (
+                              <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                            )}
                             <div className="text-sm flex-1 min-w-0">
-                              <p className="font-medium text-green-700 dark:text-green-400">URL Added</p>
+                              <p className="font-medium text-green-700 dark:text-green-400">
+                                {isScraping ? "Fetching product details..." : "URL Added"}
+                              </p>
                               <p className="text-muted-foreground truncate text-xs">
                                 {field.value}
                               </p>
@@ -568,10 +648,10 @@ export function WishlistManager({ categoryFilter = "all" }: WishlistManagerProps
                       </Button>
                       <Button 
                         type="submit" 
-                        disabled={addItemMutation.isPending}
+                        disabled={addItemMutation.isPending || isScraping}
                         data-testid="button-submit-add-item"
                       >
-                        {addItemMutation.isPending ? "Adding..." : "Add Item"}
+                        {addItemMutation.isPending ? "Adding..." : isScraping ? "Loading details..." : "Add to Wishlist"}
                       </Button>
                     </DialogFooter>
                   </form>

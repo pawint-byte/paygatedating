@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { WishlistManager } from "@/components/dashboard/wishlist-manager";
 import { GiftHistory } from "@/components/dashboard/gift-history";
@@ -6,7 +6,7 @@ import { IdeaInbox } from "@/components/dashboard/idea-inbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Gift, Sparkles, Plane, ShoppingBag, Heart, ChevronRight, ChevronLeft, X, CheckCircle2, Lightbulb } from "lucide-react";
+import { Gift, Sparkles, Plane, ShoppingBag, Heart, ChevronRight, ChevronLeft, X, CheckCircle2, Lightbulb, ExternalLink } from "lucide-react";
 import type { RegistryItem } from "@shared/schema";
 
 type CategoryFilter = "all" | "gifts" | "experiences";
@@ -64,11 +64,39 @@ const guidedSteps = [
   },
 ];
 
+const platformUrls: Record<string, string> = {
+  "Amazon": "https://www.amazon.com",
+  "Net-a-Porter": "https://www.net-a-porter.com",
+  "Viator": "https://www.viator.com",
+  "Klook": "https://www.klook.com",
+};
+
 export default function WishlistPage() {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [showGuide, setShowGuide] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
   const [guideDismissed, setGuideDismissed] = useState(false);
+  const [triggerAddDialog, setTriggerAddDialog] = useState(false);
+  const browsedPlatformRef = useRef<string | null>(null);
+
+  const handleBrowsePlatform = useCallback((platform: string) => {
+    const url = platformUrls[platform];
+    if (url) {
+      browsedPlatformRef.current = platform;
+      window.open(url, "_blank");
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && browsedPlatformRef.current) {
+        browsedPlatformRef.current = null;
+        setTriggerAddDialog(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
 
   const { data: items = [], isLoading } = useQuery<RegistryItem[]>({
     queryKey: ["/api/registry"],
@@ -245,37 +273,33 @@ export default function WishlistPage() {
         </div>
 
         {activeCategory !== "all" && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Showing items from:</span>
-            {categories.find(c => c.id === activeCategory)?.platforms?.map((platform) => {
-              const platformUrls: Record<string, string> = {
-                "Amazon": "https://www.amazon.com",
-                "Net-a-Porter": "https://www.net-a-porter.com",
-                "Viator": "https://www.viator.com",
-                "Klook": "https://www.klook.com",
-              };
-              const url = platformUrls[platform];
-              return (
-                <a
-                  key={platform}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid={`link-platform-${platform.toLowerCase()}`}
-                >
-                  <Badge variant="secondary" className="text-xs cursor-pointer">
-                    {platform}
-                  </Badge>
-                </a>
-              );
-            })}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+            <span>Browse and add from:</span>
+            {categories.find(c => c.id === activeCategory)?.platforms?.map((platform) => (
+              <Button
+                key={platform}
+                variant="outline"
+                size="sm"
+                onClick={() => handleBrowsePlatform(platform)}
+                data-testid={`link-platform-${platform.toLowerCase()}`}
+              >
+                <ExternalLink className="w-3 h-3 mr-1" />
+                {platform}
+              </Button>
+            ))}
           </div>
         )}
       </div>
 
       <IdeaInbox />
 
-      <WishlistManager categoryFilter={activeCategory} />
+      <WishlistManager 
+        categoryFilter={activeCategory} 
+        openAddDialog={triggerAddDialog}
+        onAddDialogChange={(open) => {
+          if (!open) setTriggerAddDialog(false);
+        }}
+      />
       
       <GiftHistory />
     </div>
