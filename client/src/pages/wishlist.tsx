@@ -247,11 +247,28 @@ export default function WishlistPage() {
         {activeCategory !== "all" && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Showing items from:</span>
-            {categories.find(c => c.id === activeCategory)?.platforms?.map((platform) => (
-              <Badge key={platform} variant="secondary" className="text-xs">
-                {platform}
-              </Badge>
-            ))}
+            {categories.find(c => c.id === activeCategory)?.platforms?.map((platform) => {
+              const platformUrls: Record<string, string> = {
+                "Amazon": "https://www.amazon.com",
+                "Net-a-Porter": "https://www.net-a-porter.com",
+                "Viator": "https://www.viator.com",
+                "Klook": "https://www.klook.com",
+              };
+              const url = platformUrls[platform];
+              return (
+                <a
+                  key={platform}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid={`link-platform-${platform.toLowerCase()}`}
+                >
+                  <Badge variant="secondary" className="text-xs cursor-pointer">
+                    {platform}
+                  </Badge>
+                </a>
+              );
+            })}
           </div>
         )}
       </div>
