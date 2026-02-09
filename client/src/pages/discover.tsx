@@ -17,6 +17,18 @@ import { SlidersHorizontal } from "lucide-react";
 import type { Profile, SearchPreferences } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 
+interface EnrichedProfile extends Profile {
+  wishlistPreview?: Array<{
+    id: string;
+    title: string;
+    price: string;
+    imageUrl?: string | null;
+    platform: string;
+    priceTier: string;
+  }>;
+  wishlistCount?: number;
+}
+
 export default function Discover() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -47,7 +59,7 @@ export default function Discover() {
     }
   }, [searchPrefs]);
 
-  const { data: profiles, isLoading, error } = useQuery<Profile[]>({
+  const { data: profiles, isLoading, error } = useQuery<EnrichedProfile[]>({
     queryKey: ["/api/profiles/discover"],
   });
 
@@ -196,9 +208,9 @@ export default function Discover() {
 
       <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Discover</h1>
-          <p className="text-muted-foreground">
-            Find your next meaningful connection
+          <h1 className="text-2xl font-bold tracking-tight" data-testid="text-discover-title">Discover</h1>
+          <p className="text-muted-foreground" data-testid="text-discover-subtitle">
+            Browse profiles and wishlists to find your match
           </p>
         </div>
         

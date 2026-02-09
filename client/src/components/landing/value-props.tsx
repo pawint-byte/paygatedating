@@ -1,23 +1,23 @@
-import { Target, Heart, Shield } from "lucide-react";
+import { Gift, Heart, Shield, ShoppingBag } from "lucide-react";
 
 const values = [
   {
-    icon: Target,
-    title: "Quality Over Quantity",
+    icon: Gift,
+    title: "Gifts Show Intent",
     description:
-      "Our fee-based system reduces interaction volume by 70-80%, ensuring every match you get is from someone genuinely interested in connecting.",
+      "Browse wishlists and send thoughtful gifts to show genuine interest. Every gift proves you're serious about connecting, filtering out low-effort matches.",
   },
   {
     icon: Heart,
     title: "Mutual Investment",
     description:
-      "Both parties invest equally through the gates, creating balanced relationships where both sides are equally committed from the start.",
+      "Both parties invest through our 5-gate system, creating balanced relationships where both sides show commitment from the start.",
   },
   {
-    icon: Shield,
-    title: "Safe & Secure",
+    icon: ShoppingBag,
+    title: "Curated Wishlists",
     description:
-      "Stripe-powered escrow payments, anonymous gifting, and full refund protection ensure your safety and security at every step.",
+      "Build your wishlist from Amazon, Net-a-Porter, Viator, and Klook. Suitors see exactly what you'd love, making gift-giving effortless and personal.",
   },
 ];
 
@@ -30,11 +30,11 @@ export function ValueProps() {
             Why PayGate?
           </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-serif mb-4">
-            Dating Done Differently
+            Where Gifts Meet Genuine Connection
           </h2>
           <p className="text-muted-foreground text-lg">
-            We've reimagined online dating to prioritize meaningful connections
-            over endless swiping.
+            Your wishlist is your cover page. Thoughtful gifts unlock deeper
+            stages of connection, ensuring every interaction is meaningful.
           </p>
         </div>
 
@@ -44,10 +44,10 @@ export function ValueProps() {
             return (
               <div
                 key={value.title}
-                className="bg-card border border-card-border rounded-lg p-8 hover-elevate"
+                className="bg-card border border-card-border rounded-md p-8 hover-elevate"
                 data-testid={`value-${value.title.toLowerCase().replace(/\s+/g, "-")}`}
               >
-                <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-md bg-primary/10 flex items-center justify-center mb-6">
                   <Icon className="w-7 h-7 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">{value.title}</h3>

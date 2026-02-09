@@ -411,7 +411,34 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         profiles = await storage.getDiscoverProfiles(userId);
         console.log("[Discover API] Discover profiles count:", profiles.length);
       }
-      res.json(profiles);
+      
+      const enrichedProfiles = await Promise.all(
+        profiles.map(async (profile) => {
+          const items = await storage.getRegistryItems(profile.userId);
+          const publicItems = items
+            .filter(item => item.visibility === "public" && !item.isPurchased)
+            .slice(0, 3)
+            .map(item => ({
+              id: item.id,
+              title: item.title,
+              price: item.price,
+              imageUrl: item.imageUrl,
+              platform: item.affiliateUrl?.includes('amazon') ? 'Amazon' 
+                : item.affiliateUrl?.includes('net-a-porter') ? 'Net-a-Porter'
+                : item.affiliateUrl?.includes('viator') ? 'Viator'
+                : item.affiliateUrl?.includes('klook') ? 'Klook'
+                : 'Gift',
+              priceTier: item.priceTier,
+            }));
+          return {
+            ...profile,
+            wishlistPreview: publicItems,
+            wishlistCount: items.filter(i => i.visibility === "public" && !i.isPurchased).length,
+          };
+        })
+      );
+      
+      res.json(enrichedProfiles);
     } catch (error) {
       console.error("Error fetching discover profiles:", error);
       res.status(500).json({ message: "Failed to fetch profiles" });

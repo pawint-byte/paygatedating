@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { WishlistManager } from "@/components/dashboard/wishlist-manager";
 import { GiftHistory } from "@/components/dashboard/gift-history";
+import { IdeaInbox } from "@/components/dashboard/idea-inbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -254,6 +255,8 @@ export default function WishlistPage() {
           </div>
         )}
       </div>
+
+      <IdeaInbox />
 
       <WishlistManager categoryFilter={activeCategory} />
       
