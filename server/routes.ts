@@ -2010,7 +2010,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
             title: registryItem.title,
             price: registryItem.price,
             imageUrl: registryItem.imageUrl,
-            source: registryItem.source,
             ...(purchase.status === "claimed" ? { affiliateUrl: registryItem.affiliateUrl } : {}),
           } : null;
           return {
