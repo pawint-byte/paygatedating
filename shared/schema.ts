@@ -98,6 +98,13 @@ export const profiles = pgTable("profiles", {
   showRegistryPublicly: boolean("show_registry_publicly").default(false).notNull(),
   showInterestsPublicly: boolean("show_interests_publicly").default(true).notNull(),
   
+  // Shipping Address (private - only revealed after verified gift payment)
+  shippingStreet: varchar("shipping_street", { length: 200 }),
+  shippingCity: varchar("shipping_city", { length: 100 }),
+  shippingState: varchar("shipping_state", { length: 100 }),
+  shippingZip: varchar("shipping_zip", { length: 20 }),
+  shippingCountry: varchar("shipping_country", { length: 100 }),
+
   // Date Preferences
   datePreferences: text("date_preferences").array(),
   dateBlacklist: text("date_blacklist").array(),

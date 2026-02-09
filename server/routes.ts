@@ -430,8 +430,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
                 : 'Gift',
               priceTier: item.priceTier,
             }));
+          const { shippingStreet, shippingCity, shippingState, shippingZip, shippingCountry, ...safeProfile } = profile;
           return {
-            ...profile,
+            ...safeProfile,
             wishlistPreview: publicItems,
             wishlistCount: items.filter(i => i.visibility === "public" && !i.isPurchased).length,
           };
@@ -1877,10 +1878,19 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const existingPurchase = await storage.getGiftPurchaseBySessionId(session_id as string);
       if (existingPurchase) {
         const item = await storage.getRegistryItem(existingPurchase.registryItemId);
+        const recipientProfile = await storage.getProfile(existingPurchase.recipientUserId);
+        const hasShippingAddress = !!(recipientProfile?.shippingStreet && recipientProfile?.shippingCity);
         return res.json({ 
           purchase: existingPurchase,
           affiliateUrl: item?.affiliateUrl,
           itemTitle: item?.title,
+          recipientShipping: hasShippingAddress ? {
+            street: recipientProfile!.shippingStreet,
+            city: recipientProfile!.shippingCity,
+            state: recipientProfile!.shippingState,
+            zip: recipientProfile!.shippingZip,
+            country: recipientProfile!.shippingCountry,
+          } : null,
         });
       }
 
@@ -1928,11 +1938,20 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       }
 
       const item = await storage.getRegistryItem(registryItemId);
+      const recipientProfile = await storage.getProfile(recipientUserId);
+      const hasShippingAddress = !!(recipientProfile?.shippingStreet && recipientProfile?.shippingCity);
       res.json({ 
         purchase,
         affiliateUrl: item?.affiliateUrl,
         itemTitle: item?.title,
         gatesUnlocked,
+        recipientShipping: hasShippingAddress ? {
+          street: recipientProfile!.shippingStreet,
+          city: recipientProfile!.shippingCity,
+          state: recipientProfile!.shippingState,
+          zip: recipientProfile!.shippingZip,
+          country: recipientProfile!.shippingCountry,
+        } : null,
       });
     } catch (error) {
       console.error("Error processing gift checkout success:", error);

@@ -9,7 +9,7 @@ import {
   User, MapPin, Heart, Sparkles, FileText, Camera, Video, Phone, X, Upload, 
   ThumbsUp, ThumbsDown, Ruler, Dumbbell, Wine, Cigarette, Briefcase, 
   GraduationCap, DollarSign, Church, Vote, Globe, Baby, Star, Eye, Gift, 
-  Lightbulb, ChevronDown, ChevronUp, Share2, CheckCircle2
+  Lightbulb, ChevronDown, ChevronUp, Share2, CheckCircle2, Package, Shield
 } from "lucide-react";
 import { SiInstagram, SiTiktok, SiX, SiSnapchat } from "react-icons/si";
 import {
@@ -94,6 +94,13 @@ const profileSchema = z.object({
   twitterUsername: z.string().max(100).optional(),
   snapchatUsername: z.string().max(100).optional(),
   
+  // Shipping Address (private)
+  shippingStreet: z.string().max(200).optional(),
+  shippingCity: z.string().max(100).optional(),
+  shippingState: z.string().max(100).optional(),
+  shippingZip: z.string().max(20).optional(),
+  shippingCountry: z.string().max(100).optional(),
+
   // Visibility Settings
   showPhotoPublicly: z.boolean().default(true),
   showLocationPublicly: z.boolean().default(true),
@@ -144,6 +151,11 @@ interface ProfileSetupFormProps {
     hasKids?: string;
     wantsKids?: string;
     zodiacSign?: string;
+    shippingStreet?: string;
+    shippingCity?: string;
+    shippingState?: string;
+    shippingZip?: string;
+    shippingCountry?: string;
     showPhotoPublicly: boolean;
     showLocationPublicly: boolean;
     showFirstNamePublicly: boolean;
@@ -1528,6 +1540,126 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                 </FormItem>
               )}
             />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Shipping Address Section */}
+          <AccordionItem value="shipping" className="border rounded-lg px-4">
+            <AccordionTrigger className="hover:no-underline" data-testid="accordion-shipping">
+              <div className="flex items-center gap-2 text-lg font-medium">
+                <Package className="w-5 h-5 text-primary" />
+                <span>Shipping Address</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4 pt-2">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                  <Shield className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground mb-1">Your address is private</p>
+                    <p>Your shipping address is never shown on your profile or to other users browsing. It is only shared with a gift buyer after they have completed payment through PayGate, so they can ship your gift to you.</p>
+                  </div>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="shippingStreet"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Street Address</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="123 Main Street, Apt 4B"
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="input-shipping-street"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="shippingCity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="New York"
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-shipping-city"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="shippingState"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State / Province</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="NY"
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-shipping-state"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="shippingZip"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ZIP / Postal Code</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="10001"
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-shipping-zip"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="shippingCountry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="United States"
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-shipping-country"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
             </AccordionContent>

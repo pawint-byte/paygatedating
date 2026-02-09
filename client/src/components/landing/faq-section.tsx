@@ -24,7 +24,15 @@ const faqs = [
   },
   {
     question: "How does the gift registry feature work?",
-    answer: "Create your wishlist with items from Amazon, Net-a-Porter (luxury fashion), or travel experiences from Viator and Klook. When someone wants to show genuine interest, they can purchase a gift from your wishlist. Gifts unlock additional gates based on their value ($25 unlocks 1 gate, $50 unlocks 2 gates, $100 unlocks 3 gates). From designer bags to sunset cruises, show your personality through your wishlist."
+    answer: "Create your wishlist with items from Amazon, Net-a-Porter (luxury fashion), or travel experiences from Viator and Klook. When someone wants to show genuine interest, they can purchase a gift from your wishlist through PayGate. All gift purchases go through our secure checkout with a 10% service fee. Gifts unlock additional gates based on their value ($25 unlocks 1 gate, $50 unlocks 2 gates, $100 unlocks 3 gates). From designer bags to sunset cruises, show your personality through your wishlist."
+  },
+  {
+    question: "How does gift delivery work? Do I need to share my address?",
+    answer: "You add your shipping address privately in your profile settings. It is never visible on your profile, in discovery, or to anyone browsing. When someone purchases a gift for you through PayGate, your address is only revealed to the buyer on the payment confirmation page so they can complete the purchase on the retailer's site and ship it to you. They can copy your address with one tap. If you haven't added an address yet, the buyer will be notified and you can add it anytime in your profile settings."
+  },
+  {
+    question: "Is my shipping address safe?",
+    answer: "Absolutely. Your shipping address is stored privately and is never shown on your public profile, in discovery feeds, or to anyone casually browsing. It is only shared with a gift buyer after they have completed a verified payment through PayGate's secure Stripe checkout. This means only someone who has genuinely invested in sending you a gift will ever see your address. You are always in control and can update or remove your address at any time in your profile settings."
   },
   {
     question: "What is the friends-of-friends network?",
