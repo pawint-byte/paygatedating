@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Gift, ExternalLink, Lock, Loader2, Info } from "lucide-react";
+import { Gift, Lock, Loader2, Info, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { RegistryItem, Profile } from "@shared/schema";
@@ -96,8 +96,8 @@ export function GiftWishlist({ recipientProfile, matchId }: GiftWishlistProps) {
             {recipientProfile.displayName}'s Wishlist
           </DialogTitle>
           <DialogDescription>
-            Purchase a gift to show genuine interest and unlock gates faster. 
-            A {GIFT_PLATFORM_FEE_PERCENT}% service fee applies to all purchases.
+            Purchase a gift through PayGate to show genuine interest and unlock gates faster.
+            All purchases include a {GIFT_PLATFORM_FEE_PERCENT}% service fee. We handle the purchase and delivery for you.
           </DialogDescription>
         </DialogHeader>
 
@@ -129,9 +129,16 @@ export function GiftWishlist({ recipientProfile, matchId }: GiftWishlistProps) {
                           <h4 className="font-medium truncate">{item.title}</h4>
                           <p className="text-lg font-bold text-primary">${item.price}</p>
                         </div>
-                        <Badge variant="outline" className="text-xs shrink-0">
-                          {priceTierLabels[item.priceTier as keyof typeof priceTierLabels]?.label || item.priceTier}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            {priceTierLabels[item.priceTier as keyof typeof priceTierLabels]?.label || item.priceTier}
+                          </Badge>
+                          {(item as any).platform && (
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {(item as any).platform}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       {item.description && (
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">

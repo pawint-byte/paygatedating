@@ -1443,7 +1443,24 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return false;
       });
       
-      res.json(filteredItems.filter(item => !item.isPurchased));
+      const safeItems = filteredItems
+        .filter(item => !item.isPurchased)
+        .map(item => {
+          const hostname = (() => {
+            try { return new URL(item.affiliateUrl || '').hostname.toLowerCase(); } catch { return ''; }
+          })();
+          return {
+            ...item,
+            affiliateUrl: undefined,
+            platform: hostname.includes('amazon') ? 'Amazon' 
+              : hostname.includes('net-a-porter') ? 'Net-a-Porter'
+              : hostname.includes('viator') ? 'Viator'
+              : hostname.includes('klook') ? 'Klook'
+              : 'Gift',
+          };
+        });
+      
+      res.json(safeItems);
     } catch (error) {
       console.error("Error fetching user registry:", error);
       res.status(500).json({ message: "Failed to fetch registry" });
