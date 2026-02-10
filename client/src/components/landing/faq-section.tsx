@@ -12,11 +12,15 @@ const faqs = [
   },
   {
     question: "How does the gate progression system work?",
-    answer: "When you express interest in someone, you progress through 5 gates. Each gate requires a small payment ($5-$20) that alternates between the initiator and recipient. Gate 1 unlocks initial messaging, Gate 2 enables photo sharing, Gate 3 allows video calls, Gate 4 unlocks location sharing, and Gate 5 gives you full access to plan dates together. This gradual investment builds trust and commitment."
+    answer: "When you express interest in someone, you progress through 5 gates. Each gate requires a small payment that alternates between you and your match: Gate 1 ($5) sends your interest request, Gate 2 ($5) continues the connection, Gate 3 ($10) unlocks bi-directional chat messaging, Gate 4 ($15) deepens your access, and Gate 5 ($20) gives full access to plan dates together. Both users must pay their turns — if it's your turn, you pay regardless of membership status. This mutual investment ensures both people are genuinely interested."
+  },
+  {
+    question: "Do both people have to pay? What if I'm a premium member?",
+    answer: "Yes, both people pay their alternating gate turns. This is by design — it ensures both sides are equally invested. Premium membership ($9.99/month or $99/year) gives you perks like 2x weekend visibility, priority in discover feeds, advanced search filters, profile view tracking, and exclusive badges, but gate fees remain the same for everyone. Once Gate 3 is reached, both users can message each other freely with no extra cost to reply."
   },
   {
     question: "What are the benefits of the premium subscription?",
-    answer: "Premium members ($9.99/month or $99/year) enjoy unlimited profile views, priority in discover feeds, advanced search filters, the ability to see who viewed their profile, exclusive badges, and reduced gate fees. Premium also unlocks features like gift registry management and enhanced profile customization."
+    answer: "Premium members ($9.99/month or $99/year) enjoy 2x weekend visibility boosts, priority in discover feeds, advanced search filters, the ability to see who viewed their profile, exclusive badges, and enhanced profile customization. Premium also unlocks features like gift registry management and access to seasonal promotions like the Valentine's Day discount."
   },
   {
     question: "How do I access PayGate Dating on my phone?",
