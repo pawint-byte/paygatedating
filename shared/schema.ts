@@ -170,6 +170,7 @@ export const messages = pgTable("messages", {
   senderId: varchar("sender_id").notNull(),
   content: text("content").notNull(),
   mediaUrl: text("media_url"),
+  readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -450,6 +451,10 @@ export const GATE_COSTS = {
 export const SKIP_AHEAD_COST = 50;
 export const PREMIUM_MONTHLY_COST = 9.99;
 export const PREMIUM_YEARLY_COST = 99;
+export const PREMIUM_GATE_DISCOUNT = 0.5;
+export const PREMIUM_FIRST_GATE_FREE = true;
+export const FREE_USER_DAILY_PROFILE_VIEWS = 10;
+export const CONSOLATION_CREDIT_PERCENT = 50;
 export const MINIMUM_WALLET_BALANCE = 20;
 export const GIFT_MINIMUM_VALUE = 25;
 export const GIFT_PLATFORM_FEE_PERCENT = 10;
