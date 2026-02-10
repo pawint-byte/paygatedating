@@ -59,6 +59,9 @@ import {
   type GhostReport,
   type InsertGhostReport,
   GIFT_PROTECTION,
+  gatePullRequests,
+  type GatePullRequest,
+  type InsertGatePullRequest,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, gte, lte, lt, ne, inArray } from "drizzle-orm";
@@ -191,6 +194,12 @@ export interface IStorage {
 
   // Read Receipts
   markMessagesAsRead(matchId: string, readerUserId: string): Promise<void>;
+
+  // Gate Pull Requests
+  createGatePullRequest(request: InsertGatePullRequest): Promise<GatePullRequest>;
+  getGatePullRequests(matchId: string): Promise<GatePullRequest[]>;
+  getPendingPullRequest(matchId: string): Promise<GatePullRequest | undefined>;
+  updateGatePullRequest(id: string, data: Partial<GatePullRequest>): Promise<GatePullRequest | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1183,6 +1192,30 @@ export class DatabaseStorage implements IStorage {
           sql`${messages.readAt} IS NULL`
         )
       );
+  }
+
+  async createGatePullRequest(request: InsertGatePullRequest): Promise<GatePullRequest> {
+    const [created] = await db.insert(gatePullRequests).values(request).returning();
+    return created;
+  }
+
+  async getGatePullRequests(matchId: string): Promise<GatePullRequest[]> {
+    return db.select().from(gatePullRequests).where(eq(gatePullRequests.matchId, matchId)).orderBy(desc(gatePullRequests.createdAt));
+  }
+
+  async getPendingPullRequest(matchId: string): Promise<GatePullRequest | undefined> {
+    const [request] = await db.select().from(gatePullRequests).where(
+      and(
+        eq(gatePullRequests.matchId, matchId),
+        eq(gatePullRequests.status, "pending")
+      )
+    );
+    return request;
+  }
+
+  async updateGatePullRequest(id: string, data: Partial<GatePullRequest>): Promise<GatePullRequest | undefined> {
+    const [updated] = await db.update(gatePullRequests).set(data).where(eq(gatePullRequests.id, id)).returning();
+    return updated;
   }
 }
 

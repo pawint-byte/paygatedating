@@ -59,6 +59,22 @@ const faqs = [
     answer: "Every user gets a unique QR code linking to their public profile. Share it with people you meet in real life - at coffee shops, events, or anywhere you go. When someone scans your code, they see your profile preview and wishlist, giving them a clear idea of what you're looking for and how to impress you. When they sign up through your code, you earn bonus credits! It's the perfect way to attract high-value suitors who are ready to invest in connecting with you."
   },
   {
+    question: "Can I ask the other person to pay for my gate?",
+    answer: "Yes! If it's your turn to pay but you'd prefer the other person covers it, you can send a 'payment request.' They'll see a full forecast showing what each of you has paid so far and what the remaining gates will cost. They can accept (and pay your gate) or decline (leaving you to pay it yourself). There's no limit on how many requests you can send — every connection is unique, and you can manage each one differently."
+  },
+  {
+    question: "What is match intent and why would I set it?",
+    answer: "Match intent lets you label what you're looking for with each specific connection — Serious Romance, Casual Dating, Activity Partner, or Just Chatting. It's set per match, not globally, so you might be pursuing a serious connection with one person and just looking for a hiking buddy with another. When you share your intent, the other person can see it, which helps set expectations."
+  },
+  {
+    question: "Can I pause gate progression if I'm happy where things are?",
+    answer: "Absolutely. If you're enjoying the chat phase and don't want to feel pressured to advance, just hit 'Stay Here.' This pauses gate progression without ending the match — you can keep chatting and getting to know each other. Either person can resume gate progression whenever they're ready to move forward."
+  },
+  {
+    question: "What is the gate payment forecast?",
+    answer: "The forecast shows you a complete picture of the financial side of your match: what each person has paid so far, what the remaining gates cost, and whose turn it is by default. When someone sends you a payment request, the forecast appears automatically so you can make an informed decision. You can also view it anytime from any active match."
+  },
+  {
     question: "What happens if a match doesn't work out?",
     answer: "If a match ends before reaching Gate 3 (where chat unlocks), premium members receive consolation credits — 50% of what they spent on that match is returned to their wallet. This way, you're protected if the other person loses interest early. Non-premium members don't receive consolation credits, but you can always upgrade to get this safety net."
   },

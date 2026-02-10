@@ -804,6 +804,15 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(400).json({ message: "Match already completed" });
       }
 
+      if (match.gatePaused) {
+        return res.status(400).json({ message: "Gate progression is paused. Resume before advancing." });
+      }
+
+      const existingPull = await storage.getPendingPullRequest(matchId);
+      if (existingPull) {
+        return res.status(400).json({ message: "There is a pending pull request. It must be resolved first." });
+      }
+
       const gateNum = parseInt(match.currentGate.replace("gate", ""));
       
       const baseCost = GATE_COSTS[match.currentGate as keyof typeof GATE_COSTS];
@@ -871,6 +880,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       if (match.currentGate === "completed") {
         return res.status(400).json({ message: "Match already completed" });
+      }
+
+      if (match.gatePaused) {
+        return res.status(400).json({ message: "Gate progression is paused. Resume before skipping." });
       }
 
       const wallet = await storage.getWallet(userId);
@@ -1094,6 +1107,334 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     } catch (error) {
       console.error("Error declining match:", error);
       res.status(500).json({ message: "Failed to decline match" });
+    }
+  });
+
+  // Match Intent - set per-match intent
+  app.put("/api/matches/:id/intent", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+      const { intent } = req.body;
+
+      const validIntents = ["serious_romance", "casual_dating", "activity_partner", "just_chatting"];
+      if (!intent || !validIntents.includes(intent)) {
+        return res.status(400).json({ message: "Invalid intent. Choose: serious_romance, casual_dating, activity_partner, just_chatting" });
+      }
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const intentField = match.initiatorId === userId ? "initiatorIntent" : "recipientIntent";
+      const updatedMatch = await storage.updateMatch(matchId, { [intentField]: intent });
+
+      res.json(updatedMatch);
+    } catch (error) {
+      console.error("Error setting match intent:", error);
+      res.status(500).json({ message: "Failed to set match intent" });
+    }
+  });
+
+  // Gate Pause - signal content at current gate level
+  app.post("/api/matches/:id/pause", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (match.currentGate === "completed") {
+        return res.status(400).json({ message: "Match already completed all gates" });
+      }
+
+      if (match.status !== "active") {
+        return res.status(400).json({ message: "Match must be active to pause gate progression" });
+      }
+
+      const updatedMatch = await storage.updateMatch(matchId, {
+        gatePaused: true,
+        gatePausedBy: userId,
+      });
+
+      res.json(updatedMatch);
+    } catch (error) {
+      console.error("Error pausing gate:", error);
+      res.status(500).json({ message: "Failed to pause gate" });
+    }
+  });
+
+  // Gate Resume - remove pause, both can resume
+  app.post("/api/matches/:id/resume", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (!match.gatePaused) {
+        return res.status(400).json({ message: "Gate is not paused" });
+      }
+
+      const updatedMatch = await storage.updateMatch(matchId, {
+        gatePaused: false,
+        gatePausedBy: null,
+      });
+
+      res.json(updatedMatch);
+    } catch (error) {
+      console.error("Error resuming gate:", error);
+      res.status(500).json({ message: "Failed to resume gate" });
+    }
+  });
+
+  // Gate Pull Request - request the other person pay your gate
+  app.post("/api/matches/:id/pull-request", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (match.currentGate === "completed") {
+        return res.status(400).json({ message: "Match already completed" });
+      }
+
+      if (match.gatePaused) {
+        return res.status(400).json({ message: "Gate is paused. Resume before making a pull request." });
+      }
+
+      const existingPull = await storage.getPendingPullRequest(matchId);
+      if (existingPull) {
+        return res.status(400).json({ message: "There is already a pending pull request on this match" });
+      }
+
+      const gateNum = parseInt(match.currentGate.replace("gate", ""));
+      const otherUserId = match.initiatorId === userId ? match.recipientId : match.initiatorId;
+
+      const pullRequest = await storage.createGatePullRequest({
+        matchId,
+        gateNumber: gateNum,
+        requestedBy: userId,
+        requestedFrom: otherUserId,
+      });
+
+      res.json(pullRequest);
+    } catch (error) {
+      console.error("Error creating pull request:", error);
+      res.status(500).json({ message: "Failed to create pull request" });
+    }
+  });
+
+  // Respond to pull request (accept or decline)
+  app.post("/api/matches/:id/pull-request/:pullId/respond", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+      const pullId = req.params.pullId;
+      const { action } = req.body;
+
+      if (!action || !["accept", "decline"].includes(action)) {
+        return res.status(400).json({ message: "Action must be 'accept' or 'decline'" });
+      }
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      const pullRequest = await storage.getPendingPullRequest(matchId);
+      if (!pullRequest || pullRequest.id !== pullId) {
+        return res.status(404).json({ message: "Pull request not found or already responded" });
+      }
+
+      if (pullRequest.requestedFrom !== userId) {
+        return res.status(403).json({ message: "Only the requested person can respond" });
+      }
+
+      if (action === "decline") {
+        await storage.updateGatePullRequest(pullId, {
+          status: "declined",
+          respondedAt: new Date(),
+        });
+        return res.json({ message: "Pull request declined. The original person must pay to advance." });
+      }
+
+      // Accept: the responder pays the gate
+      const gateNum = pullRequest.gateNumber;
+      const baseCost = GATE_COSTS[`gate${gateNum}` as keyof typeof GATE_COSTS];
+      const profile = await storage.getProfile(userId);
+      const isPremium = profile?.subscriptionTier === "premium";
+
+      // Check if gate 1 is free for premium initiator
+      let cost = isPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
+      if (gateNum === 1 && isPremium && match.initiatorId === userId) {
+        cost = 0;
+      }
+
+      const wallet = await storage.getWallet(userId);
+      if (!wallet || (cost > 0 && parseFloat(wallet.balance) < cost)) {
+        return res.status(400).json({ message: "Insufficient wallet balance" });
+      }
+
+      if (cost > 0) {
+        const newBalance = (parseFloat(wallet.balance) - cost).toFixed(2);
+        await storage.updateWalletBalance(userId, newBalance);
+
+        await storage.createTransaction({
+          walletId: wallet.id,
+          amount: (-cost).toFixed(2),
+          type: "gate_payment",
+          description: `Gate ${gateNum}: Payment (Pull Request accepted)${isPremium ? ' (50% Premium Discount)' : ''}`,
+          relatedMatchId: matchId,
+        });
+      }
+
+      const nextGate = gateNum >= 5 ? "completed" : `gate${gateNum + 1}`;
+      const gatePaidByField = `gate${gateNum}PaidBy` as keyof typeof match;
+
+      const updatedMatch = await storage.updateMatch(matchId, {
+        currentGate: nextGate as any,
+        status: gateNum === 1 ? "active" : match.status,
+        lastActionBy: userId,
+        [gatePaidByField]: userId,
+      });
+
+      await storage.updateGatePullRequest(pullId, {
+        status: "accepted",
+        respondedAt: new Date(),
+      });
+
+      if (gateNum === 1) {
+        try {
+          await storage.createConnectionIfNotExists(match.initiatorId, match.recipientId, matchId);
+          await storage.createConnectionIfNotExists(match.recipientId, match.initiatorId, matchId);
+        } catch (connError) {
+          console.error("Error creating connections:", connError);
+        }
+      }
+
+      res.json(updatedMatch);
+    } catch (error) {
+      console.error("Error responding to pull request:", error);
+      res.status(500).json({ message: "Failed to respond to pull request" });
+    }
+  });
+
+  // Gate Forecast - shows projected costs for both sides
+  app.get("/api/matches/:id/forecast", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const initiatorProfile = await storage.getProfile(match.initiatorId);
+      const recipientProfile = await storage.getProfile(match.recipientId);
+      const initiatorPremium = initiatorProfile?.subscriptionTier === "premium";
+      const recipientPremium = recipientProfile?.subscriptionTier === "premium";
+
+      let initiatorPaid = 0;
+      let recipientPaid = 0;
+      const gateHistory: Array<{ gate: number; paidBy: string | null; amount: number }> = [];
+
+      for (let g = 1; g <= 5; g++) {
+        const gatePaidByField = `gate${g}PaidBy` as keyof typeof match;
+        const paidBy = match[gatePaidByField] as string | null;
+        if (paidBy) {
+          const baseCost = GATE_COSTS[`gate${g}` as keyof typeof GATE_COSTS];
+          const payerIsPremium = paidBy === match.initiatorId ? initiatorPremium : recipientPremium;
+          let actualCost = payerIsPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
+          if (g === 1 && payerIsPremium && paidBy === match.initiatorId) {
+            actualCost = 0;
+          }
+          if (paidBy === match.initiatorId) {
+            initiatorPaid += actualCost;
+          } else {
+            recipientPaid += actualCost;
+          }
+          gateHistory.push({ gate: g, paidBy, amount: actualCost });
+        } else {
+          gateHistory.push({ gate: g, paidBy: null, amount: 0 });
+        }
+      }
+
+      const currentGateNum = match.currentGate === "completed" ? 6 : parseInt(match.currentGate.replace("gate", ""));
+      const remainingGates: Array<{ gate: number; defaultPayer: string; costForInitiator: number; costForRecipient: number }> = [];
+
+      for (let g = currentGateNum; g <= 5; g++) {
+        const baseCost = GATE_COSTS[`gate${g}` as keyof typeof GATE_COSTS];
+        const defaultPayer = g % 2 === 1 ? match.initiatorId : match.recipientId;
+        const costIfInitiator = initiatorPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
+        const costIfRecipient = recipientPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
+
+        remainingGates.push({
+          gate: g,
+          defaultPayer,
+          costForInitiator: g === 1 && initiatorPremium ? 0 : costIfInitiator,
+          costForRecipient: costIfRecipient,
+        });
+      }
+
+      const pendingPull = await storage.getPendingPullRequest(matchId);
+      const pullHistory = await storage.getGatePullRequests(matchId);
+
+      res.json({
+        matchId,
+        initiatorId: match.initiatorId,
+        recipientId: match.recipientId,
+        currentGate: match.currentGate,
+        gatePaused: match.gatePaused,
+        gatePausedBy: match.gatePausedBy,
+        initiatorIntent: match.initiatorIntent,
+        recipientIntent: match.recipientIntent,
+        initiatorDisplayName: initiatorProfile?.displayName,
+        recipientDisplayName: recipientProfile?.displayName,
+        paidSoFar: {
+          initiator: initiatorPaid,
+          recipient: recipientPaid,
+        },
+        gateHistory,
+        remainingGates,
+        pendingPullRequest: pendingPull,
+        pullRequestHistory: pullHistory,
+      });
+    } catch (error) {
+      console.error("Error generating forecast:", error);
+      res.status(500).json({ message: "Failed to generate gate forecast" });
     }
   });
 

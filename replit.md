@@ -37,6 +37,9 @@ Reminder preference: Always remind user to publish after making changes.
 ### Key Features
 - **Gate Progression**: Matches track states via a `gate_stage` enum. Chat unlocks at Gate 3.
 - **Premium Member Benefits**: 50% gate fee discount, free Gate 1 on every new match, read receipts on messages, unlimited profile views (free users: 10/day), consolation credits (50% refund if match ends before Gate 3).
+- **Gate Pull Requests**: Users can request the other person pay their gate (push vs pull payment). Receiver sees a full cost forecast before deciding. No limits on requests per match.
+- **Match Intent**: Per-match labels (Serious Romance, Casual Dating, Activity Partner, Just Chatting) let users define what they're looking for with each specific connection.
+- **Gate Pausing**: "Stay Here" feature lets users pause gate progression without ending the match. Both parties can resume anytime.
 - **Gift Purchasing System**: Users can purchase items from wishlists; platform charges a 10% fee and earns affiliate commissions. Gifts can unlock gates based on value. Affiliate URLs are only revealed after verified Stripe payment.
 - **Anti-Scam Protection**: Call verification required before gifting, ghost reporting system (3+ reports = gift suspension), ID verification for gift recipients.
 - **Shipping Address Privacy**: Recipient addresses are never shared with gift senders. When a gift is purchased, the recipient claims it themselves via "My Gifts" and orders from the retailer site using their own address. No address is ever transmitted between users.

@@ -11,6 +11,8 @@ export const transactionTypeEnum = pgEnum("transaction_type", ["deposit", "gate_
 
 export const cryptoPaymentStatusEnum = pgEnum("crypto_payment_status", ["waiting", "confirming", "confirmed", "sending", "partially_paid", "finished", "failed", "refunded", "expired"]);
 export const matchStatusEnum = pgEnum("match_status", ["pending", "active", "declined", "completed"]);
+export const matchIntentEnum = pgEnum("match_intent", ["serious_romance", "casual_dating", "activity_partner", "just_chatting"]);
+export const pullRequestStatusEnum = pgEnum("pull_request_status", ["pending", "accepted", "declined"]);
 export const verificationStatusEnum = pgEnum("verification_status", ["none", "pending", "verified", "rejected"]);
 
 export const TRIAL_CREDITS_AMOUNT = 15;
@@ -160,8 +162,23 @@ export const matches = pgTable("matches", {
   gate3PaidBy: varchar("gate3_paid_by"),
   gate4PaidBy: varchar("gate4_paid_by"),
   gate5PaidBy: varchar("gate5_paid_by"),
+  gatePaused: boolean("gate_paused").default(false).notNull(),
+  gatePausedBy: varchar("gate_paused_by"),
+  initiatorIntent: matchIntentEnum("initiator_intent"),
+  recipientIntent: matchIntentEnum("recipient_intent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const gatePullRequests = pgTable("gate_pull_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  matchId: varchar("match_id").notNull(),
+  gateNumber: integer("gate_number").notNull(),
+  requestedBy: varchar("requested_by").notNull(),
+  requestedFrom: varchar("requested_from").notNull(),
+  status: pullRequestStatusEnum("status").default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  respondedAt: timestamp("responded_at"),
 });
 
 export const messages = pgTable("messages", {
@@ -374,6 +391,13 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   createdAt: true,
 });
 
+export const insertGatePullRequestSchema = createInsertSchema(gatePullRequests).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  respondedAt: true,
+});
+
 export const insertRegistryItemSchema = createInsertSchema(registryItems).omit({
   id: true,
   createdAt: true,
@@ -420,6 +444,8 @@ export type Match = typeof matches.$inferSelect;
 export type InsertMatch = z.infer<typeof insertMatchSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type GatePullRequest = typeof gatePullRequests.$inferSelect;
+export type InsertGatePullRequest = z.infer<typeof insertGatePullRequestSchema>;
 export type RegistryItem = typeof registryItems.$inferSelect;
 export type InsertRegistryItem = z.infer<typeof insertRegistryItemSchema>;
 export type GiftPurchase = typeof giftPurchases.$inferSelect;
