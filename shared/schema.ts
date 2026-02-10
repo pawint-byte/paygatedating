@@ -193,7 +193,7 @@ export const messages = pgTable("messages", {
 
 export const registryVisibilityEnum = pgEnum("registry_visibility", ["public", "matches_only", "after_gate1"]);
 export const registryPriceTierEnum = pgEnum("registry_price_tier", ["starter", "impressive", "vip"]);
-export const giftStatusEnum = pgEnum("gift_status", ["pending", "purchased", "shipped", "delivered", "claimed", "refunded"]);
+export const giftStatusEnum = pgEnum("gift_status", ["pending", "fee_paid", "address_provided", "link_clicked", "purchase_confirmed", "delivered", "refunded", "purchased", "shipped", "claimed"]);
 
 export const registryItems = pgTable("registry_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -210,6 +210,8 @@ export const registryItems = pgTable("registry_items", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const deliveryAddressTypeEnum = pgEnum("delivery_address_type", ["home", "work", "pickup_location", "other"]);
+
 export const giftPurchases = pgTable("gift_purchases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   buyerUserId: varchar("buyer_user_id").notNull(),
@@ -223,6 +225,14 @@ export const giftPurchases = pgTable("gift_purchases", {
   gatesUnlocked: integer("gates_unlocked").default(0).notNull(),
   claimDeadline: timestamp("claim_deadline"),
   stripeSessionId: varchar("stripe_session_id"),
+  deliveryAddress: text("delivery_address"),
+  deliveryAddressType: deliveryAddressTypeEnum("delivery_address_type"),
+  deliveryName: varchar("delivery_name", { length: 200 }),
+  affiliateLinkClicked: boolean("affiliate_link_clicked").default(false).notNull(),
+  affiliateClickedAt: timestamp("affiliate_clicked_at"),
+  purchaseConfirmedAt: timestamp("purchase_confirmed_at"),
+  orderTrackingInfo: text("order_tracking_info"),
+  deliveryConfirmedAt: timestamp("delivery_confirmed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -484,7 +494,13 @@ export const CONSOLATION_CREDIT_PERCENT = 50;
 export const MINIMUM_WALLET_BALANCE = 20;
 export const GIFT_MINIMUM_VALUE = 25;
 export const GIFT_PLATFORM_FEE_PERCENT = 10;
+export const GIFT_PLATFORM_FEE_MINIMUM = 5;
 export const GIFT_AFFILIATE_COMMISSION_PERCENT = 10;
+
+export function calculateGiftPlatformFee(giftValue: number): number {
+  const percentFee = giftValue * GIFT_PLATFORM_FEE_PERCENT / 100;
+  return Math.max(percentFee, GIFT_PLATFORM_FEE_MINIMUM);
+}
 
 export const callTypeEnum = pgEnum("call_type", ["voice", "video"]);
 export const callStatusEnum = pgEnum("call_status", ["pending", "confirmed", "disputed"]);

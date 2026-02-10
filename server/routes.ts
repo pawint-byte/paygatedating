@@ -16,7 +16,9 @@ import {
   REFERRAL_BONUS_AMOUNT,
   GIFT_MINIMUM_VALUE,
   GIFT_PLATFORM_FEE_PERCENT,
+  GIFT_PLATFORM_FEE_MINIMUM,
   GIFT_PROTECTION,
+  calculateGiftPlatformFee,
   PREMIUM_GATE_DISCOUNT,
   CONSOLATION_CREDIT_PERCENT,
   FREE_USER_DAILY_PROFILE_VIEWS,
@@ -2327,8 +2329,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         });
       }
 
-      const platformFee = giftValue * GIFT_PLATFORM_FEE_PERCENT / 100;
-      const totalCharge = giftValue + platformFee;
+      const platformFee = calculateGiftPlatformFee(giftValue);
       
       await storage.updateRegistryItem(registryItemId, { isReserved: true });
 
@@ -2336,6 +2337,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       const host = req.headers['host'];
       const baseUrl = `${protocol}://${host}`;
+
+      const feeDescription = platformFee === GIFT_PLATFORM_FEE_MINIMUM
+        ? `$${GIFT_PLATFORM_FEE_MINIMUM} minimum service fee`
+        : `${GIFT_PLATFORM_FEE_PERCENT}% service fee ($${platformFee.toFixed(2)})`;
 
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
@@ -2345,10 +2350,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
             price_data: {
               currency: 'usd',
               product_data: {
-                name: `Gift: ${item.title}`,
-                description: `Gift for your match (includes ${GIFT_PLATFORM_FEE_PERCENT}% service fee)`,
+                name: `Gift Service Fee: ${item.title}`,
+                description: `Platform fee to gift "${item.title}" (${feeDescription}). You will purchase the $${giftValue.toFixed(2)} item directly from the retailer using our affiliate link.`,
               },
-              unit_amount: Math.round(totalCharge * 100),
+              unit_amount: Math.round(platformFee * 100),
             },
             quantity: 1,
           },
@@ -2366,7 +2371,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         cancel_url: `${baseUrl}/gift-cancel?item_id=${registryItemId}`,
       });
 
-      res.json({ url: session.url });
+      res.json({ url: session.url, platformFee, giftValue });
     } catch (error) {
       console.error("Error creating gift checkout:", error);
       res.status(500).json({ message: "Failed to create checkout session" });
@@ -2408,15 +2413,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       const { registryItemId, recipientUserId, matchId, giftValue, platformFee } = session.metadata;
 
-      let gatesUnlocked = 0;
-      const giftValueNum = parseFloat(giftValue);
-      if (giftValueNum >= 100) gatesUnlocked = 3;
-      else if (giftValueNum >= 50) gatesUnlocked = 2;
-      else if (giftValueNum >= 25) gatesUnlocked = 1;
-
-      const claimDeadline = new Date();
-      claimDeadline.setDate(claimDeadline.getDate() + 14);
-
       const purchase = await storage.createGiftPurchase({
         buyerUserId,
         recipientUserId,
@@ -2424,36 +2420,18 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         matchId: matchId || null,
         giftValue,
         platformFee,
-        claimDeadline,
         stripeSessionId: session_id as string,
       });
 
-      await storage.updateRegistryItem(registryItemId, { isPurchased: true, isReserved: false });
-      await storage.updateGiftPurchase(purchase.id, { status: 'purchased', gatesUnlocked });
-
-      if (matchId) {
-        const match = await storage.getMatch(matchId);
-        if (match && gatesUnlocked > 0 && match.currentGate !== "completed") {
-          const gateOrder = ["gate1", "gate2", "gate3", "gate4", "gate5", "completed"];
-          const currentIndex = gateOrder.indexOf(match.currentGate);
-          
-          if (currentIndex >= 0) {
-            const newIndex = Math.min(currentIndex + gatesUnlocked, gateOrder.length - 1);
-            const newGate = gateOrder[newIndex];
-            
-            await storage.updateMatch(matchId, {
-              currentGate: newGate as any,
-              status: "active",
-            });
-          }
-        }
-      }
+      await storage.updateRegistryItem(registryItemId, { isReserved: true });
+      await storage.updateGiftPurchase(purchase.id, { status: 'fee_paid' });
 
       const item = await storage.getRegistryItem(registryItemId);
       res.json({ 
         purchase,
         itemTitle: item?.title,
-        gatesUnlocked,
+        nextStep: 'waiting_for_address',
+        message: 'Service fee paid. Waiting for recipient to provide delivery address.',
       });
     } catch (error) {
       console.error("Error processing gift checkout success:", error);
@@ -2485,7 +2463,27 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     try {
       const userId = req.user.claims.sub;
       const purchases = await storage.getGiftPurchasesByBuyer(userId);
-      res.json(purchases);
+      
+      const enrichedPurchases = await Promise.all(
+        purchases.map(async (purchase) => {
+          const recipientProfile = await storage.getProfile(purchase.recipientUserId);
+          const registryItem = await storage.getRegistryItem(purchase.registryItemId);
+          const safeItem = registryItem ? {
+            id: registryItem.id,
+            title: registryItem.title,
+            price: registryItem.price,
+            imageUrl: registryItem.imageUrl,
+            affiliateUrl: registryItem.affiliateUrl,
+          } : null;
+          return {
+            ...purchase,
+            recipientName: recipientProfile?.displayName?.split(' ')[0] || "Your Match",
+            item: safeItem,
+          };
+        })
+      );
+      
+      res.json(enrichedPurchases);
     } catch (error) {
       console.error("Error fetching sent gifts:", error);
       res.status(500).json({ message: "Failed to fetch sent gifts" });
@@ -2506,7 +2504,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
             title: registryItem.title,
             price: registryItem.price,
             imageUrl: registryItem.imageUrl,
-            ...(purchase.status === "claimed" ? { affiliateUrl: registryItem.affiliateUrl } : {}),
+            affiliateUrl: registryItem.affiliateUrl,
           } : null;
           return {
             ...purchase,
@@ -2523,7 +2521,155 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
   });
 
-  app.post("/api/gifts/:id/claim", isAuthenticated, async (req: any, res) => {
+  app.post("/api/gifts/:id/provide-address", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const giftId = req.params.id;
+      const { deliveryAddress, deliveryAddressType, deliveryName } = req.body;
+
+      if (!deliveryAddress) {
+        return res.status(400).json({ message: "Delivery address is required" });
+      }
+
+      const purchase = await storage.getGiftPurchase(giftId);
+      if (!purchase) {
+        return res.status(404).json({ message: "Gift not found" });
+      }
+
+      if (purchase.recipientUserId !== userId) {
+        return res.status(403).json({ message: "Only the recipient can provide a delivery address" });
+      }
+
+      if (purchase.status !== "fee_paid") {
+        return res.status(400).json({ message: "Address can only be provided after the service fee is paid" });
+      }
+
+      const updatedPurchase = await storage.updateGiftPurchase(giftId, {
+        deliveryAddress,
+        deliveryAddressType: deliveryAddressType || "home",
+        deliveryName: deliveryName || null,
+        status: "address_provided",
+      });
+
+      res.json({ purchase: updatedPurchase, message: "Address provided. The buyer can now purchase the gift." });
+    } catch (error) {
+      console.error("Error providing delivery address:", error);
+      res.status(500).json({ message: "Failed to save delivery address" });
+    }
+  });
+
+  app.get("/api/gifts/:id/details", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const giftId = req.params.id;
+
+      const purchase = await storage.getGiftPurchase(giftId);
+      if (!purchase) {
+        return res.status(404).json({ message: "Gift not found" });
+      }
+
+      if (purchase.buyerUserId !== userId && purchase.recipientUserId !== userId) {
+        return res.status(403).json({ message: "Not authorized to view this gift" });
+      }
+
+      const item = await storage.getRegistryItem(purchase.registryItemId);
+      const isBuyer = purchase.buyerUserId === userId;
+      const otherUserId = isBuyer ? purchase.recipientUserId : purchase.buyerUserId;
+      const otherProfile = await storage.getProfile(otherUserId);
+
+      const response: any = {
+        purchase,
+        item: item ? {
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          imageUrl: item.imageUrl,
+          affiliateUrl: isBuyer ? item.affiliateUrl : undefined,
+        } : null,
+        otherUserName: otherProfile?.displayName?.split(' ')[0] || "Your Match",
+        role: isBuyer ? 'buyer' : 'recipient',
+      };
+
+      if (isBuyer && purchase.deliveryAddress && 
+          ['address_provided', 'link_clicked', 'purchase_confirmed', 'delivered'].includes(purchase.status)) {
+        response.deliveryAddress = purchase.deliveryAddress;
+        response.deliveryAddressType = purchase.deliveryAddressType;
+        response.deliveryName = purchase.deliveryName;
+      }
+
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching gift details:", error);
+      res.status(500).json({ message: "Failed to fetch gift details" });
+    }
+  });
+
+  app.post("/api/gifts/:id/track-affiliate-click", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const giftId = req.params.id;
+
+      const purchase = await storage.getGiftPurchase(giftId);
+      if (!purchase) {
+        return res.status(404).json({ message: "Gift not found" });
+      }
+
+      if (purchase.buyerUserId !== userId) {
+        return res.status(403).json({ message: "Only the buyer can track affiliate clicks" });
+      }
+
+      if (!['address_provided', 'link_clicked'].includes(purchase.status)) {
+        return res.status(400).json({ message: "Affiliate link can only be clicked after address is provided" });
+      }
+
+      const updatedPurchase = await storage.updateGiftPurchase(giftId, {
+        affiliateLinkClicked: true,
+        affiliateClickedAt: new Date(),
+        status: "link_clicked",
+      });
+
+      res.json({ purchase: updatedPurchase, message: "Affiliate link click recorded" });
+    } catch (error) {
+      console.error("Error tracking affiliate click:", error);
+      res.status(500).json({ message: "Failed to track affiliate click" });
+    }
+  });
+
+  app.post("/api/gifts/:id/confirm-purchase", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const giftId = req.params.id;
+      const { orderTrackingInfo } = req.body;
+
+      const purchase = await storage.getGiftPurchase(giftId);
+      if (!purchase) {
+        return res.status(404).json({ message: "Gift not found" });
+      }
+
+      if (purchase.buyerUserId !== userId) {
+        return res.status(403).json({ message: "Only the buyer can confirm purchase" });
+      }
+
+      if (!purchase.affiliateLinkClicked) {
+        return res.status(400).json({ message: "You must use the affiliate link to purchase the gift first" });
+      }
+
+      const updatedPurchase = await storage.updateGiftPurchase(giftId, {
+        status: "purchase_confirmed",
+        purchaseConfirmedAt: new Date(),
+        orderTrackingInfo: orderTrackingInfo || null,
+      });
+
+      await storage.updateRegistryItem(purchase.registryItemId, { isPurchased: true, isReserved: false });
+
+      res.json({ purchase: updatedPurchase, message: "Purchase confirmed. Waiting for recipient to confirm delivery." });
+    } catch (error) {
+      console.error("Error confirming purchase:", error);
+      res.status(500).json({ message: "Failed to confirm purchase" });
+    }
+  });
+
+  app.post("/api/gifts/:id/confirm-delivery", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const giftId = req.params.id;
@@ -2534,24 +2680,51 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       }
 
       if (purchase.recipientUserId !== userId) {
-        return res.status(403).json({ message: "Not authorized" });
+        return res.status(403).json({ message: "Only the recipient can confirm delivery" });
       }
 
-      if (purchase.status === "claimed") {
-        const item = await storage.getRegistryItem(purchase.registryItemId);
-        return res.json({ purchase, affiliateUrl: item?.affiliateUrl, itemTitle: item?.title });
+      if (purchase.status !== "purchase_confirmed") {
+        return res.status(400).json({ message: "Cannot confirm delivery until purchase is confirmed" });
       }
 
-      if (purchase.status !== "purchased" && purchase.status !== "delivered" && purchase.status !== "shipped") {
-        return res.status(400).json({ message: "Gift cannot be claimed yet" });
+      let gatesUnlocked = 0;
+      const giftValueNum = parseFloat(purchase.giftValue);
+      if (giftValueNum >= 100) gatesUnlocked = 3;
+      else if (giftValueNum >= 50) gatesUnlocked = 2;
+      else if (giftValueNum >= 25) gatesUnlocked = 1;
+
+      const updatedPurchase = await storage.updateGiftPurchase(giftId, {
+        status: "delivered",
+        deliveryConfirmedAt: new Date(),
+        gatesUnlocked,
+      });
+
+      if (purchase.matchId) {
+        const match = await storage.getMatch(purchase.matchId);
+        if (match && gatesUnlocked > 0 && match.currentGate !== "completed") {
+          const gateOrder = ["gate1", "gate2", "gate3", "gate4", "gate5", "completed"];
+          const currentIndex = gateOrder.indexOf(match.currentGate);
+          
+          if (currentIndex >= 0) {
+            const newIndex = Math.min(currentIndex + gatesUnlocked, gateOrder.length - 1);
+            const newGate = gateOrder[newIndex];
+            
+            await storage.updateMatch(purchase.matchId, {
+              currentGate: newGate as any,
+              status: "active",
+            });
+          }
+        }
       }
 
-      const updatedPurchase = await storage.updateGiftPurchase(giftId, { status: "claimed" });
-      const item = await storage.getRegistryItem(purchase.registryItemId);
-      res.json({ purchase: updatedPurchase, affiliateUrl: item?.affiliateUrl, itemTitle: item?.title });
+      res.json({ 
+        purchase: updatedPurchase, 
+        gatesUnlocked,
+        message: `Delivery confirmed! ${gatesUnlocked > 0 ? `${gatesUnlocked} gate(s) unlocked.` : ''}` 
+      });
     } catch (error) {
-      console.error("Error claiming gift:", error);
-      res.status(500).json({ message: "Failed to claim gift" });
+      console.error("Error confirming delivery:", error);
+      res.status(500).json({ message: "Failed to confirm delivery" });
     }
   });
 
@@ -2747,8 +2920,8 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(403).json({ message: "Only the buyer can revoke a gift" });
       }
 
-      if (purchase.status === "claimed") {
-        return res.status(400).json({ message: "Cannot revoke a gift that has already been claimed" });
+      if (purchase.status === "delivered") {
+        return res.status(400).json({ message: "Cannot revoke a gift that has already been delivered" });
       }
 
       if (purchase.status === "refunded") {
@@ -2788,7 +2961,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       const updated = await storage.updateGiftPurchase(giftId, { status: "refunded" });
       
-      res.json({ purchase: updated, message: "Gift revoked and refund processed" });
+      res.json({ purchase: updated, message: "Gift revoked and service fee refunded" });
     } catch (error) {
       console.error("Error revoking gift:", error);
       res.status(500).json({ message: "Failed to revoke gift" });

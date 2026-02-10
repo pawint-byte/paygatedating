@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Inbox, Gift, Clock, CheckCircle2, ShoppingBag, Sparkles, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Inbox, Gift, Clock, CheckCircle2, ShoppingBag, Sparkles, TrendingUp, MapPin, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GiftPurchase, RegistryItem } from "@shared/schema";
 
@@ -11,11 +12,11 @@ interface GiftWithItem extends GiftPurchase {
 }
 
 const statusConfig: Record<string, { icon: typeof Clock; label: string; color: string }> = {
-  pending: { icon: Clock, label: "Processing", color: "text-amber-500" },
-  purchased: { icon: Gift, label: "Gift Purchased", color: "text-blue-500" },
-  shipped: { icon: ShoppingBag, label: "On Its Way", color: "text-purple-500" },
+  fee_paid: { icon: Clock, label: "Fee Paid - Provide Address", color: "text-amber-500" },
+  address_provided: { icon: MapPin, label: "Address Shared", color: "text-blue-500" },
+  link_clicked: { icon: ExternalLink, label: "Being Purchased", color: "text-purple-500" },
+  purchase_confirmed: { icon: ShoppingBag, label: "On Its Way", color: "text-purple-500" },
   delivered: { icon: CheckCircle2, label: "Delivered", color: "text-emerald-500" },
-  claimed: { icon: Sparkles, label: "Claimed", color: "text-primary" },
 };
 
 export function IdeaInbox() {
@@ -28,8 +29,8 @@ export function IdeaInbox() {
   });
 
   const activeGifts = receivedGifts.filter(g => g.status !== "refunded");
-  const pendingGifts = activeGifts.filter(g => ["pending", "purchased", "shipped"].includes(g.status));
-  const completedGifts = activeGifts.filter(g => ["delivered", "claimed"].includes(g.status));
+  const pendingGifts = activeGifts.filter(g => g.status !== "delivered" && g.status !== "refunded");
+  const completedGifts = activeGifts.filter(g => g.status === "delivered");
 
   const totalWishlistValue = registryItems
     .filter(i => !i.isPurchased)
@@ -54,7 +55,7 @@ export function IdeaInbox() {
   return (
     <div className="space-y-4" data-testid="section-idea-inbox">
       <div className="flex items-center gap-2">
-        <Inbox className="w-5 h-5 text-primary" />
+        <Inbox className="w-5 h-5" />
         <h2 className="text-lg font-semibold">Idea Inbox</h2>
         {pendingGifts.length > 0 && (
           <Badge variant="default" className="text-xs">
@@ -66,7 +67,7 @@ export function IdeaInbox() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Card>
           <CardContent className="p-4 text-center">
-            <TrendingUp className="w-5 h-5 mx-auto text-primary mb-1" />
+            <TrendingUp className="w-5 h-5 mx-auto mb-1" />
             <p className="text-2xl font-bold" data-testid="text-wishlist-value">${totalWishlistValue.toFixed(0)}</p>
             <p className="text-xs text-muted-foreground">Wishlist Value</p>
           </CardContent>
@@ -97,22 +98,23 @@ export function IdeaInbox() {
           </CardHeader>
           <CardContent className="space-y-2">
             {pendingGifts.map((gift) => {
-              const config = statusConfig[gift.status] || statusConfig.pending;
+              const config = statusConfig[gift.status] || statusConfig.fee_paid;
               const StatusIcon = config.icon;
+              const needsAddress = gift.status === "fee_paid";
               return (
                 <div
                   key={gift.id}
-                  className="flex items-center gap-3 p-3 rounded-md bg-muted/50"
+                  className={`flex items-center gap-3 p-3 rounded-md ${needsAddress ? "bg-amber-500/10 border border-amber-500/20" : "bg-muted/50"}`}
                   data-testid={`inbox-gift-${gift.id}`}
                 >
-                  <div className={`w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0`}>
+                  <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
                     <StatusIcon className={`w-4 h-4 ${config.color}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
                       {gift.item?.title || `Gift worth $${gift.giftValue}`}
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs text-muted-foreground">
                         From {gift.senderName || "an admirer"}
                       </span>
@@ -120,8 +122,13 @@ export function IdeaInbox() {
                         {config.label}
                       </Badge>
                     </div>
+                    {needsAddress && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
+                        Action required: Provide your delivery address
+                      </p>
+                    )}
                   </div>
-                  <span className="text-sm font-semibold text-primary flex-shrink-0">${gift.giftValue}</span>
+                  <span className="text-sm font-semibold flex-shrink-0">${gift.giftValue}</span>
                 </div>
               );
             })}
@@ -139,7 +146,7 @@ export function IdeaInbox() {
           </CardHeader>
           <CardContent className="space-y-2">
             {completedGifts.slice(0, 5).map((gift) => {
-              const config = statusConfig[gift.status] || statusConfig.claimed;
+              const config = statusConfig[gift.status] || statusConfig.delivered;
               const StatusIcon = config.icon;
               return (
                 <div

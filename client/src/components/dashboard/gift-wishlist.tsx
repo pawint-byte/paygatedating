@@ -7,7 +7,7 @@ import { Gift, Lock, Loader2, Info, ShoppingBag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { RegistryItem, Profile } from "@shared/schema";
-import { GIFT_PLATFORM_FEE_PERCENT } from "@shared/schema";
+import { calculateGiftPlatformFee, GIFT_PLATFORM_FEE_PERCENT, GIFT_PLATFORM_FEE_MINIMUM } from "@shared/schema";
 import { useState } from "react";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 
@@ -75,10 +75,9 @@ export function GiftWishlist({ recipientProfile, matchId }: GiftWishlistProps) {
 
   const availableItems = items.filter(item => !item.isPurchased && !item.isReserved);
 
-  const calculateTotal = (price: string) => {
+  const calculateServiceFee = (price: string) => {
     const giftValue = parseFloat(price);
-    const fee = giftValue * GIFT_PLATFORM_FEE_PERCENT / 100;
-    return (giftValue + fee).toFixed(2);
+    return calculateGiftPlatformFee(giftValue).toFixed(2);
   };
 
   return (
@@ -92,12 +91,12 @@ export function GiftWishlist({ recipientProfile, matchId }: GiftWishlistProps) {
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Gift className="w-5 h-5 text-primary" />
+            <Gift className="w-5 h-5" />
             {recipientProfile.displayName}'s Wishlist
           </DialogTitle>
           <DialogDescription>
-            Purchase a gift through PayGate to show genuine interest and unlock gates faster.
-            All purchases include a {GIFT_PLATFORM_FEE_PERCENT}% service fee. We handle the purchase and delivery for you.
+            Pay a small service fee, then purchase the gift directly from the retailer via our link.
+            Service fee is {GIFT_PLATFORM_FEE_PERCENT}% (${GIFT_PLATFORM_FEE_MINIMUM} minimum).
           </DialogDescription>
         </DialogHeader>
 
@@ -127,7 +126,7 @@ export function GiftWishlist({ recipientProfile, matchId }: GiftWishlistProps) {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <h4 className="font-medium truncate">{item.title}</h4>
-                          <p className="text-lg font-bold text-primary">${item.price}</p>
+                          <p className="text-lg font-bold">${item.price}</p>
                         </div>
                         <div className="flex flex-col items-end gap-1">
                           <Badge variant="outline" className="text-xs shrink-0">
@@ -147,7 +146,7 @@ export function GiftWishlist({ recipientProfile, matchId }: GiftWishlistProps) {
                       )}
                       <div className="flex items-center justify-between mt-3">
                         <div className="text-xs text-muted-foreground">
-                          Total with fee: <span className="font-medium">${calculateTotal(item.price)}</span>
+                          Service fee: <span className="font-medium">${calculateServiceFee(item.price)}</span>
                         </div>
                         <Button
                           size="sm"
@@ -163,7 +162,7 @@ export function GiftWishlist({ recipientProfile, matchId }: GiftWishlistProps) {
                           ) : (
                             <>
                               <Gift className="w-4 h-4 mr-2" />
-                              Buy Gift
+                              Pay Fee
                             </>
                           )}
                         </Button>
@@ -176,9 +175,16 @@ export function GiftWishlist({ recipientProfile, matchId }: GiftWishlistProps) {
             
             <div className="bg-muted rounded-lg p-3 text-xs text-muted-foreground flex items-start gap-2">
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
-              <p>
-                Gifts unlock gates automatically based on value: $25+ unlocks 1 gate, $50+ unlocks 2 gates, $100+ unlocks 3 gates.
-              </p>
+              <div>
+                <p className="font-medium mb-1">How it works</p>
+                <ol className="list-decimal list-inside space-y-0.5">
+                  <li>Pay the service fee to reserve the gift</li>
+                  <li>Your match provides a delivery address</li>
+                  <li>Purchase the gift directly from the retailer using our link</li>
+                  <li>Confirm your purchase and your match confirms delivery</li>
+                  <li>Gates unlock based on gift value: $25+ = 1 gate, $50+ = 2, $100+ = 3</li>
+                </ol>
+              </div>
             </div>
           </div>
         )}

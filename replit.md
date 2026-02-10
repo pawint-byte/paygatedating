@@ -40,10 +40,13 @@ Reminder preference: Always remind user to publish after making changes.
 - **Gate Pull Requests**: Users can request the other person pay their gate (push vs pull payment). Receiver sees a full cost forecast before deciding. No limits on requests per match.
 - **Match Intent**: Per-match labels (Serious Romance, Casual Dating, Activity Partner, Just Chatting) let users define what they're looking for with each specific connection.
 - **Gate Pausing**: "Stay Here" feature lets users pause gate progression without ending the match. Both parties can resume anytime.
-- **Gift Purchasing System**: Users can purchase items from wishlists; platform charges a 10% fee and earns affiliate commissions. Gifts can unlock gates based on value. Affiliate URLs are only revealed after verified Stripe payment.
+- **Gift Purchasing System (Redesigned)**: Buyer pays a service fee (10% of gift value or $5, whichever is greater) via Stripe. Recipient provides a delivery address (home, work, Amazon pickup, etc.) which is shared with the buyer. Buyer then purchases the item directly from the retailer using the platform's affiliate link (click is tracked). Buyer confirms purchase, recipient confirms delivery, and gates unlock. Platform earns the service fee + affiliate commission.
+  - **Gift Flow**: fee_paid → address_provided → link_clicked → purchase_confirmed → delivered
+  - **Gift API Endpoints**: POST /api/gifts/checkout, POST /api/gifts/:id/provide-address, POST /api/gifts/:id/track-affiliate-click, POST /api/gifts/:id/confirm-purchase, POST /api/gifts/:id/confirm-delivery, GET /api/gifts/:id/details
+  - **Fee Formula**: `calculateGiftPlatformFee(giftValue)` = max(giftValue * 10%, $5)
 - **Anti-Scam Protection**: Call verification required before gifting, ghost reporting system (3+ reports = gift suspension), ID verification for gift recipients.
-- **Shipping Address Privacy**: Recipient addresses are never shared with gift senders. When a gift is purchased, the recipient claims it themselves via "My Gifts" and orders from the retailer site using their own address. No address is ever transmitted between users.
-- **Gift Revocation**: Buyers can cancel unclaimed gifts for Stripe refund with gate progress reversal.
+- **Delivery Address**: Recipient provides address directly to platform; buyer sees it to ship the gift. Address types: home, work, pickup_location, other.
+- **Gift Revocation**: Buyers can cancel gifts before delivery for Stripe refund of service fee with gate progress reversal.
 - **Maintenance Mode**: Set `MAINTENANCE_MODE=true` environment variable to show a branded maintenance page during updates. API routes remain accessible.
 - **3D Gift Delivery Experience**: Immersive 3D animations when receiving gifts, with tier-based visual effects (Starter/Impressive/VIP). Uses React Three Fiber with WebGL fallback for unsupported browsers. Demo available at `/gift-demo`.
 - **AI Onboarding Assistant**: A floating chatbot (OpenAI gpt-4o-mini) provides personalized guidance on profile setup, gate system, and wishlist suggestions.
