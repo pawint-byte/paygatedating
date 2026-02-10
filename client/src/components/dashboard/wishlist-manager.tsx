@@ -254,7 +254,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
         try {
           const url = new URL(text);
           const hostname = url.hostname.toLowerCase();
-          const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
+          const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
           const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
           const isLuxury = hostname.includes('net-a-porter.com');
           
@@ -307,7 +307,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
       try {
         const url = new URL(value);
         const hostname = url.hostname.toLowerCase();
-        const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
+        const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
         const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
         const isLuxury = hostname.includes('net-a-porter.com');
         if (isAmazon || isTravel || isLuxury) {
@@ -447,6 +447,45 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                       }}
                       data-testid="input-item-url-step1"
                     />
+                    {form.watch("affiliateUrl") && !urlPasted && (
+                      <Button
+                        type="button"
+                        className="w-full gap-2"
+                        onClick={() => {
+                          const url = form.getValues("affiliateUrl");
+                          if (url) {
+                            try {
+                              const urlObj = new URL(url);
+                              const hostname = urlObj.hostname.toLowerCase();
+                              const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
+                              const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
+                              const isLuxury = hostname.includes('net-a-porter.com');
+                              if (isAmazon || isTravel || isLuxury) {
+                                setUrlPasted(true);
+                                setCurrentStep(2);
+                                scrapeUrl(url);
+                              } else {
+                                toast({
+                                  title: "Invalid Link",
+                                  description: "Only Amazon, Viator, Klook, and Net-a-Porter links are supported.",
+                                  variant: "destructive",
+                                });
+                              }
+                            } catch {
+                              toast({
+                                title: "Invalid URL",
+                                description: "Please enter a valid product URL.",
+                                variant: "destructive",
+                              });
+                            }
+                          }
+                        }}
+                        data-testid="button-add-url"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Add This Item
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
@@ -464,7 +503,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           try {
                             const url = new URL(value);
                             const hostname = url.hostname.toLowerCase();
-                            const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
+                            const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
                             const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
                             const isLuxury = hostname.includes('net-a-porter.com');
                             if (!isAmazon && !isTravel && !isLuxury) {

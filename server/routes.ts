@@ -1973,7 +1973,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     try {
       const urlObj = new URL(url);
       const hostname = urlObj.hostname.toLowerCase();
-      const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com');
+      const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
       const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
       const isLuxury = hostname.includes('net-a-porter.com');
       
@@ -2037,7 +2037,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       
       // Amazon affiliate tagging
       const amazonTag = process.env.AMAZON_ASSOCIATE_TAG;
-      if (amazonTag && (urlObj.hostname.includes('amazon.com') || urlObj.hostname.includes('amzn.to') || urlObj.hostname.includes('amzn.com'))) {
+      if (amazonTag && (urlObj.hostname.includes('amazon.com') || urlObj.hostname.includes('amzn.to') || urlObj.hostname.includes('amzn.com') || urlObj.hostname === 'a.co')) {
         urlObj.searchParams.set('tag', amazonTag);
         return urlObj.toString();
       }
@@ -2154,7 +2154,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         const urlObj = new URL(url);
         const hostname = urlObj.hostname.toLowerCase();
         let platform = "Other";
-        if (hostname.includes("amazon.com") || hostname.includes("amzn.to")) platform = "Amazon";
+        if (hostname.includes("amazon.com") || hostname.includes("amzn.to") || hostname === "a.co") platform = "Amazon";
         else if (hostname.includes("viator.com")) platform = "Viator";
         else if (hostname.includes("klook.com")) platform = "Klook";
         else if (hostname.includes("net-a-porter.com")) platform = "Net-a-Porter";
