@@ -35,9 +35,12 @@ Reminder preference: Always remind user to publish after making changes.
 - **Key Entities**: Users, sessions, profiles, wallets, transactions, matches, messages.
 
 ### Key Features
-- **Gate Progression**: Matches track states via a `gate_stage` enum.
+- **Gate Progression**: Matches track states via a `gate_stage` enum. Chat unlocks at Gate 3.
+- **Premium Member Benefits**: 50% gate fee discount, free Gate 1 on every new match, read receipts on messages, unlimited profile views (free users: 10/day), consolation credits (50% refund if match ends before Gate 3).
 - **Gift Purchasing System**: Users can purchase items from wishlists; platform charges a 10% fee and earns affiliate commissions. Gifts can unlock gates based on value. Affiliate URLs are only revealed after verified Stripe payment.
+- **Anti-Scam Protection**: Call verification required before gifting, ghost reporting system (3+ reports = gift suspension), ID verification for gift recipients.
 - **Shipping Address Privacy**: Recipient addresses are never shared with gift senders. When a gift is purchased, the recipient claims it themselves via "My Gifts" and orders from the retailer site using their own address. No address is ever transmitted between users.
+- **Gift Revocation**: Buyers can cancel unclaimed gifts for Stripe refund with gate progress reversal.
 - **Maintenance Mode**: Set `MAINTENANCE_MODE=true` environment variable to show a branded maintenance page during updates. API routes remain accessible.
 - **3D Gift Delivery Experience**: Immersive 3D animations when receiving gifts, with tier-based visual effects (Starter/Impressive/VIP). Uses React Three Fiber with WebGL fallback for unsupported browsers. Demo available at `/gift-demo`.
 - **AI Onboarding Assistant**: A floating chatbot (OpenAI gpt-4o-mini) provides personalized guidance on profile setup, gate system, and wishlist suggestions.

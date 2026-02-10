@@ -188,6 +188,9 @@ export interface IStorage {
   createGhostReport(report: InsertGhostReport): Promise<GhostReport>;
   getGhostReportsByReported(userId: string): Promise<GhostReport[]>;
   getGhostReportCount(userId: string): Promise<number>;
+
+  // Read Receipts
+  markMessagesAsRead(matchId: string, readerUserId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1168,6 +1171,18 @@ export class DatabaseStorage implements IStorage {
       )
     );
     return reports.length;
+  }
+
+  async markMessagesAsRead(matchId: string, readerUserId: string): Promise<void> {
+    await db.update(messages)
+      .set({ readAt: new Date() })
+      .where(
+        and(
+          eq(messages.matchId, matchId),
+          sql`${messages.senderId} != ${readerUserId}`,
+          sql`${messages.readAt} IS NULL`
+        )
+      );
   }
 }
 

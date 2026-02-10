@@ -17,6 +17,9 @@ import {
   GIFT_MINIMUM_VALUE,
   GIFT_PLATFORM_FEE_PERCENT,
   GIFT_PROTECTION,
+  PREMIUM_GATE_DISCOUNT,
+  CONSOLATION_CREDIT_PERCENT,
+  FREE_USER_DAILY_PROFILE_VIEWS,
   type CallLog,
 } from "@shared/schema";
 import { z } from "zod";
@@ -37,6 +40,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  const profileViewCounts = new Map<string, { count: number; date: string }>();
   await setupAuth(app);
   registerAuthRoutes(app);
 
@@ -400,6 +404,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
   app.get("/api/profiles/discover", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+
       console.log("[Discover API] User ID:", userId);
       
       const prefs = await storage.getSearchPreferences(userId);
@@ -701,13 +706,13 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(403).json({ message: "Premium subscription required to send interest" });
       }
 
-      // Check for first match free eligibility (don't consume yet)
+      const isPremium = profile.subscriptionTier === "premium";
+
       const rewards = await storage.getUserRewards(userId);
-      const eligibleForFirstMatchFree = rewards && !rewards.firstMatchFreeUsed;
-      
+      const eligibleForFirstMatchFree = !isPremium && rewards && !rewards.firstMatchFreeUsed;
+
       const wallet = await storage.getWallet(userId);
-      if (!eligibleForFirstMatchFree) {
-        // Only check balance if not eligible for first match free
+      if (!isPremium && !eligibleForFirstMatchFree) {
         if (!wallet || parseFloat(wallet.balance) < GATE_COSTS.gate1) {
           return res.status(400).json({ message: "Insufficient wallet balance" });
         }
@@ -721,9 +726,18 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         lastActionBy: userId,
       });
 
-      // Now process payment or use first match free (after successful match creation)
-      if (eligibleForFirstMatchFree) {
-        // Use the first match free reward
+      // Now process payment or use perks
+      if (isPremium) {
+        // Premium members get Gate 1 free on every match
+        if (wallet) {
+          await storage.createTransaction({
+            walletId: wallet.id,
+            amount: "0.00",
+            type: "gate_payment",
+            description: "Gate 1: Interest request sent (Premium Perk - Free!)",
+          });
+        }
+      } else if (eligibleForFirstMatchFree) {
         await storage.useFirstMatchFree(userId);
         if (wallet) {
           await storage.createTransaction({
@@ -734,7 +748,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
           });
         }
       } else if (wallet) {
-        // Charge the user
         const newBalance = (parseFloat(wallet.balance) - GATE_COSTS.gate1).toFixed(2);
         await storage.updateWalletBalance(userId, newBalance);
         await storage.createTransaction({
@@ -793,7 +806,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       const gateNum = parseInt(match.currentGate.replace("gate", ""));
       
-      const cost = GATE_COSTS[match.currentGate as keyof typeof GATE_COSTS];
+      const baseCost = GATE_COSTS[match.currentGate as keyof typeof GATE_COSTS];
+      const profile = await storage.getProfile(userId);
+      const isPremium = profile?.subscriptionTier === "premium";
+      const cost = isPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
       const wallet = await storage.getWallet(userId);
       
       if (!wallet || parseFloat(wallet.balance) < cost) {
@@ -807,7 +823,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         walletId: wallet.id,
         amount: (-cost).toFixed(2),
         type: "gate_payment",
-        description: `Gate ${gateNum}: Payment`,
+        description: `Gate ${gateNum}: Payment${isPremium ? ' (50% Premium Discount)' : ''}`,
         relatedMatchId: matchId,
       });
 
@@ -915,8 +931,16 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(403).json({ message: "Chat unlocked at Gate 3 or higher" });
       }
 
-      const messages = await storage.getMessages(matchId);
-      res.json(messages);
+      const msgs = await storage.getMessages(matchId);
+      const profile = await storage.getProfile(userId);
+      const isPremium = profile?.subscriptionTier === "premium";
+
+      const enrichedMessages = msgs.map(msg => ({
+        ...msg,
+        readAt: isPremium && msg.senderId === userId ? msg.readAt : undefined,
+      }));
+
+      res.json(enrichedMessages);
     } catch (error) {
       console.error("Error fetching messages:", error);
       res.status(500).json({ message: "Failed to fetch messages" });
@@ -965,6 +989,111 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     } catch (error) {
       console.error("Error sending message:", error);
       res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.post("/api/matches/:id/messages/read", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const validGates = ["gate3", "gate4", "gate5", "completed"];
+      if (!validGates.includes(match.currentGate)) {
+        return res.status(403).json({ message: "Chat unlocked at Gate 3 or higher" });
+      }
+
+      await storage.markMessagesAsRead(matchId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ message: "Failed to mark messages as read" });
+    }
+  });
+
+  app.post("/api/matches/:id/decline", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (match.status === "declined" || match.status === "expired") {
+        return res.status(400).json({ message: "Match already ended" });
+      }
+
+      const gateNum = parseInt(match.currentGate.replace("gate", ""));
+      const preGate3 = gateNum < 3 && match.currentGate !== "completed";
+      
+      let consolationCredits = 0;
+
+      if (preGate3) {
+        // Issue consolation credits to premium members who paid gate fees
+        const processConsolation = async (targetUserId: string) => {
+          const targetProfile = await storage.getProfile(targetUserId);
+          if (targetProfile?.subscriptionTier !== "premium") return 0;
+
+          let totalSpent = 0;
+          for (let g = 1; g < gateNum; g++) {
+            const gatePaidByField = `gate${g}PaidBy` as keyof typeof match;
+            if (match[gatePaidByField] === targetUserId) {
+              const baseCost = GATE_COSTS[`gate${g}` as keyof typeof GATE_COSTS];
+              // Gate 1 is free for premium initiators, so skip it
+              if (g === 1 && match.initiatorId === targetUserId) continue;
+              // Premium users paid discounted rate
+              totalSpent += baseCost * PREMIUM_GATE_DISCOUNT;
+            }
+          }
+
+          if (totalSpent > 0) {
+            const credit = totalSpent * (CONSOLATION_CREDIT_PERCENT / 100);
+            const wallet = await storage.getWallet(targetUserId);
+            if (wallet) {
+              const newBalance = (parseFloat(wallet.balance) + credit).toFixed(2);
+              await storage.updateWalletBalance(targetUserId, newBalance);
+              await storage.createTransaction({
+                walletId: wallet.id,
+                amount: credit.toFixed(2),
+                type: "refund",
+                description: `Consolation credit: Match ended before Gate 3 (${CONSOLATION_CREDIT_PERCENT}% back)`,
+                relatedMatchId: matchId,
+              });
+            }
+            return credit;
+          }
+          return 0;
+        };
+
+        const otherUserId = match.initiatorId === userId ? match.recipientId : match.initiatorId;
+        consolationCredits += await processConsolation(otherUserId);
+        consolationCredits += await processConsolation(userId);
+      }
+
+      await storage.updateMatch(matchId, { status: "declined" as any });
+
+      res.json({ 
+        message: "Match declined",
+        consolationCreditsIssued: consolationCredits > 0,
+        consolationCredits,
+      });
+    } catch (error) {
+      console.error("Error declining match:", error);
+      res.status(500).json({ message: "Failed to decline match" });
     }
   });
 
@@ -1049,6 +1178,32 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
   app.get("/api/public-profile/:userId", async (req: any, res) => {
     try {
       const { userId } = req.params;
+
+      // Rate limit profile views for free users (authenticated only)
+      if (req.user?.claims?.sub) {
+        const viewerId = req.user.claims.sub;
+        if (viewerId !== userId) {
+          const viewerProfile = await storage.getProfile(viewerId);
+          const isPremiumViewer = viewerProfile?.subscriptionTier === "premium";
+
+          if (!isPremiumViewer) {
+            const today = new Date().toISOString().split('T')[0];
+            const current = profileViewCounts.get(viewerId);
+            
+            if (current && current.date === today) {
+              if (current.count >= FREE_USER_DAILY_PROFILE_VIEWS) {
+                return res.status(429).json({ 
+                  message: "Daily profile view limit reached. Upgrade to Premium for unlimited views.",
+                  code: "VIEW_LIMIT_REACHED"
+                });
+              }
+              current.count++;
+            } else {
+              profileViewCounts.set(viewerId, { count: 1, date: today });
+            }
+          }
+        }
+      }
       
       const profile = await storage.getProfile(userId);
       if (!profile || !profile.isVisible) {

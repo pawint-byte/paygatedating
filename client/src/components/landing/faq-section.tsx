@@ -16,11 +16,11 @@ const faqs = [
   },
   {
     question: "Do both people have to pay? What if I'm a premium member?",
-    answer: "Yes, both people pay their alternating gate turns. This is by design — it ensures both sides are equally invested. Premium membership ($9.99/month or $99/year) gives you perks like 2x weekend visibility, priority in discover feeds, advanced search filters, profile view tracking, and exclusive badges, but gate fees remain the same for everyone. Once Gate 3 is reached, both users can message each other freely with no extra cost to reply."
+    answer: "Yes, both people pay their alternating gate turns to ensure mutual investment. However, premium members get significant advantages: Gate 1 is always free on every new match, and all gate fees are 50% off. Plus, if a match doesn't work out before reaching Gate 3 (where chat unlocks), premium members get 50% of their gate payments back as consolation credits. Once Gate 3 is reached, both users can message each other freely with no extra cost to reply."
   },
   {
     question: "What are the benefits of the premium subscription?",
-    answer: "Premium members ($9.99/month or $99/year) enjoy 2x weekend visibility boosts, priority in discover feeds, advanced search filters, the ability to see who viewed their profile, exclusive badges, and enhanced profile customization. Premium also unlocks features like gift registry management and access to seasonal promotions like the Valentine's Day discount."
+    answer: "Premium members ($9.99/month or $99/year) get powerful advantages: Gate 1 is free on every new match, 50% off all gate fees, consolation credits if a match ends before Gate 3, read receipts on messages, unlimited daily profile views (free users get 10/day), 2x weekend visibility boosts, priority in discover feeds, advanced search filters, exclusive badges, and enhanced profile customization."
   },
   {
     question: "How do I access PayGate Dating on my phone?",
@@ -57,6 +57,10 @@ const faqs = [
   {
     question: "What is my Personal QR Code and how does it help me?",
     answer: "Every user gets a unique QR code linking to their public profile. Share it with people you meet in real life - at coffee shops, events, or anywhere you go. When someone scans your code, they see your profile preview and wishlist, giving them a clear idea of what you're looking for and how to impress you. When they sign up through your code, you earn bonus credits! It's the perfect way to attract high-value suitors who are ready to invest in connecting with you."
+  },
+  {
+    question: "What happens if a match doesn't work out?",
+    answer: "If a match ends before reaching Gate 3 (where chat unlocks), premium members receive consolation credits — 50% of what they spent on that match is returned to their wallet. This way, you're protected if the other person loses interest early. Non-premium members don't receive consolation credits, but you can always upgrade to get this safety net."
   },
   {
     question: "Can I pay with cryptocurrency?",
