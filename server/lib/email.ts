@@ -261,6 +261,34 @@ const templates = {
         </p>
       </div>
     `
+  }),
+
+  contactForm: (name: string, email: string, subject: string, message: string) => ({
+    subject: `[Contact Form] ${subject}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">New Contact Form Submission</h1>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <tr>
+            <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee; width: 100px;">Name:</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Email:</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><a href="mailto:${email}">${email}</a></td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Subject:</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td>
+          </tr>
+        </table>
+        <h3 style="color: #333;">Message:</h3>
+        <div style="background: #f9f9f9; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${message}</div>
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">
+          Reply directly to this email to respond to ${name} at ${email}.
+        </p>
+      </div>
+    `
   })
 };
 
@@ -311,6 +339,9 @@ export async function sendEmail(
         break;
       case 'loginStreakReward':
         emailContent = templates.loginStreakReward(data.firstName, data.streakDays);
+        break;
+      case 'contactForm':
+        emailContent = templates.contactForm(data.name, data.email, data.subject, data.message);
         break;
       default:
         throw new Error(`Unknown template: ${template}`);
@@ -367,5 +398,8 @@ export const emailService = {
     sendEmail(to, 'inactivityReminder', { firstName, daysSinceActive, seasonalMessage }),
   
   sendLoginStreakReward: (to: string, firstName: string, streakDays: number) => 
-    sendEmail(to, 'loginStreakReward', { firstName, streakDays })
+    sendEmail(to, 'loginStreakReward', { firstName, streakDays }),
+
+  sendContactForm: (to: string, name: string, email: string, subject: string, message: string) =>
+    sendEmail(to, 'contactForm', { name, email, subject, message })
 };

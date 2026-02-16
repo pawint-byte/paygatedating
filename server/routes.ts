@@ -3306,6 +3306,30 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
   });
 
   // ===== FEEDBACK / SUPPORT ROUTES =====
+  app.post("/api/contact", async (req: any, res) => {
+    try {
+      const contactSchema = z.object({
+        name: z.string().min(1).max(200),
+        email: z.string().email().max(200),
+        subject: z.string().min(1).max(300),
+        message: z.string().min(1).max(5000),
+      });
+      const parsed = contactSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Please fill in all fields correctly." });
+      }
+
+      const { name, email, subject, message } = parsed.data;
+      const adminEmail = "pawint@pawint-app.com";
+      await emailService.sendContactForm(adminEmail, name, email, subject, message);
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Contact form error:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
   app.post("/api/feedback", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
