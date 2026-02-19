@@ -17,7 +17,7 @@ const values = [
     icon: ShoppingBag,
     title: "Curated Wishlists",
     description:
-      "Build your wishlist from Amazon, Net-a-Porter, Viator, and Klook. Suitors see exactly what you'd love, making gift-giving effortless and personal.",
+      "Build your wishlist from Amazon, Net-a-Porter, MR PORTER, Viator, and Klook. Suitors see exactly what you'd love, making gift-giving effortless and personal.",
   },
 ];
 

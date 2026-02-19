@@ -90,5 +90,5 @@ Reminder preference: Always remind user to publish after making changes.
 - **Leaflet with OpenStreetMap**: For the Nearby Map feature.
 
 ### E-commerce Affiliates
-- **Amazon, Viator, Klook, Net-a-Porter**: Integrated for anonymous gift purchasing with affiliate link auto-tagging.
+- **Amazon, Viator, Klook, Net-a-Porter, MR PORTER**: Integrated for anonymous gift purchasing with affiliate link auto-tagging.
 - **Travelpayouts**: Affiliate network for Viator/Klook.

@@ -434,6 +434,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
               imageUrl: item.imageUrl,
               platform: item.affiliateUrl?.includes('amazon') ? 'Amazon' 
                 : item.affiliateUrl?.includes('net-a-porter') ? 'Net-a-Porter'
+                : item.affiliateUrl?.includes('mrporter') ? 'MR PORTER'
                 : item.affiliateUrl?.includes('viator') ? 'Viator'
                 : item.affiliateUrl?.includes('klook') ? 'Klook'
                 : 'Gift',
@@ -1589,7 +1590,8 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
           platform: item.affiliateUrl?.includes('amazon') ? 'Amazon' :
                     item.affiliateUrl?.includes('viator') ? 'Viator' :
                     item.affiliateUrl?.includes('klook') ? 'Klook' :
-                    item.affiliateUrl?.includes('net-a-porter') ? 'Net-a-Porter' : 'Other',
+                    item.affiliateUrl?.includes('net-a-porter') ? 'Net-a-Porter' :
+                    item.affiliateUrl?.includes('mrporter') ? 'MR PORTER' : 'Other',
         })),
       };
 
@@ -1955,6 +1957,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
             affiliateUrl: undefined,
             platform: hostname.includes('amazon') ? 'Amazon' 
               : hostname.includes('net-a-porter') ? 'Net-a-Porter'
+              : hostname.includes('mrporter') ? 'MR PORTER'
               : hostname.includes('viator') ? 'Viator'
               : hostname.includes('klook') ? 'Klook'
               : 'Gift',
@@ -1977,10 +1980,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const hostname = urlObj.hostname.toLowerCase();
       const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
       const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-      const isLuxury = hostname.includes('net-a-porter.com');
+      const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
       
       if (!isAmazon && !isTravel && !isLuxury) {
-        return { valid: false, error: "Only Amazon, Viator, Klook, and Net-a-Porter links are supported for wishlist items" };
+        return { valid: false, error: "Only Amazon, Viator, Klook, Net-a-Porter, and MR PORTER links are supported for wishlist items" };
       }
       return { valid: true };
     } catch {
@@ -2160,9 +2163,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         else if (hostname.includes("viator.com")) platform = "Viator";
         else if (hostname.includes("klook.com")) platform = "Klook";
         else if (hostname.includes("net-a-porter.com")) platform = "Net-a-Porter";
+        else if (hostname.includes("mrporter.com")) platform = "MR PORTER";
 
         title = title
-          .replace(/\s*[-|]\s*(Amazon|Viator|Klook|NET-A-PORTER|Net-a-Porter).*$/i, "")
+          .replace(/\s*[-|]\s*(Amazon|Viator|Klook|NET-A-PORTER|Net-a-Porter|MR PORTER|Mr Porter).*$/i, "")
           .replace(/&amp;/g, "&")
           .replace(/&lt;/g, "<")
           .replace(/&gt;/g, ">")
@@ -3252,7 +3256,7 @@ User Profile:
 
 2. **Gate System**: Explain PayGate's unique 5-gate progression system where users pay incrementally ($5-$20) to advance through interaction stages. This filters out low-effort matches and creates more meaningful connections.
 
-3. **Wishlist/Registry**: Help users add items from Amazon or Net-a-Porter to their wishlist, or travel experiences from Viator and Klook. Gifts from matches can unlock gates.
+3. **Wishlist/Registry**: Help users add items from Amazon, Net-a-Porter, or MR PORTER to their wishlist, or travel experiences from Viator and Klook. Gifts from matches can unlock gates.
 
 4. **Match Tips**: Provide conversation starters, dating advice, and tips for advancing through gates successfully.
 

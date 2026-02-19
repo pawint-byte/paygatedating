@@ -177,6 +177,10 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
     window.open("https://www.net-a-porter.com", "_blank");
   };
 
+  const handleBrowseMrPorter = () => {
+    window.open("https://www.mrporter.com", "_blank");
+  };
+
   const scrapeAbortRef = useRef<AbortController | null>(null);
 
   const scrapeUrl = async (url: string) => {
@@ -248,7 +252,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
           const hostname = url.hostname.toLowerCase();
           const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
           const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-          const isLuxury = hostname.includes('net-a-porter.com');
+          const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
           
           if (isAmazon || isTravel || isLuxury) {
             setUrlPasted(true);
@@ -257,7 +261,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
           } else {
             toast({
               title: "Invalid Link",
-              description: "Only Amazon, Viator, Klook, and Net-a-Porter links are supported.",
+              description: "Only Amazon, Viator, Klook, Net-a-Porter, and MR PORTER links are supported.",
               variant: "destructive",
             });
           }
@@ -301,7 +305,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
         const hostname = url.hostname.toLowerCase();
         const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
         const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-        const isLuxury = hostname.includes('net-a-porter.com');
+        const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
         if (isAmazon || isTravel || isLuxury) {
           setUrlPasted(true);
           setCurrentStep(2);
@@ -355,7 +359,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Shopping</p>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -374,7 +378,17 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           data-testid="button-browse-netaporter"
                         >
                           <Gem className="w-5 h-5" />
-                          <span className="text-xs">Luxury</span>
+                          <span className="text-xs">Women's Luxury</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={handleBrowseMrPorter}
+                          data-testid="button-browse-mrporter"
+                        >
+                          <Gem className="w-5 h-5" />
+                          <span className="text-xs">Men's Luxury</span>
                         </Button>
                       </div>
                     </div>
@@ -451,7 +465,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                               const hostname = urlObj.hostname.toLowerCase();
                               const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
                               const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-                              const isLuxury = hostname.includes('net-a-porter.com');
+                              const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
                               if (isAmazon || isTravel || isLuxury) {
                                 setUrlPasted(true);
                                 setCurrentStep(2);
@@ -459,7 +473,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                               } else {
                                 toast({
                                   title: "Invalid Link",
-                                  description: "Only Amazon, Viator, Klook, and Net-a-Porter links are supported.",
+                                  description: "Only Amazon, Viator, Klook, Net-a-Porter, and MR PORTER links are supported.",
                                   variant: "destructive",
                                 });
                               }
@@ -498,9 +512,9 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                             const hostname = url.hostname.toLowerCase();
                             const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
                             const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-                            const isLuxury = hostname.includes('net-a-porter.com');
+                            const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
                             if (!isAmazon && !isTravel && !isLuxury) {
-                              return "Only Amazon, Viator, Klook, and Net-a-Porter links are supported";
+                              return "Only Amazon, Viator, Klook, Net-a-Porter, and MR PORTER links are supported";
                             }
                             return true;
                           } catch {
