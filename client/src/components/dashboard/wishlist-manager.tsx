@@ -103,10 +103,11 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
 
   const addItemMutation = useMutation({
     mutationFn: async (data: AddItemFormData) => {
-      return await apiRequest("POST", "/api/registry", {
+      const res = await apiRequest("POST", "/api/registry", {
         ...data,
         price: data.price,
       });
+      return res.json();
     },
     onSuccess: () => {
       toast({
@@ -126,7 +127,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
       }
       toast({
         title: "Error",
-        description: "Failed to add item.",
+        description: error.message || "Failed to add item. Please check all fields and try again.",
         variant: "destructive",
       });
     },
@@ -157,15 +158,6 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
   });
 
   const onSubmit = (data: AddItemFormData) => {
-    const price = parseFloat(data.price);
-    if (isNaN(price) || price < GIFT_MINIMUM_VALUE) {
-      toast({
-        title: "Invalid Price",
-        description: `Minimum price is $${GIFT_MINIMUM_VALUE}`,
-        variant: "destructive",
-      });
-      return;
-    }
     addItemMutation.mutate(data);
   };
 
@@ -338,7 +330,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                 Add Item
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-md flex flex-col max-h-[90vh] overflow-hidden">
               <DialogHeader>
                 <DialogTitle>Add Wishlist Item</DialogTitle>
                 <DialogDescription>
@@ -347,7 +339,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
               </DialogHeader>
 
               {currentStep === 1 && !urlPasted && (
-                <div className="space-y-6">
+                <div className="space-y-6 overflow-y-auto flex-1">
                   <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                     <h4 className="font-medium flex items-center gap-2">
                       <ShoppingBag className="w-4 h-4" />
@@ -492,7 +484,8 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
 
               {(currentStep === 2 || urlPasted) && (
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+                    <div className="space-y-4 overflow-y-auto flex-1 pr-1">
                     <FormField
                       control={form.control}
                       name="affiliateUrl"
@@ -517,17 +510,17 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                       }}
                       render={({ field }) => (
                         <FormItem>
-                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
+                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2 overflow-hidden">
                             {isScraping ? (
                               <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
                             ) : (
                               <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                             )}
-                            <div className="text-sm flex-1 min-w-0">
+                            <div className="text-sm flex-1 min-w-0 overflow-hidden">
                               <p className="font-medium text-green-700 dark:text-green-400">
                                 {isScraping ? "Fetching product details..." : "URL Added"}
                               </p>
-                              <p className="text-muted-foreground truncate text-xs">
+                              <p className="text-muted-foreground truncate text-xs break-all">
                                 {field.value}
                               </p>
                             </div>
@@ -578,6 +571,15 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                               min={GIFT_MINIMUM_VALUE}
                               placeholder="29.99" 
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                const price = parseFloat(e.target.value);
+                                if (!isNaN(price)) {
+                                  if (price >= 100) form.setValue("priceTier", "vip");
+                                  else if (price >= 50) form.setValue("priceTier", "impressive");
+                                  else form.setValue("priceTier", "starter");
+                                }
+                              }}
                               data-testid="input-item-price" 
                             />
                           </FormControl>
@@ -613,7 +615,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Price Tier</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-price-tier">
                                 <SelectValue placeholder="Select tier" />
@@ -672,7 +674,8 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                       )}
                     />
 
-                    <DialogFooter className="gap-2 sm:gap-0">
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t mt-4 shrink-0">
                       <Button
                         type="button"
                         variant="outline"
@@ -749,7 +752,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h4 className="font-medium truncate">{item.title}</h4>
-                      <p className="text-lg font-bold text-primary">${item.price}</p>
+                      <p className="text-lg font-bold">${item.price}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Badge variant="outline" className="text-xs">
