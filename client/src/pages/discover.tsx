@@ -195,7 +195,7 @@ export default function Discover() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       {myProfile && (
         <div className="space-y-4 mb-6">
           <ReferrerHighlight currentUserId={myProfile.userId} />
@@ -206,10 +206,10 @@ export default function Discover() {
         </div>
       )}
 
-      <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+      <div className="mb-4 md:mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight" data-testid="text-discover-title">Discover</h1>
-          <p className="text-muted-foreground" data-testid="text-discover-subtitle">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight" data-testid="text-discover-title">Discover</h1>
+          <p className="text-sm text-muted-foreground" data-testid="text-discover-subtitle">
             Browse profiles and wishlists to find your match
           </p>
         </div>
@@ -347,7 +347,7 @@ export default function Discover() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {profiles.map((profile) => (
             <MatchCard
               key={profile.id}

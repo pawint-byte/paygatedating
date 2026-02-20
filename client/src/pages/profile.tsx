@@ -97,26 +97,28 @@ export default function Profile() {
   });
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-6 flex items-start justify-between gap-4">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <div className="mb-4 md:mb-6 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">My Profile</h1>
+          <p className="text-sm text-muted-foreground">
             Manage your dating profile and preferences
           </p>
         </div>
         <Button
           variant="outline"
+          size="sm"
           onClick={copyInviteLink}
           disabled={!referralInfo?.referralCode}
           data-testid="button-share-profile"
         >
           {copied ? (
-            <Check className="w-4 h-4 mr-2" />
+            <Check className="w-4 h-4 mr-1.5" />
           ) : (
-            <Share2 className="w-4 h-4 mr-2" />
+            <Share2 className="w-4 h-4 mr-1.5" />
           )}
-          {copied ? "Copied!" : "Share Profile"}
+          <span className="hidden sm:inline">{copied ? "Copied!" : "Share Profile"}</span>
+          <span className="sm:hidden">{copied ? "Copied" : "Share"}</span>
         </Button>
       </div>
 
@@ -194,6 +196,9 @@ export default function Profile() {
                       tiktokUsername: (profile.socialLinks as any)?.tiktok || "",
                       twitterUsername: (profile.socialLinks as any)?.twitter || "",
                       snapchatUsername: (profile.socialLinks as any)?.snapchat || "",
+                      datingStyle: profile.datingStyle || "",
+                      profileMode: profile.profileMode || "detailed",
+                      viewerMessage: profile.viewerMessage || "",
                     }
                   : user
                   ? {

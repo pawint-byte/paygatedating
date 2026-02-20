@@ -15,10 +15,22 @@ import {
   Sparkles,
   ShoppingBag,
   DollarSign,
-  ArrowRight
+  ArrowRight,
+  Crown,
+  Gem,
+  Waves,
+  Handshake
 } from "lucide-react";
 import { SiTiktok, SiSnapchat } from "react-icons/si";
-import { GATE_COSTS } from "@shared/schema";
+import { GATE_COSTS, DATING_STYLES, type DatingStyleKey } from "@shared/schema";
+
+const DATING_STYLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  heart: Heart,
+  handshake: Handshake,
+  crown: Crown,
+  gem: Gem,
+  waves: Waves,
+};
 
 interface PublicWishlistItem {
   id: string;
@@ -41,6 +53,9 @@ interface PublicProfile {
   verificationStatus: string;
   interests: string[];
   lookingFor?: string;
+  datingStyle?: string;
+  profileMode?: string;
+  viewerMessage?: string;
   socialLinks?: {
     instagram?: string;
     tiktok?: string;
@@ -179,6 +194,28 @@ export default function PublicProfile() {
           )}
 
           <div className="p-6 space-y-6">
+            {/* Dating Style Badge & Viewer Message */}
+            {(profile.datingStyle || profile.viewerMessage) && (
+              <div className="space-y-3" data-testid="section-dating-style">
+                {profile.datingStyle && DATING_STYLES[profile.datingStyle as DatingStyleKey] && (() => {
+                  const styleData = DATING_STYLES[profile.datingStyle as DatingStyleKey];
+                  const Icon = DATING_STYLE_ICONS[styleData.icon];
+                  return (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+                      {Icon && <Icon className="w-4 h-4 text-primary" />}
+                      <span className="font-semibold text-sm">{styleData.label}</span>
+                      <span className="text-xs text-muted-foreground hidden sm:inline">-- {styleData.description}</span>
+                    </div>
+                  );
+                })()}
+                {profile.viewerMessage && (
+                  <div className="p-4 rounded-lg bg-muted/50 border border-border" data-testid="text-viewer-message">
+                    <p className="text-sm italic text-foreground leading-relaxed">"{profile.viewerMessage}"</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {hasWishlist && (
               <div data-testid="section-wishlist">
                 <div className="flex items-center justify-between gap-2 mb-4">

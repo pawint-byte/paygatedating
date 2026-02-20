@@ -1579,6 +1579,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         verificationStatus: profile.verificationStatus,
         interests: profile.showInterestsPublicly ? profile.interests : [],
         lookingFor: profile.showInterestsPublicly ? profile.lookingFor : undefined,
+        datingStyle: profile.datingStyle,
+        profileMode: profile.profileMode,
+        viewerMessage: profile.viewerMessage,
         socialLinks: profile.showPhotoPublicly ? profile.socialLinks : undefined,
         referralCode: wallet?.referralCode,
         wishlist: publicWishlist.map(item => ({

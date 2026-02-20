@@ -16,7 +16,7 @@ export function SeasonalHero() {
 
   return (
     <section className="relative min-h-[90vh] pt-24 pb-16 flex items-center">
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 md:px-6">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div className="space-y-8">
             <div className="space-y-4">

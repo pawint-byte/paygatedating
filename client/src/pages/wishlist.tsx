@@ -135,7 +135,7 @@ export default function WishlistPage() {
   const StepIcon = currentStep?.icon || Gift;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">

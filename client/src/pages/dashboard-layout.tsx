@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Switch, Route, Redirect, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation, Link } from "wouter";
+import { Heart } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { WalletDisplay } from "@/components/dashboard/wallet-display";
@@ -26,6 +27,7 @@ import Help from "./help";
 import AdminFeedback from "./admin-feedback";
 import GiftClaim from "./gift-claim";
 import { RewardsDashboard } from "@/components/dashboard/rewards-dashboard";
+import { MobileBottomNav } from "@/components/dashboard/mobile-bottom-nav";
 
 export default function DashboardLayout() {
   const { user } = useAuth();
@@ -227,13 +229,19 @@ export default function DashboardLayout() {
         <AppSidebar user={user ?? null} profile={profile ?? null} />
 
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between gap-4 p-4 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-40">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <h2 className="font-medium text-lg hidden sm:block">Dashboard</h2>
+          <header className="flex items-center justify-between gap-2 p-3 md:p-4 border-b border-border bg-background/95 backdrop-blur-md sticky top-0 z-40">
+            <div className="flex items-center gap-2 md:gap-3">
+              <SidebarTrigger data-testid="button-sidebar-toggle" className="hidden md:flex" />
+              <Link href="/discover" className="flex items-center gap-1.5 md:hidden">
+                <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+                  <Heart className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="font-semibold text-sm">PayGate</span>
+              </Link>
+              <h2 className="font-medium text-lg hidden md:block">Dashboard</h2>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <WalletDisplay
                 wallet={wallet ?? null}
                 transactions={transactions}
@@ -243,7 +251,7 @@ export default function DashboardLayout() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto pb-20 md:pb-0">
             <Switch>
               <Route path="/discover" component={Discover} />
               <Route path="/nearby" component={Nearby} />
@@ -270,6 +278,8 @@ export default function DashboardLayout() {
           onAddFunds={(amount) => addFundsMutation.mutate(amount)}
           isPending={addFundsMutation.isPending}
         />
+
+        <MobileBottomNav />
       </div>
     </SidebarProvider>
   );

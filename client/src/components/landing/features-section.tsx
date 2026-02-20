@@ -92,7 +92,7 @@ const features = [
 export function FeaturesSection() {
   return (
     <section className="py-20 bg-muted/30">
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <p className="text-primary font-medium tracking-wide uppercase text-sm mb-3">
             Powerful Features

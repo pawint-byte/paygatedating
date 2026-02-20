@@ -9,8 +9,18 @@ import {
   User, MapPin, Heart, Sparkles, FileText, Camera, Video, Phone, X, Upload, 
   ThumbsUp, ThumbsDown, Ruler, Dumbbell, Wine, Cigarette, Briefcase, 
   GraduationCap, DollarSign, Church, Vote, Globe, Baby, Star, Eye, Gift, 
-  Lightbulb, ChevronDown, ChevronUp, Share2, CheckCircle2, Package, Shield
+  Lightbulb, ChevronDown, ChevronUp, Share2, CheckCircle2, Package, Shield,
+  MessageCircle, ToggleLeft, Crown, Gem, Waves, Handshake
 } from "lucide-react";
+import { DATING_STYLES, type DatingStyleKey } from "@shared/schema";
+
+const DATING_STYLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  heart: Heart,
+  handshake: Handshake,
+  crown: Crown,
+  gem: Gem,
+  waves: Waves,
+};
 import { SiInstagram, SiTiktok, SiX, SiSnapchat } from "react-icons/si";
 import {
   Accordion,
@@ -101,6 +111,11 @@ const profileSchema = z.object({
   shippingZip: z.string().max(20).optional(),
   shippingCountry: z.string().max(100).optional(),
 
+  // Dating Style & Profile Mode
+  datingStyle: z.string().optional(),
+  profileMode: z.string().default("detailed"),
+  viewerMessage: z.string().max(500).optional(),
+
   // Visibility Settings
   showPhotoPublicly: z.boolean().default(true),
   showLocationPublicly: z.boolean().default(true),
@@ -151,6 +166,9 @@ interface ProfileSetupFormProps {
     hasKids?: string;
     wantsKids?: string;
     zodiacSign?: string;
+    datingStyle?: string;
+    profileMode?: string;
+    viewerMessage?: string;
     shippingStreet?: string;
     shippingCity?: string;
     shippingState?: string;
@@ -226,6 +244,9 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
       tiktokUsername: defaultValues?.tiktokUsername || "",
       twitterUsername: defaultValues?.twitterUsername || "",
       snapchatUsername: defaultValues?.snapchatUsername || "",
+      datingStyle: defaultValues?.datingStyle || "",
+      profileMode: defaultValues?.profileMode || "detailed",
+      viewerMessage: defaultValues?.viewerMessage || "",
       termsAccepted: false,
     },
   });
@@ -391,6 +412,136 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
           </Alert>
         )}
         
+        {/* Profile Mode Toggle */}
+        <div className="rounded-lg border border-border p-4 space-y-3" data-testid="profile-mode-section">
+          <div className="flex items-center gap-2 text-lg font-medium">
+            <ToggleLeft className="w-5 h-5 text-primary" />
+            <span>Profile Style</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Choose how much you want to share. Simple profiles show just the essentials — your photos, dating style, and a message. Detailed profiles let you tell your full story.
+          </p>
+          <FormField
+            control={form.control}
+            name="profileMode"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => field.onChange("simple")}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        field.value === "simple"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      data-testid="button-mode-simple"
+                    >
+                      <div className="font-semibold text-sm">Keep It Simple</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Photos, dating style & a message
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => field.onChange("detailed")}
+                      className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        field.value === "detailed"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      data-testid="button-mode-detailed"
+                    >
+                      <div className="font-semibold text-sm">Tell My Story</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Full profile with all the details
+                      </div>
+                    </button>
+                  </div>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Dating Style Selector */}
+        <div className="rounded-lg border border-border p-4 space-y-3" data-testid="dating-style-section">
+          <div className="flex items-center gap-2 text-lg font-medium">
+            <Heart className="w-5 h-5 text-primary" />
+            <span>My Dating Style</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Let others know how you approach dating. This shows prominently on your profile.
+          </p>
+          <FormField
+            control={form.control}
+            name="datingStyle"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(Object.entries(DATING_STYLES) as [DatingStyleKey, typeof DATING_STYLES[DatingStyleKey]][]).map(([key, style]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => field.onChange(field.value === key ? "" : key)}
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          field.value === key
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                        data-testid={`button-dating-style-${key}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {DATING_STYLE_ICONS[style.icon] && (() => {
+                            const Icon = DATING_STYLE_ICONS[style.icon];
+                            return <Icon className="w-5 h-5 text-primary" />;
+                          })()}
+                          <span className="font-semibold text-sm">{style.label}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{style.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Viewer Message */}
+        <div className="rounded-lg border border-border p-4 space-y-3" data-testid="viewer-message-section">
+          <div className="flex items-center gap-2 text-lg font-medium">
+            <MessageCircle className="w-5 h-5 text-primary" />
+            <span>Message to Viewers</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            A short message that people see first when they visit your profile. Say what matters most.
+          </p>
+          <FormField
+            control={form.control}
+            name="viewerMessage"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Textarea
+                    placeholder="e.g. Looking for someone who values honesty and adventure. Let's see if we click!"
+                    className="min-h-[80px] resize-none"
+                    {...field}
+                    data-testid="input-viewer-message"
+                  />
+                </FormControl>
+                <div className="text-xs text-muted-foreground text-right">
+                  {(field.value || "").length}/500
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <Accordion type="multiple" defaultValue={["photos", "basic-info"]} className="space-y-4">
           {/* Photos & Videos Section - First for visibility */}
           <AccordionItem value="photos" className="border rounded-lg px-4">
@@ -613,6 +764,9 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
             </AccordionContent>
           </AccordionItem>
 
+          {/* Detailed-only sections - hidden in simple mode */}
+          {form.watch("profileMode") !== "simple" && (
+          <>
           {/* About You Section */}
           <AccordionItem value="about-you" className="border rounded-lg px-4">
             <AccordionTrigger className="hover:no-underline" data-testid="accordion-about-you">
@@ -1544,6 +1698,9 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
               </div>
             </AccordionContent>
           </AccordionItem>
+
+          </>
+          )}
 
           {/* Shipping Address Section */}
           <AccordionItem value="shipping" className="border rounded-lg px-4">

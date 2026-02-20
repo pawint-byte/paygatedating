@@ -18,6 +18,36 @@ export const verificationStatusEnum = pgEnum("verification_status", ["none", "pe
 export const TRIAL_CREDITS_AMOUNT = 15;
 export const REFERRAL_BONUS_AMOUNT = 5;
 
+export const DATING_STYLES = {
+  traditional: {
+    label: "Traditional",
+    description: "I believe in classic courtship. One person leads, the other is pursued.",
+    icon: "heart" as const,
+  },
+  fifty_fifty: {
+    label: "50/50",
+    description: "We split everything equally. No expectations, just partnership.",
+    icon: "handshake" as const,
+  },
+  dating_princess: {
+    label: "Dating Princess",
+    description: "I expect to be courted and treated. Effort is the minimum.",
+    icon: "crown" as const,
+  },
+  high_value: {
+    label: "High Value",
+    description: "I invest in myself and expect the same. Quality over quantity.",
+    icon: "gem" as const,
+  },
+  go_with_the_flow: {
+    label: "Go With The Flow",
+    description: "No labels. Let's see where it goes.",
+    icon: "waves" as const,
+  },
+} as const;
+
+export type DatingStyleKey = keyof typeof DATING_STYLES;
+
 export const profiles = pgTable("profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().unique(),
@@ -106,6 +136,11 @@ export const profiles = pgTable("profiles", {
   shippingState: varchar("shipping_state", { length: 100 }),
   shippingZip: varchar("shipping_zip", { length: 20 }),
   shippingCountry: varchar("shipping_country", { length: 100 }),
+
+  // Dating Style & Profile Mode
+  datingStyle: varchar("dating_style", { length: 50 }),
+  profileMode: varchar("profile_mode", { length: 20 }).default("detailed").notNull(),
+  viewerMessage: text("viewer_message"),
 
   // Date Preferences
   datePreferences: text("date_preferences").array(),

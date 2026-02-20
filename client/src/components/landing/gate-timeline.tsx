@@ -52,7 +52,7 @@ const gates = [
 export function GateTimeline() {
   return (
     <section id="how-it-works" className="py-20 bg-card/50">
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-primary font-medium tracking-wide uppercase text-sm mb-3">
             The 5-Gate System

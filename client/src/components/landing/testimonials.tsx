@@ -104,7 +104,7 @@ function TransactionalCard() {
 export function Testimonials() {
   return (
     <section id="testimonials" className="py-20">
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-primary font-medium tracking-wide uppercase text-sm mb-3">
             Success Stories

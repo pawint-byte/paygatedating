@@ -4,8 +4,8 @@ import heroImage from "@assets/generated_images/romantic_couple_coffee_date.png"
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[90vh] pt-24 pb-16 flex items-center">
-      <div className="container mx-auto px-6">
+    <section className="relative min-h-[85vh] md:min-h-[90vh] pt-20 md:pt-24 pb-12 md:pb-16 flex items-center">
+      <div className="container mx-auto px-4 md:px-6">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div className="space-y-8">
             <div className="space-y-4">
@@ -75,7 +75,7 @@ export function HeroSection() {
                 className="w-full h-auto object-cover transition-transform duration-500 hover:scale-105"
               />
             </div>
-            <div className="absolute -bottom-6 -left-6 bg-card border border-card-border rounded-lg p-4 shadow-lg z-20">
+            <div className="absolute -bottom-4 -left-2 md:-bottom-6 md:-left-6 bg-card border border-card-border rounded-lg p-3 md:p-4 shadow-lg z-20">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <Check className="w-6 h-6 text-primary" />
