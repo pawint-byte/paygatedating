@@ -60,7 +60,7 @@ const features = [
   {
     icon: Sparkles,
     title: "Seasonal Themes",
-    description: "Enjoy fresh, seasonal content and promotions throughout the year. From Valentine's specials to summer love campaigns.",
+    description: "Enjoy fresh, seasonal content and promotions throughout the year. Each season brings new themes, offers, and ways to connect.",
     category: "experience"
   },
   {

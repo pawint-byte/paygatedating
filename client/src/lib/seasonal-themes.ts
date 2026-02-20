@@ -261,6 +261,9 @@ export function getCurrentTheme(): SeasonalTheme {
   
   const applicableThemes = seasonalThemes.filter(theme => {
     if (theme.startMonth <= theme.endMonth) {
+      if (theme.startMonth === theme.endMonth) {
+        return month === theme.startMonth && day >= theme.startDay && day <= theme.endDay;
+      }
       if (month > theme.startMonth && month < theme.endMonth) return true;
       if (month === theme.startMonth && day >= theme.startDay) return true;
       if (month === theme.endMonth && day <= theme.endDay) return true;

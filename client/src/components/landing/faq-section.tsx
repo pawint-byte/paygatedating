@@ -88,7 +88,7 @@ const faqs = [
   },
   {
     question: "What are the seasonal themes and promotions?",
-    answer: "PayGate features dynamic seasonal content that changes throughout the year. From Valentine's Day specials and spring renewal themes to summer love campaigns and cozy winter promotions, our platform evolves to match the season. Each theme brings fresh messaging, special promotions, and seasonal tips for making connections."
+    answer: "PayGate features dynamic seasonal content that changes throughout the year. From spring renewal themes and summer adventure campaigns to cozy fall cuffing season and winter warmth promotions, our platform evolves to match the moment. Each theme brings fresh messaging, special promotions, and seasonal tips for making connections."
   },
   {
     question: "How can I attract more quality matches?",

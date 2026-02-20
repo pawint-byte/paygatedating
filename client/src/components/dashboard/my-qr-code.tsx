@@ -151,13 +151,13 @@ export function MyQRCode({ userId, displayName }: MyQRCodeProps) {
           </Button>
         </div>
 
-        <div className="p-3 bg-gradient-to-r from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/30 rounded-lg">
+        <div className="p-3 bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 rounded-lg">
           <div className="flex items-start gap-2">
             <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-medium">Pro tip for Valentine's Day</p>
+              <p className="font-medium">Pro tip</p>
               <p className="text-muted-foreground">
-                Print your QR code on a card or add it to your dating profile bio to let potential suitors see your wishlist!
+                Share your QR code instead of your number. Add it to your social media bio, print it on a card, or share it at events -- let PayGate screen everyone before they get your time!
               </p>
             </div>
           </div>
