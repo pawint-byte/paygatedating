@@ -15,8 +15,8 @@ export function Footer() {
               <span className="font-semibold text-lg">PayGate</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Meaningful connections worth investing in. Join 10,000+ members
-              finding quality matches.
+              Where real effort meets real connection. Join 10,000+ intentional
+              daters building something meaningful.
             </p>
           </div>
 
@@ -121,7 +121,7 @@ export function Footer() {
           </div>
           <p className="text-sm text-muted-foreground">
             Made with <Heart className="w-3 h-3 inline text-primary" /> for
-            meaningful connections
+            people who show up
           </p>
         </div>
       </div>

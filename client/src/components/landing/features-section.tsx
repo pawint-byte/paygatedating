@@ -35,8 +35,8 @@ const features = [
   },
   {
     icon: Gift,
-    title: "Gift Experiences & Luxury",
-    description: "Send gifts from Amazon, Net-a-Porter, MR PORTER, or book travel experiences from Viator and Klook. Meaningful gestures that unlock gates.",
+    title: "Thoughtful Gift Giving",
+    description: "Show you've been paying attention. Send gifts from their wishlist -- from everyday favorites to luxury items and travel experiences. Effort speaks louder than words.",
     category: "connection"
   },
   {
@@ -66,7 +66,7 @@ const features = [
   {
     icon: QrCode,
     title: "Personal QR Code",
-    description: "Your unique QR code lets anyone view your profile and wishlist. Share on social media, dating apps, or print on cards - become a walking billboard!",
+    description: "Your unique QR code lets anyone view your profile and wishlist. Share on social media, at events, or hand out on cards -- make it easy for the right people to find you.",
     category: "discovery"
   },
   {
@@ -83,8 +83,8 @@ const features = [
   },
   {
     icon: UserPlus,
-    title: "Referral Rewards",
-    description: "Invite friends and earn credits when they join. Grow your network while saving on gates.",
+    title: "Grow Your Circle",
+    description: "Invite friends and earn credits when they join. The best connections often come through the people you already trust.",
     category: "rewards"
   },
 ];
@@ -95,13 +95,14 @@ export function FeaturesSection() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <p className="text-primary font-medium tracking-wide uppercase text-sm mb-3">
-            Powerful Features
+            Tools for Intentional Daters
           </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-serif mb-4">
-            Everything You Need to Find Love
+            Everything You Need to Build Something Real
           </h2>
           <p className="text-muted-foreground text-lg">
-            More than just swiping. PayGate gives you tools to build genuine connections.
+            More than just swiping. PayGate gives you the tools to invest your
+            time and energy into connections that actually matter.
           </p>
         </div>
 

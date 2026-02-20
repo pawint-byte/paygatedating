@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Shield, Users } from "lucide-react";
+import { Check, Shield, Users, Sparkles } from "lucide-react";
 import heroImage from "@assets/generated_images/romantic_couple_coffee_date.png";
 
 export function HeroSection() {
@@ -10,23 +10,25 @@ export function HeroSection() {
           <div className="space-y-8">
             <div className="space-y-4">
               <p className="text-primary font-medium tracking-wide uppercase text-sm">
-                Dating With Intent
+                Where Real Effort Meets Real Connection
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight font-serif">
-                Meaningful Connections{" "}
-                <span className="text-primary">Worth Investing In</span>
+                Love Worth{" "}
+                <span className="text-primary">Showing Up For</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                PayGate transforms dating into a deliberate, invested journey.
-                Our 5-gate progression system ensures every connection is
-                genuine, eliminating spam and low-effort interactions.
+                You've already invested in becoming who you are -- the education,
+                the career, the gym, the self-care, the growth. PayGate is for
+                people who've done the work on themselves and want to meet someone
+                who's done the same. Our 5-gate journey takes you from first hello
+                to first date, one intentional step at a time.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <a href="/api/login">
                 <Button size="lg" className="text-base px-8" data-testid="button-hero-start">
-                  Start Free Profile
+                  Start Your Journey Free
                 </Button>
               </a>
               <Button
@@ -49,11 +51,11 @@ export function HeroSection() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Users className="w-4 h-4 text-primary" />
                 </div>
-                <span>10K+ Active Members</span>
+                <span>10K+ Intentional Daters</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Check className="w-4 h-4 text-primary" />
+                  <Sparkles className="w-4 h-4 text-primary" />
                 </div>
                 <span>Free to Join</span>
               </div>
@@ -61,7 +63,7 @@ export function HeroSection() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Shield className="w-4 h-4 text-primary" />
                 </div>
-                <span>Secure Payments</span>
+                <span>Effort-Verified Matches</span>
               </div>
             </div>
           </div>
@@ -81,9 +83,9 @@ export function HeroSection() {
                   <Check className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">87% Success Rate</p>
+                  <p className="font-semibold text-sm">87% Say It's Worth It</p>
                   <p className="text-xs text-muted-foreground">
-                    Meaningful connections
+                    Deeper connections from day one
                   </p>
                 </div>
               </div>

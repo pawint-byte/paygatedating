@@ -33,11 +33,11 @@ export function SecuritySection() {
             Trust & Security
           </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-serif mb-4">
-            Your Safety, Our Priority
+            Feel Safe Enough to Be Yourself
           </h2>
           <p className="text-muted-foreground text-lg">
-            We've built PayGate with security at its core, so you can focus on
-            finding meaningful connections.
+            You can't invest your heart in someone if you don't feel safe.
+            That's why we built PayGate with security at its core.
           </p>
         </div>
 

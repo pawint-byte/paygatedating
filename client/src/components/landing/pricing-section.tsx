@@ -1,22 +1,22 @@
-import { Check, DollarSign, Heart, Gift } from "lucide-react";
+import { Check, Heart, Gift, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const freeFeatures = [
   "Create your full profile",
-  "Browse all profiles and photos",
-  "Build your gift wishlist",
+  "Browse and discover other members",
+  "Build your personal wishlist",
   "Share your QR code and profile link",
-  "Get discovered by interested singles",
-  "Use the Nearby Map",
-  "ID verification badge",
+  "Get noticed by interested singles",
+  "Explore the Nearby Map",
+  "Earn your verification badge",
 ];
 
-const payAsYouGoDetails = [
-  "Gate 1: $5 — Break the ice",
-  "Gate 2: $5 — Keep the conversation going",
-  "Gate 3: $10 — Unlock chat messaging",
-  "Gate 4: $15 — Go deeper",
-  "Gate 5: $20 — Plan your first date",
+const journeySteps = [
+  "Gate 1: $5 -- Take the leap, say hello",
+  "Gate 2: $5 -- Show you're genuinely interested",
+  "Gate 3: $10 -- Open up, share more of yourself",
+  "Gate 4: $15 -- Invest quality time together",
+  "Gate 5: $20 -- Step into each other's real lives",
 ];
 
 export function PricingSection() {
@@ -25,13 +25,15 @@ export function PricingSection() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-primary font-medium tracking-wide uppercase text-sm mb-3">
-            No Subscriptions. Ever.
+            No Subscriptions. No Wasted Money.
           </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-serif mb-4">
-            Free to Join. Pay Only When You Connect.
+            Free to Begin. Invest Only in People Who Matter.
           </h2>
           <p className="text-muted-foreground text-lg">
-            No monthly fees, no hidden charges. You invest only when you find someone worth pursuing.
+            You've already invested in yourself -- the growth, the discipline, the self-care.
+            Don't waste that on a monthly subscription hoping someone notices. Invest only when
+            you've found someone who's done the same work on themselves.
           </p>
         </div>
 
@@ -40,14 +42,14 @@ export function PricingSection() {
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
                 <Heart className="w-5 h-5 text-primary" />
-                <h3 className="text-xl font-semibold">Join Free</h3>
+                <h3 className="text-xl font-semibold">Explore Free</h3>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-bold">$0</span>
                 <span className="text-muted-foreground">/forever</span>
               </div>
               <p className="text-muted-foreground mt-2">
-                Everything you need to get started and get noticed
+                Everything you need to put yourself out there and get discovered
               </p>
             </div>
 
@@ -73,26 +75,26 @@ export function PricingSection() {
           >
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
               <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
-                Pay As You Go
+                Invest As You Go
               </span>
             </div>
 
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text-primary" />
-                <h3 className="text-xl font-semibold">Gate Fees</h3>
+                <Compass className="w-5 h-5 text-primary" />
+                <h3 className="text-xl font-semibold">The Journey</h3>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-bold">$5</span>
                 <span className="text-muted-foreground">to start</span>
               </div>
               <p className="text-muted-foreground mt-2">
-                Costs alternate between you and your match
+                You and your match take turns investing -- equal effort, equal commitment
               </p>
             </div>
 
             <ul className="space-y-3 mb-8">
-              {payAsYouGoDetails.map((detail) => (
+              {journeySteps.map((detail) => (
                 <li key={detail} className="flex items-center gap-3">
                   <Check className="w-5 h-5 text-primary flex-shrink-0" />
                   <span className="text-sm">{detail}</span>
@@ -102,7 +104,7 @@ export function PricingSection() {
 
             <a href="/api/login">
               <Button className="w-full" data-testid="button-start-connecting">
-                Start Connecting
+                Begin Your Journey
               </Button>
             </a>
           </div>
@@ -112,14 +114,14 @@ export function PricingSection() {
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Gift className="w-4 h-4 text-primary" />
             <span>
-              Gift purchases include a small service fee (10% or $5 minimum) — that's how we keep the lights on.
+              Gifts include a small service fee (10% or $5 minimum) -- that's how we keep this community running.
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
             <span className="text-foreground font-medium">
-              Total cost for a full 5-gate connection: $55 split between two people.
+              Full connection cost: ~$55 split between two people.
             </span>
-            {" "}No subscription needed.
+            {" "}Less than dinner for two -- and infinitely more meaningful.
           </p>
         </div>
       </div>

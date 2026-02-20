@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Gift, Heart, MapPin, ShoppingBag, Sparkles, DollarSign, ArrowRight } from "lucide-react";
+import { Gift, Heart, MapPin, ShoppingBag, Sparkles, ArrowRight } from "lucide-react";
 import { useSeasonalTheme } from "@/contexts/seasonal-theme-context";
 import heroImage from "@assets/generated_images/romantic_couple_coffee_date.png";
 
@@ -86,8 +86,8 @@ export function SeasonalHero() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute top-3 right-3">
                   <Badge variant="secondary" className="bg-black/50 text-white border-white/20 text-xs">
-                    <DollarSign className="w-3 h-3 mr-0.5" />
-                    $5 to connect
+                    <Heart className="w-3 h-3 mr-0.5" />
+                    $5 to say hello
                   </Badge>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">

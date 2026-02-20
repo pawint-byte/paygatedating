@@ -4,48 +4,53 @@ import { GATE_COSTS } from "@shared/schema";
 const gates = [
   {
     number: 1,
-    title: "Initial Reach-Out",
-    description: "Send a personalized message to spark interest",
+    title: "Show Your Interest",
+    description: "Take the first step -- send a thoughtful message that says 'I noticed you'",
     icon: Send,
     cost: GATE_COSTS.gate1,
     payer: "Initiator",
-    unlocks: "Interest request sent",
+    unlocks: "First impression sent",
+    effort: "Courage to reach out",
   },
   {
     number: 2,
-    title: "Acceptance & Response",
-    description: "Accept and view the message, send initial reply",
+    title: "Accept & Respond",
+    description: "You liked what you saw -- now invest your attention and write back",
     icon: MessageCircle,
     cost: GATE_COSTS.gate2,
     payer: "Recipient",
-    unlocks: "View message & reply",
+    unlocks: "Conversation begins",
+    effort: "Openness to connect",
   },
   {
     number: 3,
-    title: "Conversation Deepening",
-    description: "Unlock multimedia sharing and private chat room",
+    title: "Go Deeper",
+    description: "Share more of who you are -- photos, stories, and real conversation",
     icon: Camera,
     cost: GATE_COSTS.gate3,
     payer: "Initiator",
-    unlocks: "Photos & videos chat",
+    unlocks: "Photos & rich chat",
+    effort: "Vulnerability & trust",
   },
   {
     number: 4,
-    title: "Virtual Engagement",
-    description: "Access video calls and shared activities",
+    title: "Face to Face",
+    description: "Put a voice to the words -- video dates and shared experiences",
     icon: Video,
     cost: GATE_COSTS.gate4,
     payer: "Recipient",
-    unlocks: "Video dates & games",
+    unlocks: "Video calls & activities",
+    effort: "Quality time together",
   },
   {
     number: 5,
-    title: "Contact Exchange",
-    description: "Request and share real contact details",
+    title: "Step Into Real Life",
+    description: "You've built something real -- now take it beyond the screen",
     icon: Phone,
     cost: GATE_COSTS.gate5,
     payer: "Both",
-    unlocks: "Phone/email exchange",
+    unlocks: "Contact exchange",
+    effort: "Full commitment",
   },
 ];
 
@@ -55,14 +60,16 @@ export function GateTimeline() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-primary font-medium tracking-wide uppercase text-sm mb-3">
-            The 5-Gate System
+            The 5-Gate Journey
           </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-serif mb-4">
-            How PayGate Works
+            A Path That Mirrors Real Relationships
           </h2>
           <p className="text-muted-foreground text-lg">
-            Every stage requires investment from both parties, ensuring mutual
-            interest and filtering out low-effort interactions.
+            You've already invested years in becoming who you are. This journey
+            is about finding someone who's done the same. Each gate is a moment
+            where you both choose to invest a little more -- your time, your
+            energy, your trust -- into building something real together.
           </p>
         </div>
 
@@ -95,8 +102,12 @@ export function GateTimeline() {
 
                     <div className="space-y-2 pt-3 border-t border-border">
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Cost:</span>
-                        <span className="font-bold text-primary">${gate.cost}</span>
+                        <span className="text-muted-foreground">You invest:</span>
+                        <span className="font-medium text-primary">{gate.effort}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Gate fee:</span>
+                        <span className="font-bold">${gate.cost}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">Paid by:</span>
@@ -118,10 +129,10 @@ export function GateTimeline() {
 
         <div className="mt-12 text-center">
           <p className="text-muted-foreground mb-4">
-            Total investment per match: ~$75 split between both users
+            Total journey per match: ~$55 shared between both people -- less than one dinner out
           </p>
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
-            <span>Skip-Ahead Option: Pay $50 to bypass all gates</span>
+            <span>Ready to commit? Skip ahead for $50 and go straight to contact exchange</span>
           </div>
         </div>
       </div>

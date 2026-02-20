@@ -1,4 +1,4 @@
-import { Star, Crown, Scale, Gift } from "lucide-react";
+import { Star, Crown, Scale, Gift, Dumbbell, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 
@@ -9,7 +9,7 @@ const testimonials = [
     location: "San Francisco",
     avatar: "SM",
     quote:
-      "I was skeptical about paying for dating interactions, but PayGate completely changed my perspective. Every match I've had has been someone genuinely interested in getting to know me.",
+      "I spend hours on my fitness, my skincare, my career -- I've worked hard to become who I am. PayGate is the first app where the men I meet have clearly put in the same effort. No more low-energy messages from guys who can't even hold a conversation.",
     rating: 5,
   },
   {
@@ -18,7 +18,7 @@ const testimonials = [
     location: "New York",
     avatar: "MR",
     quote:
-      "The quality of conversations here is incredible. No more ghosting, no more low-effort 'hey' messages. Worth every penny.",
+      "I've built a career, I stay in shape, I've done the personal growth work. When I match with someone on PayGate, I know she's invested in herself too. The conversations are on a completely different level.",
     rating: 5,
   },
   {
@@ -27,14 +27,14 @@ const testimonials = [
     location: "Austin",
     avatar: "JL",
     quote:
-      "Met my partner through PayGate. The investment aspect weeds out people who aren't serious. We're now 8 months strong!",
+      "Met my partner through PayGate. We both showed up as our best selves -- him with his ambition and emotional depth, me with my confidence and independence. It started with both of us choosing to invest in something real.",
     rating: 5,
   },
 ];
 
 const stats = [
-  { value: "87%", label: "Report meaningful connections" },
-  { value: "70%", label: "Reduction in ghosting" },
+  { value: "87%", label: "Say connections feel more genuine" },
+  { value: "70%", label: "Less ghosting than other apps" },
   { value: "3.2x", label: "Higher response rates" },
 ];
 
@@ -52,9 +52,9 @@ function TraditionalCard() {
         </div>
       </div>
       <p className="text-muted-foreground leading-relaxed mb-4 italic text-sm">
-        "I believe a man should provide and protect. In return, I give my complete devotion and make our home a haven. PayGate helps me find men who value traditional roles."
+        "He built his career and his character so he could provide. I've invested in my grace, my presence, and my ability to create warmth. We both did the work -- just in different ways. PayGate lets us find each other."
       </p>
-      <p className="text-sm font-medium">— Victoria K., 34</p>
+      <p className="text-sm font-medium">-- Victoria K., 34</p>
     </Card>
   );
 }
@@ -68,35 +68,35 @@ function PartnershipCard() {
           <Scale className="w-5 h-5 text-blue-500 dark:text-blue-400" />
         </div>
         <div>
-          <h4 className="font-semibold">50/50 Partnership</h4>
-          <p className="text-xs text-muted-foreground">Equal in everything</p>
+          <h4 className="font-semibold">Equal Partnership</h4>
+          <p className="text-xs text-muted-foreground">We grow together</p>
         </div>
       </div>
       <p className="text-muted-foreground leading-relaxed mb-4 italic text-sm">
-        "We split bills, decisions, and responsibilities right down the middle. I wanted a true partner, not a provider or dependent. Found exactly that here."
+        "We both hit the gym, we both have ambitions, we both invest in how we show up. I wanted someone who matches my energy across the board -- not just financially, but emotionally, physically, and mentally. Found exactly that here."
       </p>
-      <p className="text-sm font-medium">— Jordan T., 31</p>
+      <p className="text-sm font-medium">-- Jordan T., 31</p>
     </Card>
   );
 }
 
-function TransactionalCard() {
+function IntentionalCard() {
   return (
-    <Card className="p-6 relative overflow-hidden" data-testid="style-transactional">
+    <Card className="p-6 relative overflow-hidden" data-testid="style-intentional">
       <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 dark:bg-amber-400" />
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 rounded-lg bg-amber-500/10 dark:bg-amber-400/10">
           <Gift className="w-5 h-5 text-amber-500 dark:text-amber-400" />
         </div>
         <div>
-          <h4 className="font-semibold">Transactional</h4>
-          <p className="text-xs text-muted-foreground">Clear expectations, clear value</p>
+          <h4 className="font-semibold">Intentional</h4>
+          <p className="text-xs text-muted-foreground">Actions speak louder</p>
         </div>
       </div>
       <p className="text-muted-foreground leading-relaxed mb-4 italic text-sm">
-        "I respond to effort that I can see and measure - gifts, money, acts of service. It's honest and upfront. PayGate's gate system aligns perfectly with how I date."
+        "I didn't spend years perfecting my style, my fitness, and my mindset just to settle. I notice the guys here have done the same -- they're educated, driven, and they show up with real effort. That's all I ever wanted."
       </p>
-      <p className="text-sm font-medium">— Diamond R., 27</p>
+      <p className="text-sm font-medium">-- Diamond R., 27</p>
     </Card>
   );
 }
@@ -107,13 +107,13 @@ export function Testimonials() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-primary font-medium tracking-wide uppercase text-sm mb-3">
-            Success Stories
+            Real Stories
           </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-serif mb-4">
-            Real People, Real Connections
+            People Who've Done the Work
           </h2>
           <p className="text-muted-foreground text-lg">
-            See what our members are saying about their PayGate experience.
+            They invested in themselves first. Then they found someone who did the same.
           </p>
         </div>
 
@@ -159,15 +159,15 @@ export function Testimonials() {
             Your Relationship, Your Rules
           </h3>
           <p className="text-muted-foreground text-lg">
-            Whether you prefer traditional dynamics, equal partnership, or something else entirely - 
-            PayGate welcomes all relationship styles.
+            Whether you prefer traditional dynamics, equal partnership, or your own unique approach --
+            PayGate welcomes every way of showing up for love.
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           <TraditionalCard />
           <PartnershipCard />
-          <TransactionalCard />
+          <IntentionalCard />
         </div>
 
         <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto">
