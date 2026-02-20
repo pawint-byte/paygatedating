@@ -7,9 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Bell, Eye, Shield, CreditCard, MapPin } from "lucide-react";
+import { Wallet, Bell, Eye, Shield, MapPin } from "lucide-react";
 import type { Profile } from "@shared/schema";
-import { PREMIUM_MONTHLY_COST, PREMIUM_YEARLY_COST } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { ReferralCard } from "@/components/dashboard/referral-card";
 import { WishlistManager } from "@/components/dashboard/wishlist-manager";
@@ -56,38 +55,6 @@ export default function Settings() {
     },
   });
 
-  const isPremium = profile?.subscriptionTier === "premium";
-
-  const createSubscriptionMutation = useMutation({
-    mutationFn: async (priceType: "monthly" | "yearly") => {
-      const response = await apiRequest("POST", "/api/subscription/create-checkout", { priceType });
-      return response.json();
-    },
-    onSuccess: (data: { url: string }) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: error.message || "Failed to start checkout. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div className="mb-6">
@@ -100,68 +67,30 @@ export default function Settings() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Crown className="w-5 h-5 text-primary" />
-            <CardTitle>Subscription</CardTitle>
+            <Wallet className="w-5 h-5 text-primary" />
+            <CardTitle>Your Plan</CardTitle>
           </div>
           <CardDescription>
-            Manage your premium membership
+            Pay-as-you-go — no subscriptions, no monthly fees
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Current Plan</p>
+              <p className="font-medium">Pay As You Go</p>
               <p className="text-sm text-muted-foreground">
-                {isPremium ? "Premium Member" : "Free Plan"}
+                You only pay when you connect with someone
               </p>
             </div>
-            <Badge variant={isPremium ? "default" : "secondary"}>
-              {isPremium ? "Premium" : "Free"}
+            <Badge variant="default" data-testid="badge-plan-type">
+              Free to Join
             </Badge>
           </div>
-
-          {!isPremium && !profile && (
-            <div className="bg-muted/50 border rounded-lg p-4">
-              <p className="font-medium mb-2">Complete Your Profile First</p>
-              <p className="text-sm text-muted-foreground mb-4">
-                You need to set up your profile before upgrading to Premium.
-              </p>
-              <Button 
-                onClick={() => window.location.href = "/profile"}
-                data-testid="button-complete-profile"
-              >
-                Complete Profile
-              </Button>
-            </div>
-          )}
-
-          {!isPremium && profile && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-              <p className="font-medium mb-2">Upgrade to Premium</p>
-              <p className="text-sm text-muted-foreground mb-4">
-                Unlock likes, requests, and wallet funding for just ${PREMIUM_MONTHLY_COST}/month or ${PREMIUM_YEARLY_COST}/year.
-              </p>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => createSubscriptionMutation.mutate("monthly")}
-                  disabled={createSubscriptionMutation.isPending}
-                  data-testid="button-upgrade-monthly"
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  {createSubscriptionMutation.isPending ? "Loading..." : `$${PREMIUM_MONTHLY_COST}/month`}
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => createSubscriptionMutation.mutate("yearly")}
-                  disabled={createSubscriptionMutation.isPending}
-                  data-testid="button-upgrade-yearly"
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  {createSubscriptionMutation.isPending ? "Loading..." : `$${PREMIUM_YEARLY_COST}/year (Save 17%)`}
-                </Button>
-              </div>
-            </div>
-          )}
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">
+              Gate fees start at $5 and alternate between you and your match. Add funds to your wallet anytime from your dashboard to start connecting.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

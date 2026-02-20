@@ -90,11 +90,6 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
               Demo
             </Badge>
           )}
-          {profile.subscriptionTier === "premium" && (
-            <Badge variant="secondary" className="bg-amber-500/20 text-amber-200 border-amber-500/30 text-xs">
-              Premium
-            </Badge>
-          )}
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">

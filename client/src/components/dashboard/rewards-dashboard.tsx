@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Flame, Gift, Trophy, Calendar, Users, Crown, Sparkles, CheckCircle } from "lucide-react";
+import { Flame, Gift, Trophy, Calendar, Users, Sparkles, CheckCircle, Wallet } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { UserRewards, RewardHistory } from "@shared/schema";
@@ -35,7 +35,7 @@ export function RewardsDashboard() {
     onSuccess: () => {
       toast({
         title: "Reward Claimed!",
-        description: "You earned 1 week of Premium access!",
+        description: "You earned $10 in bonus credits!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
       queryClient.invalidateQueries({ queryKey: ["/api/rewards/history"] });
@@ -70,26 +70,17 @@ export function RewardsDashboard() {
   const referralTier2Progress = rewards ? Math.min((rewards.totalReferrals / 10) * 100, 100) : 0;
   const monthlyMilestoneProgress = rewards ? Math.min((rewards.monthlyReferrals / 5) * 100, 100) : 0;
 
-  const isPremiumActive = rewards?.hasLifetimePremium || 
-    (rewards?.premiumExpiresAt && new Date(rewards.premiumExpiresAt) > new Date());
-
-  const daysUntilExpiry = rewards?.premiumExpiresAt 
-    ? Math.max(0, Math.ceil((new Date(rewards.premiumExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0;
-
   return (
     <div className="p-6 space-y-6" data-testid="rewards-dashboard">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Rewards Center</h1>
-          <p className="text-muted-foreground">Earn free Premium access and credits</p>
+          <p className="text-muted-foreground">Earn bonus credits and perks</p>
         </div>
-        {isPremiumActive && (
-          <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-yellow-500">
-            <Crown className="w-3 h-3 mr-1" />
-            {rewards?.hasLifetimePremium ? "Lifetime Premium" : `Premium (${daysUntilExpiry} days left)`}
-          </Badge>
-        )}
+        <Badge variant="default" className="bg-gradient-to-r from-emerald-500 to-teal-500">
+          <Wallet className="w-3 h-3 mr-1" />
+          Earn Credits
+        </Badge>
       </div>
 
       {seasonalOffers && seasonalOffers.length > 0 && (
@@ -149,7 +140,7 @@ export function RewardsDashboard() {
               <Users className="w-5 h-5 text-blue-500" />
               Referral Rewards
             </CardTitle>
-            <CardDescription>Invite friends for Premium access</CardDescription>
+            <CardDescription>Invite friends for bonus credits</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -161,7 +152,7 @@ export function RewardsDashboard() {
               <div className="space-y-3">
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span>3 referrals = 1 week</span>
+                    <span>3 referrals = $10 credits</span>
                     {rewards && rewards.totalReferrals >= 3 ? (
                       <CheckCircle className="w-4 h-4 text-green-500" />
                     ) : (
@@ -173,7 +164,7 @@ export function RewardsDashboard() {
                 
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span>10 referrals = 1 month</span>
+                    <span>10 referrals = $25 credits</span>
                     {rewards && rewards.totalReferrals >= 10 ? (
                       <CheckCircle className="w-4 h-4 text-green-500" />
                     ) : (
@@ -193,15 +184,15 @@ export function RewardsDashboard() {
               <Trophy className="w-5 h-5 text-yellow-500" />
               Monthly Milestone
             </CardTitle>
-            <CardDescription>5 referrals this month = Lifetime!</CardDescription>
+            <CardDescription>5 referrals this month = $50 bonus!</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {rewards?.hasLifetimePremium ? (
                 <div className="text-center py-4">
-                  <Crown className="w-12 h-12 mx-auto text-yellow-500 mb-2" />
-                  <p className="font-bold text-lg">Lifetime Achieved!</p>
-                  <p className="text-sm text-muted-foreground">You have Premium forever</p>
+                  <Trophy className="w-12 h-12 mx-auto text-yellow-500 mb-2" />
+                  <p className="font-bold text-lg">Milestone Achieved!</p>
+                  <p className="text-sm text-muted-foreground">You earned the top referral bonus</p>
                 </div>
               ) : (
                 <>
@@ -225,7 +216,7 @@ export function RewardsDashboard() {
               <Gift className="w-5 h-5 text-pink-500" />
               Profile Completion
             </CardTitle>
-            <CardDescription>Complete 100% for 1 week Premium</CardDescription>
+            <CardDescription>Complete 100% for $10 bonus credits</CardDescription>
           </CardHeader>
           <CardContent>
             {rewards?.profileCompletionRewardClaimed ? (
@@ -236,7 +227,7 @@ export function RewardsDashboard() {
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Fill out all your profile fields to earn 1 week of free Premium access.
+                  Fill out all your profile fields to earn $10 in bonus credits toward gate fees.
                 </p>
                 <Button 
                   onClick={() => claimProfileReward.mutate()} 
@@ -286,19 +277,9 @@ export function RewardsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-center py-4">
-              {isPremiumActive ? (
-                <>
-                  <Sparkles className="w-12 h-12 mx-auto text-purple-500 mb-2" />
-                  <p className="font-medium">Active!</p>
-                  <p className="text-sm text-muted-foreground">Your profile is boosted on weekends</p>
-                </>
-              ) : (
-                <>
-                  <Crown className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
-                  <p className="font-medium">Premium Only</p>
-                  <p className="text-sm text-muted-foreground">Upgrade for weekend visibility boost</p>
-                </>
-              )}
+              <Sparkles className="w-12 h-12 mx-auto text-purple-500 mb-2" />
+              <p className="font-medium">Available for All Members!</p>
+              <p className="text-sm text-muted-foreground">Your profile gets boosted visibility on weekends</p>
             </div>
           </CardContent>
         </Card>
@@ -328,7 +309,7 @@ export function RewardsDashboard() {
                     )}
                     {item.premiumDaysAwarded && (
                       <Badge variant="outline" className="text-purple-600">
-                        +{item.premiumDaysAwarded} days
+                        +{item.premiumDaysAwarded} day bonus
                       </Badge>
                     )}
                   </div>

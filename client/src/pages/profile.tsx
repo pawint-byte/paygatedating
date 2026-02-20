@@ -5,9 +5,8 @@ import { ProfileSetupForm } from "@/components/dashboard/profile-setup-form";
 import { ShareProfileCard } from "@/components/dashboard/share-profile-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Crown, Share2, Copy, Check } from "lucide-react";
+import { Share2, Copy, Check } from "lucide-react";
 import type { Profile as ProfileType, Wallet } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { isUnauthorizedError } from "@/lib/auth-utils";
@@ -143,12 +142,6 @@ export default function Profile() {
                   This information will be visible to other members
                 </CardDescription>
               </div>
-              {profile?.subscriptionTier === "premium" && (
-                <Badge className="gap-1">
-                  <Crown className="w-3 h-3" />
-                  Premium
-                </Badge>
-              )}
             </div>
           </CardHeader>
           <CardContent>

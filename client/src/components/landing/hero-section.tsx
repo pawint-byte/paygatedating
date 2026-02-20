@@ -10,7 +10,7 @@ export function HeroSection() {
           <div className="space-y-8">
             <div className="space-y-4">
               <p className="text-primary font-medium tracking-wide uppercase text-sm">
-                Premium Dating, Reimagined
+                Dating With Intent
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight font-serif">
                 Meaningful Connections{" "}
@@ -49,13 +49,13 @@ export function HeroSection() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Users className="w-4 h-4 text-primary" />
                 </div>
-                <span>10K+ Premium Members</span>
+                <span>10K+ Active Members</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Check className="w-4 h-4 text-primary" />
                 </div>
-                <span>Free Forever Plan</span>
+                <span>Free to Join</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">

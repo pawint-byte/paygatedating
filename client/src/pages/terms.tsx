@@ -29,9 +29,9 @@ export default function Terms() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
-              PayGate Dating is a premium online dating platform that uses a 5-gate progression system to facilitate 
+              PayGate Dating is a free-to-join online dating platform that uses a 5-gate progression system to facilitate 
               meaningful connections between users. The Service includes profile creation, matching, messaging through 
-              gates, wallet management, and premium subscription features.
+              gates, wallet management, and pay-as-you-go gate fees.
             </p>
           </section>
 
@@ -78,11 +78,12 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">6. Premium Subscriptions</h2>
+            <h2 className="text-2xl font-semibold mb-4">6. Pay-As-You-Go Model</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Premium subscriptions are available at $9.99/month or $99/year. Subscriptions automatically renew 
-              unless cancelled before the renewal date. You may cancel at any time through your account settings. 
-              Refunds are provided in accordance with applicable law and our refund policy.
+              PayGate Dating operates on a pay-as-you-go model with no subscriptions or recurring charges. 
+              Users pay gate fees only when they choose to advance a connection. Gate fees are non-refundable 
+              once a gate has been unlocked. Gift purchases include a service fee (10% of gift value or $5 minimum, 
+              whichever is greater). All payments are processed securely through our payment partners.
             </p>
           </section>
 

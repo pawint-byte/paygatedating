@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Users, MessageSquare, User, Settings, LogOut, Crown, ShieldCheck, Radio, HelpCircle, Shield, Gift, Trophy, Package } from "lucide-react";
+import { Heart, Users, MessageSquare, User, Settings, LogOut, ShieldCheck, Radio, HelpCircle, Shield, Gift, Trophy, Package } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -215,14 +215,7 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
               <p className="font-medium text-sm truncate">{displayName}</p>
             </div>
             <div className="flex items-center gap-1">
-              {profile?.subscriptionTier === "premium" ? (
-                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 gap-0.5">
-                  <Crown className="w-2.5 h-2.5" />
-                  Premium
-                </Badge>
-              ) : (
-                <span className="text-xs text-muted-foreground">Free Member</span>
-              )}
+              <span className="text-xs text-muted-foreground">Member</span>
             </div>
           </div>
         </div>

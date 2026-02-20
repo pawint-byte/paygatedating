@@ -1,7 +1,7 @@
 # PayGate Dating
 
 ## Overview
-PayGate Dating is a premium online dating platform designed for serious relationship seekers aged 25-45 in urban areas. It employs a unique 5-gate progression system where users pay incremental fees at each interaction stage, alternating between initiator and recipient. This financial investment model aims to filter out low-effort interactions, fostering more meaningful connections. The platform generates revenue through premium subscriptions, gate transaction fees, and affiliate integrations for anonymous gift sending.
+PayGate Dating is a free-to-join online dating platform designed for serious relationship seekers aged 25-45 in urban areas. It employs a unique 5-gate progression system where users pay incremental fees at each interaction stage, alternating between initiator and recipient. This pay-as-you-go model (no subscriptions) filters out low-effort interactions, fostering more meaningful connections. The platform generates revenue through gate transaction fees, gift service fees, and affiliate commissions.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -36,7 +36,7 @@ Reminder preference: Always remind user to publish after making changes.
 
 ### Key Features
 - **Gate Progression**: Matches track states via a `gate_stage` enum. Chat unlocks at Gate 3.
-- **Premium Member Benefits**: 50% gate fee discount, free Gate 1 on every new match, read receipts on messages, unlimited profile views (free users: 10/day), consolation credits (50% refund if match ends before Gate 3).
+- **Pay-As-You-Go Model**: No subscriptions — users only pay gate fees when they pursue connections. Free to join, browse, and build profile.
 - **Gate Pull Requests**: Users can request the other person pay their gate (push vs pull payment). Receiver sees a full cost forecast before deciding. No limits on requests per match.
 - **Match Intent**: Per-match labels (Serious Romance, Casual Dating, Activity Partner, Just Chatting) let users define what they're looking for with each specific connection.
 - **Gate Pausing**: "Stay Here" feature lets users pause gate progression without ending the match. Both parties can resume anytime.
@@ -60,13 +60,11 @@ Reminder preference: Always remind user to publish after making changes.
 - **Profile Sharing System**: Users can share their profile via QR code, downloadable profile cards, and one-tap sharing to SMS/WhatsApp/social media. Referral links store referrer info for "Interested in Me" flow.
 - **Promotional Rewards System**: Comprehensive rewards engine with:
   - **Login Streak**: 7 consecutive days = $5 credits (tracked daily)
-  - **Referral Tiers**: 3 referrals = 1 week Premium, 10 referrals = 1 month Premium, 5 this month = Lifetime
-  - **Free Trial**: 7 days (14 days during Cuffing Season Sept-Nov)
+  - **Referral Tiers**: 3 referrals = $10 credits, 10 referrals = $25 credits, 5 this month = $50 bonus
   - **First Match Free**: Gate 1 free on first match
-  - **Profile Completion Bonus**: 100% profile = 1 week Premium
-  - **Weekend Boost**: 2x visibility on weekends for Premium users
-  - **Seasonal Offers**: Valentine's Day 50% off, Cuffing Season extended trial
-  - **Couples Discount**: Both partners upgrade = 20% off
+  - **Profile Completion Bonus**: 100% profile = $10 bonus credits
+  - **Weekend Boost**: 2x visibility on weekends for all members
+  - **Seasonal Offers**: Seasonal promotions with bonus credits and perks
 
 ## External Dependencies
 
@@ -77,7 +75,7 @@ Reminder preference: Always remind user to publish after making changes.
 - **Replit Auth**: OIDC-based authentication.
 
 ### Payment Processing
-- **Stripe**: For wallet funding, subscriptions, and gift purchases. Includes automatic webhook management via `stripe-replit-sync`.
+- **Stripe**: For wallet funding and gift purchases. Includes automatic webhook management via `stripe-replit-sync`.
 - **Stripe Crypto Payments**: Native support for stablecoins (USDC/USDT) and optional Crypto.com partnership for BTC/ETH.
 
 ### Email Service

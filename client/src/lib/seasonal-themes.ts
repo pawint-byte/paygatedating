@@ -41,7 +41,7 @@ export const seasonalThemes: SeasonalTheme[] = [
       icon: "heart",
       title: "Valentine's Day Special",
       tagline: "Find your perfect match before Feb 14th",
-      offer: "50% off Premium for new members",
+      offer: "Join free — pay only when you connect",
       cta: "Start Free Today"
     },
     hero: {
@@ -69,7 +69,7 @@ export const seasonalThemes: SeasonalTheme[] = [
       icon: "flower",
       title: "Spring Into Love",
       tagline: "Fresh starts and new connections await",
-      offer: "Free Premium trial for 7 days",
+      offer: "First gate free on your first match",
       cta: "Bloom Today"
     },
     hero: {
@@ -125,7 +125,7 @@ export const seasonalThemes: SeasonalTheme[] = [
       icon: "leaf",
       title: "Cuffing Season is Here",
       tagline: "Find your cozy companion",
-      offer: "Premium members get priority matching",
+      offer: "Join free and find your cozy companion",
       cta: "Get Cozy Today"
     },
     hero: {
@@ -153,7 +153,7 @@ export const seasonalThemes: SeasonalTheme[] = [
       icon: "gift",
       title: "Holiday Romance Special",
       tagline: "The best gift is finding someone special",
-      offer: "Gift a friend Premium membership",
+      offer: "Send a gift to someone special",
       cta: "Unwrap Love"
     },
     hero: {
@@ -181,7 +181,7 @@ export const seasonalThemes: SeasonalTheme[] = [
       icon: "sparkles",
       title: "New Year, New Connections",
       tagline: "Make 2026 your year of love",
-      offer: "Resolution special: 40% off annual Premium",
+      offer: "New year, new connections — join free",
       cta: "Start Fresh"
     },
     hero: {
@@ -241,7 +241,7 @@ export const seasonalThemes: SeasonalTheme[] = [
       cta: "Start Matching"
     },
     hero: {
-      subtitle: "Premium Dating, Reimagined",
+      subtitle: "Dating With Intent",
       headline: "Meaningful Connections",
       highlightText: "Worth Investing In",
       description: "PayGate transforms dating into a deliberate, invested journey. Our 5-gate progression system ensures every connection is genuine."

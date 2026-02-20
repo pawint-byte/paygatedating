@@ -24,7 +24,7 @@ export function ValentinesBanner() {
         
         <div className="flex items-center gap-2">
           <Gift className="w-4 h-4" />
-          <span className="font-medium" data-testid="text-valentines-offer">50% off Premium for new members</span>
+          <span className="font-medium" data-testid="text-valentines-offer">Join free and start connecting today</span>
           <Sparkles className="w-4 h-4" />
         </div>
         
