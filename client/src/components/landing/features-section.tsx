@@ -65,8 +65,8 @@ const features = [
   },
   {
     icon: QrCode,
-    title: "Personal QR Code",
-    description: "Your unique QR code lets anyone view your profile and wishlist. Share on social media, at events, or hand out on cards -- make it easy for the right people to find you.",
+    title: "Your Personal Screening Link",
+    description: "Stop giving out your number. Share your QR code or profile link instead -- at events, on social media, anywhere. Anyone interested has to come through the gates first. Think of it as a velvet rope for your dating life.",
     category: "discovery"
   },
   {

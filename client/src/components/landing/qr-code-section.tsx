@@ -1,6 +1,6 @@
 import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Smartphone, Scan, Share2 } from "lucide-react";
+import { ShieldCheck, Share2, MessageCircleX } from "lucide-react";
 
 export function QRCodeSection() {
   const siteUrl = typeof window !== "undefined" 
@@ -12,11 +12,12 @@ export function QRCodeSection() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4" data-testid="text-qr-title">
-            Take PayGate Dating With You
+            Your Link Is Your Velvet Rope
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto" data-testid="text-qr-description">
-            Scan the QR code below to instantly access PayGate Dating on your mobile device. 
-            Share it with friends to help them find meaningful connections too.
+            Stop handing out your number to people who haven't earned it.
+            Share your PayGate QR code instead -- at events, on social media,
+            or anywhere you meet someone new. Let the gates screen them first.
           </p>
         </div>
 
@@ -33,44 +34,48 @@ export function QRCodeSection() {
                 />
               </div>
               <p className="mt-4 text-sm text-muted-foreground text-center" data-testid="text-qr-scan-label">
-                Scan to open PayGate Dating
+                Scan to see PayGate in action
               </p>
             </CardContent>
           </Card>
 
           <div className="flex flex-col gap-6 max-w-sm">
-            <div className="flex items-start gap-4" data-testid="card-qr-feature-easy-access">
+            <div className="flex items-start gap-4" data-testid="card-qr-feature-screen">
               <div className="p-3 rounded-full bg-primary/10">
-                <Scan className="w-6 h-6 text-primary" />
+                <ShieldCheck className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Easy Access</h3>
+                <h3 className="font-semibold mb-1">Screen Before You Share</h3>
                 <p className="text-sm text-muted-foreground">
-                  Open your phone's camera and point it at the QR code to instantly access the app
+                  Anyone who scans your code lands on your profile. They can express
+                  interest -- but they have to go through the gates to reach you.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-4" data-testid="card-qr-feature-mobile-optimized">
+            <div className="flex items-start gap-4" data-testid="card-qr-feature-no-cold-dms">
               <div className="p-3 rounded-full bg-primary/10">
-                <Smartphone className="w-6 h-6 text-primary" />
+                <MessageCircleX className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Mobile Optimized</h3>
+                <h3 className="font-semibold mb-1">No More Cold DMs</h3>
                 <p className="text-sm text-muted-foreground">
-                  Our platform is fully responsive and works beautifully on any device
+                  Instead of fielding random messages on every platform, funnel
+                  all interest through one place. Serious people will show up.
+                  The rest won't bother.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-4" data-testid="card-qr-feature-share">
+            <div className="flex items-start gap-4" data-testid="card-qr-feature-share-anywhere">
               <div className="p-3 rounded-full bg-primary/10">
                 <Share2 className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Share With Friends</h3>
+                <h3 className="font-semibold mb-1">Share It Everywhere</h3>
                 <p className="text-sm text-muted-foreground">
-                  Screenshot the QR code and share it with friends looking for genuine connections
+                  Instagram bio, business card, group chat, brunch with friends --
+                  your QR code works anywhere. Print it, screenshot it, post it.
                 </p>
               </div>
             </div>

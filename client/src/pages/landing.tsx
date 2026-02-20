@@ -7,7 +7,7 @@ import { FeaturesSection } from "@/components/landing/features-section";
 import { PricingSection } from "@/components/landing/pricing-section";
 import { Testimonials } from "@/components/landing/testimonials";
 import { SecuritySection } from "@/components/landing/security-section";
-import { QRCodeSection } from "@/components/landing/qr-code-section";
+import { ConciergeSection } from "@/components/landing/concierge-section";
 import { FAQSection } from "@/components/landing/faq-section";
 import { Footer } from "@/components/landing/footer";
 import { Chatbot } from "@/components/chatbot";
@@ -21,11 +21,11 @@ export default function Landing() {
         <SeasonalHero />
         <GateTimeline />
         <ValueProps />
+        <ConciergeSection />
         <FeaturesSection />
         <PricingSection />
         <Testimonials />
         <SecuritySection />
-        <QRCodeSection />
         <FAQSection />
       </main>
       <Footer />

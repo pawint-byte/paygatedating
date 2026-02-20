@@ -20,8 +20,8 @@ export function HeroSection() {
                 You've already invested in becoming who you are -- the education,
                 the career, the gym, the self-care, the growth. PayGate is for
                 people who've done the work on themselves and want to meet someone
-                who's done the same. Our 5-gate journey takes you from first hello
-                to first date, one intentional step at a time.
+                who's done the same. Create your profile, share your link, and let
+                the gates screen everyone before they get your time.
               </p>
             </div>
 
