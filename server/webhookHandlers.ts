@@ -1,10 +1,8 @@
-import { getStripeSync } from './stripeClient';
+import { getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
 import { emailService } from './lib/email';
 
 export class WebhookHandlers {
-  // Webhook handler that uses stripe-replit-sync for signature verification and DB sync
-  // Then processes custom business logic with the verified event
   static async processWebhook(payload: Buffer, signature: string): Promise<void> {
     if (!Buffer.isBuffer(payload)) {
       throw new Error(
@@ -15,12 +13,14 @@ export class WebhookHandlers {
       );
     }
 
-    // stripe-replit-sync handles signature verification and syncs to database
-    // It returns the verified event object
-    const sync = await getStripeSync();
-    const verifiedEvent = await sync.processWebhook(payload, signature);
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      throw new Error('STRIPE_WEBHOOK_SECRET is not set');
+    }
 
-    // Process our custom business logic with the verified event
+    const stripe = await getUncachableStripeClient();
+    const verifiedEvent = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+
     if (verifiedEvent) {
       await WebhookHandlers.processCustomLogic(verifiedEvent);
     }

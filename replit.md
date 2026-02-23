@@ -75,7 +75,7 @@ Reminder preference: Always remind user to publish after making changes.
 - **Replit Auth**: OIDC-based authentication.
 
 ### Payment Processing
-- **Stripe**: For wallet funding and gift purchases. Includes automatic webhook management via `stripe-replit-sync`.
+- **Stripe**: For wallet funding and gift purchases. Webhook configured manually in Stripe Dashboard pointing to deployed URL + `/api/stripe/webhook`. Signing secret stored as `STRIPE_WEBHOOK_SECRET`. Uses `stripe-replit-sync` for schema migrations and data backfill only.
 - **Stripe Crypto Payments**: Native support for stablecoins (USDC/USDT) and optional Crypto.com partnership for BTC/ETH.
 
 ### Email Service

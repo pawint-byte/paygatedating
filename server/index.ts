@@ -4,7 +4,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import path from "path";
 import { runMigrations } from "stripe-replit-sync";
-import { getUncachableStripeClient, getStripeSync } from "./stripeClient";
+import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
 
 const app = express();
@@ -16,8 +16,6 @@ declare module "http" {
   }
 }
 
-// Initialize Stripe schema and managed webhook on startup
-// Uses stripe-replit-sync for automatic webhook management
 async function initStripe() {
   const databaseUrl = process.env.DATABASE_URL;
 
@@ -31,39 +29,12 @@ async function initStripe() {
     await runMigrations({ databaseUrl });
     console.log('Stripe schema ready');
 
-    // Get StripeSync instance
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      console.warn('STRIPE_WEBHOOK_SECRET not set - webhook signature verification will fail');
+    }
+
     const stripeSync = await getStripeSync();
 
-    // Set up managed webhook - no manual configuration needed!
-    console.log('Setting up managed webhook...');
-    const replitDomains = process.env.REPLIT_DOMAINS;
-    if (!replitDomains) {
-      console.warn('REPLIT_DOMAINS not set - webhook registration may fail');
-    }
-    const webhookBaseUrl = `https://${replitDomains?.split(',')[0] || 'localhost:5000'}`;
-    const webhookUrl = `${webhookBaseUrl}/api/stripe/webhook`;
-    
-    try {
-      let result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
-      
-      // If first call returns undefined (e.g., after cleaning up orphaned webhooks), try again
-      if (!result?.webhook) {
-        console.log('Retrying webhook registration...');
-        result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
-      }
-      
-      if (result?.webhook?.url) {
-        console.log(`Webhook configured: ${result.webhook.url}`);
-      } else if (result?.webhook) {
-        console.log(`Webhook setup completed for: ${webhookUrl}`);
-      } else {
-        console.warn('Webhook registration returned undefined - webhook events may not be received. Check Stripe Dashboard.');
-      }
-    } catch (webhookError) {
-      console.error('Failed to set up managed webhook:', webhookError);
-    }
-
-    // Sync all existing Stripe data in background
     console.log('Starting Stripe data sync...');
     stripeSync.syncBackfill()
       .then(() => console.log('Stripe data synced'))
@@ -161,7 +132,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize Stripe with automatic webhook management
   try {
     await initStripe();
     console.log('Stripe client initialized successfully');
