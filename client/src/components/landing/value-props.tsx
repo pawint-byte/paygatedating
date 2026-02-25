@@ -1,27 +1,27 @@
-import { Gift, BookOpen, Compass, Dumbbell, Sparkles, GraduationCap } from "lucide-react";
+import { Eye, Sliders, Zap, Dumbbell, Sparkles } from "lucide-react";
 
 const values = [
   {
-    icon: BookOpen,
-    title: "A Story, Not a Transaction",
+    icon: Eye,
+    title: "Effort You Can Actually See",
     description:
-      "Our 5-chapter journey mirrors how real relationships unfold: slowly, deliberately, with both people choosing to turn the page together. Every chapter forward means you're both writing this story -- not just swiping through someone else's.",
+      "No more guessing if they're interested. Every chapter someone turns with you is visible proof they showed up. By Chapter 3, you both know this one's real — not just another match collecting dust.",
   },
   {
-    icon: Compass,
-    title: "Both People Show Up",
+    icon: Sliders,
+    title: "You Choose the Dynamic",
     description:
-      "No more one-sided effort. Each chapter alternates who leads, so both of you put in the work. When someone reaches Chapter 3 with you, you know they've been just as intentional as you have.",
+      "Want to lead? Lead. Want to be pursued? Share your link and wait. Want equal effort? The chapters alternate who goes first. Traditional, modern, or somewhere in between — the system supports your style.",
   },
   {
-    icon: Gift,
-    title: "Thoughtful Gestures Speak Volumes",
+    icon: Zap,
+    title: "No Wasted Energy",
     description:
-      "Browse wishlists and send meaningful gifts that say 'I've been paying attention to your story.' It's the difference between a generic like and remembering their favorite thing -- small acts that show you're reading between the lines.",
+      "On other apps, you invest time in people who were never serious. Here, you only invest in connections where both people are turning pages. No subscriptions draining your wallet. No messages disappearing into the void.",
   },
 ];
 
-function HisStory() {
+function HisReality() {
   return (
     <div className="bg-card border border-card-border rounded-md p-6 hover-elevate" data-testid="value-his-investment">
       <div className="flex items-center gap-3 mb-4">
@@ -29,37 +29,30 @@ function HisStory() {
           <Dumbbell className="w-6 h-6 text-blue-500 dark:text-blue-400" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold">His Story So Far</h3>
-          <p className="text-xs text-muted-foreground">The chapters he's already written</p>
+          <h3 className="text-lg font-semibold">What He's Thinking</h3>
+          <p className="text-xs text-muted-foreground">The frustration is real</p>
         </div>
       </div>
-      <ul className="space-y-2.5 text-sm text-muted-foreground">
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 mt-1.5 flex-shrink-0" />
-          <span>Built a career through discipline, late nights, and showing up</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 mt-1.5 flex-shrink-0" />
-          <span>Earned his health through consistency at the gym and on the plate</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 mt-1.5 flex-shrink-0" />
-          <span>Grew through education, mentors, and real-world experience</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 mt-1.5 flex-shrink-0" />
-          <span>Learned how to communicate, listen, and be present</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 mt-1.5 flex-shrink-0" />
-          <span>Built a life that's ready for someone to share it with</span>
-        </li>
-      </ul>
+      <p className="text-sm text-muted-foreground leading-relaxed mb-4 italic">
+        "I plan dates, I pay, I put in real effort — and half the time I get ghosted or
+        it feels like she was just there for a free night out. I'm done investing in
+        people who don't invest back."
+      </p>
+      <div className="border-t border-border pt-4">
+        <p className="text-sm font-medium">
+          How chapters fix this:
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          By Chapter 2, she's already shown up too. You're not guessing anymore — the
+          chapters proved she's just as interested as you are. Your effort goes toward
+          someone who's matching it.
+        </p>
+      </div>
     </div>
   );
 }
 
-function HerStory() {
+function HerReality() {
   return (
     <div className="bg-card border border-card-border rounded-md p-6 hover-elevate" data-testid="value-her-investment">
       <div className="flex items-center gap-3 mb-4">
@@ -67,32 +60,25 @@ function HerStory() {
           <Sparkles className="w-6 h-6 text-rose-500 dark:text-rose-400" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold">Her Story So Far</h3>
-          <p className="text-xs text-muted-foreground">The chapters she's already written</p>
+          <h3 className="text-lg font-semibold">What She's Thinking</h3>
+          <p className="text-xs text-muted-foreground">The frustration is real</p>
         </div>
       </div>
-      <ul className="space-y-2.5 text-sm text-muted-foreground">
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 mt-1.5 flex-shrink-0" />
-          <span>Stayed committed to her health through fitness, yoga, and self-care</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 mt-1.5 flex-shrink-0" />
-          <span>Curated her confidence -- the style, the presence, the way she carries herself</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 mt-1.5 flex-shrink-0" />
-          <span>Built her education, career, and independence on her own terms</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 mt-1.5 flex-shrink-0" />
-          <span>Nurtured deep friendships and emotional intelligence</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 mt-1.5 flex-shrink-0" />
-          <span>Knows exactly who she is -- and what she deserves in a partner</span>
-        </li>
-      </ul>
+      <p className="text-sm text-muted-foreground leading-relaxed mb-4 italic">
+        "Men don't put in effort anymore. I get low-effort messages, no follow-through,
+        and guys who won't commit to making plans — let alone actually showing up. I've
+        done the work on myself. Where are the men who've done the same?"
+      </p>
+      <div className="border-t border-border pt-4">
+        <p className="text-sm font-medium">
+          How chapters fix this:
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          When a man opens Chapter 1, he's already proven he's serious — not just
+          swiping. By Chapter 3, you know he's invested real effort. The chapters filter
+          out everything you're tired of.
+        </p>
+      </div>
     </div>
   );
 }
@@ -103,22 +89,22 @@ export function ValueProps() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <p className="text-primary font-medium tracking-wide uppercase text-sm mb-3">
-            Why PayGate?
+            The Real Problem — and How Chapters Solve It
           </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-serif mb-4">
-            You've Already Written Incredible Chapters
+            Both Sides Are Tired of the Same Thing
           </h2>
           <p className="text-muted-foreground text-lg">
-            The gym sessions, the degrees, the late nights building something.
-            The skincare routines, the career moves, the personal growth. Both
-            men and women have been writing their own story for years -- PayGate
-            is where two great stories finally meet.
+            Men feel like effort goes unreciprocated. Women feel like effort from
+            men has disappeared. Both sides are saying the same thing: "I'm
+            putting in work and not getting it back." The chapters make effort
+            visible — so you always know where you stand.
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <HisStory />
-          <HerStory />
+          <HisReality />
+          <HerReality />
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">

@@ -35,11 +35,12 @@ Reminder preference: Always remind user to publish after making changes.
 - **Key Entities**: Users, sessions, profiles, wallets, transactions, matches, messages.
 
 ### Key Features
-- **Gate Progression**: Matches track states via a `gate_stage` enum. Chat unlocks at Gate 3.
-- **Pay-As-You-Go Model**: No subscriptions — users only pay gate fees when they pursue connections. Free to join, browse, and build profile.
-- **Gate Pull Requests**: Users can request the other person pay their gate (push vs pull payment). Receiver sees a full cost forecast before deciding. No limits on requests per match.
+- **Gate Progression**: Matches track states via a `gate_stage` enum. Chat unlocks at Gate 3. User-facing labels use chapter names (The Spark, The Curiosity, Getting Real, Face to Face, Beyond the Screen).
+- **Pay-As-You-Go Model**: No subscriptions — users only pay chapter fees when they pursue connections. Free to join, browse, and build profile.
+- **Gate Pull Requests**: Users can request the other person pay their chapter (push vs pull payment). Receiver sees a full cost forecast before deciding. No limits on requests per match.
 - **Match Intent**: Per-match labels (Serious Romance, Casual Dating, Activity Partner, Just Chatting) let users define what they're looking for with each specific connection.
-- **Gate Pausing**: "Stay Here" feature lets users pause gate progression without ending the match. Both parties can resume anytime.
+- **Gate Pausing**: "Stay Here" feature lets users pause chapter progression without ending the match. Both parties can resume anytime.
+- **Persona-Driven Landing Page**: "Your Story, Your Rules" section presents 5 dater personas (The One Who Leads, The One Who's Pursued, Equal Effort, Serious Romantic, Explorer) showing how chapters work for each dating style. Addresses real dating frustrations both genders face without taking sides.
 - **Gift Purchasing System (Redesigned)**: Buyer pays a service fee (10% of gift value or $5, whichever is greater) via Stripe. Recipient provides a delivery address (home, work, Amazon pickup, etc.) which is shared with the buyer. Buyer then purchases the item directly from the retailer using the platform's affiliate link (click is tracked). Buyer confirms purchase, recipient confirms delivery, and gates unlock. Platform earns the service fee + affiliate commission.
   - **Gift Flow**: fee_paid → address_provided → link_clicked → purchase_confirmed → delivered
   - **Gift API Endpoints**: POST /api/gifts/checkout, POST /api/gifts/:id/provide-address, POST /api/gifts/:id/track-affiliate-click, POST /api/gifts/:id/confirm-purchase, POST /api/gifts/:id/confirm-delivery, GET /api/gifts/:id/details
