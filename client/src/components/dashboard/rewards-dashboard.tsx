@@ -227,7 +227,7 @@ export function RewardsDashboard() {
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Fill out all your profile fields to earn $10 in bonus credits toward gate fees.
+                  Fill out all your profile fields to earn $10 in bonus credits toward your chapters.
                 </p>
                 <Button 
                   onClick={() => claimProfileReward.mutate()} 
@@ -248,14 +248,14 @@ export function RewardsDashboard() {
               <Calendar className="w-5 h-5 text-green-500" />
               First Match Free
             </CardTitle>
-            <CardDescription>Gate 1 free on your first match</CardDescription>
+            <CardDescription>Chapter 1 free on your first match</CardDescription>
           </CardHeader>
           <CardContent>
             {rewards?.firstMatchFreeUsed ? (
               <div className="text-center py-4">
                 <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-2" />
                 <p className="font-medium">Reward Used!</p>
-                <p className="text-sm text-muted-foreground">You saved $5 on Gate 1</p>
+                <p className="text-sm text-muted-foreground">You saved $5 on Chapter 1</p>
               </div>
             ) : (
               <div className="text-center py-4">

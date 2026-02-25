@@ -13,7 +13,7 @@ interface SocialShareProps {
 export function SocialShare({ 
   url = typeof window !== 'undefined' ? window.location.href : 'https://paygate-dating.replit.app',
   title = "PayGate Dating - Meaningful Connections Worth Investing In",
-  description = "Join PayGate Dating and get $15 in free credits! Find meaningful connections with our unique 5-gate system.",
+  description = "Join PayGate Dating and get $15 in free credits! Write your love story in 5 chapters with someone worth showing up for.",
   className = ""
 }: SocialShareProps) {
   const { toast } = useToast();

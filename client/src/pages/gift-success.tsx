@@ -123,10 +123,10 @@ export default function GiftSuccess() {
               <div className="flex items-center justify-between flex-wrap gap-1 pt-2 border-t">
                 <span className="text-muted-foreground flex items-center gap-1">
                   <Lock className="w-4 h-4" />
-                  Gates Unlocked
+                  Chapters Unlocked
                 </span>
                 <Badge variant="secondary" className="bg-primary/10 text-primary" data-testid="badge-gates-unlocked">
-                  {data.gatesUnlocked} {data.gatesUnlocked === 1 ? "Gate" : "Gates"}
+                  {data.gatesUnlocked} {data.gatesUnlocked === 1 ? "Chapter" : "Chapters"}
                 </Badge>
               </div>
             )}

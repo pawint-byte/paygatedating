@@ -47,7 +47,7 @@ export function AssistantChat() {
         ? `Hi there! I'm your dating coach. I noticed your profile is ${completeness.score}% complete. Would you like some tips to make it more attractive to potential matches?`
         : completeness.score < 80
         ? `Welcome back! Your profile is looking good at ${completeness.score}% complete. I can help you add the finishing touches or give you some matching tips!`
-        : `Great job on your profile! It's ${completeness.score}% complete. How can I help you today - matching tips, conversation starters, or understanding the gate system?`;
+        : `Great job on your profile! It's ${completeness.score}% complete. How can I help you today - matching tips, conversation starters, or understanding how the 5 chapters work?`;
       
       setMessages([{ role: "assistant", content: welcomeMessage }]);
     }
@@ -119,7 +119,7 @@ export function AssistantChat() {
 
   const quickQuestions = [
     "How do I write a great bio?",
-    "Explain the gate system",
+    "Explain the 5 chapters",
     "Tips for my first message",
     "What should I add to my wishlist?",
   ];

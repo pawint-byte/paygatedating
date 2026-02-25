@@ -135,7 +135,7 @@ export function GiftHistory() {
     },
     onSuccess: () => {
       invalidateGifts();
-      toast({ title: "Delivery confirmed", description: "Gates have been unlocked!" });
+      toast({ title: "Delivery confirmed", description: "New chapters have been unlocked!" });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });

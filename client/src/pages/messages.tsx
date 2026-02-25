@@ -13,9 +13,9 @@ export default function Messages() {
         </div>
         <h2 className="text-xl font-semibold mb-2">Messages Coming Soon</h2>
         <p className="text-muted-foreground mb-6">
-          Once you advance past Gate 3 with a match, you'll be able to chat with
-          them here. Start by sending interest requests and progressing through
-          the gates!
+          Once you reach Chapter 3 (Getting Real) with a match, you'll be able
+          to chat with them here. Start by sending interest requests and writing
+          your first chapters together!
         </p>
         <Button onClick={() => setLocation("/matches")} data-testid="button-view-matches">
           View My Matches

@@ -8,35 +8,35 @@ import {
 const faqs = [
   {
     question: "What makes PayGate Dating different from other dating apps?",
-    answer: "PayGate is 100% free to join -- no subscriptions, no monthly fees, ever. You only invest when you find someone you genuinely want to connect with. Our 5-gate journey means every step you take is toward a real conversation with a real person, not a faceless monthly charge. This naturally filters out people who aren't willing to put in the effort, so the people you meet are actually invested in getting to know you."
+    answer: "PayGate is 100% free to join -- no subscriptions, no monthly fees, ever. You only invest when you find someone you genuinely want to write a story with. Our 5-chapter journey means every step forward is one you both chose to take together, not a faceless monthly charge. This naturally filters out people who aren't willing to show up, so the people you meet are actually invested in getting to know you."
   },
   {
-    question: "How does the gate progression system work?",
-    answer: "Think of it like the natural stages of getting to know someone. When you express interest, you move through 5 gates together. Each gate requires a small step of commitment that alternates between you and your match: Gate 1 ($5) sends your interest, Gate 2 ($5) continues the connection, Gate 3 ($10) unlocks deeper conversation, Gate 4 ($15) opens up video dates, and Gate 5 ($20) exchanges real contact info. Both people take turns investing -- this mutual effort ensures you're both genuinely interested."
+    question: "How does the chapter progression system work?",
+    answer: "Think of it like the natural chapters of getting to know someone. When you express interest, you move through 5 chapters together. Each chapter is a moment where one of you leads and the other follows: Chapter 1 ($5) is The Spark -- your first move. Chapter 2 ($5) is The Curiosity -- they write back. Chapter 3 ($10) is Getting Real -- walls come down. Chapter 4 ($15) is Face to Face -- video calls and real chemistry. Chapter 5 ($20) is Beyond the Screen -- you exchange contact info. Both people take turns leading, so you're always co-authoring the story together."
   },
   {
     question: "Why is this better for women?",
-    answer: "You've invested in yourself -- the fitness routine, the skincare, the wardrobe, your education, your career. You've put real effort into becoming who you are. PayGate makes sure the men who reach out to you have done the same kind of work on themselves. When someone opens a gate to connect with you, it's not just a swipe -- it's proof they're willing to invest real effort, just like you do every day. No more low-effort messages or matches that go nowhere."
+    answer: "You've written incredible chapters of your own story -- the fitness, the career, the style, the growth. PayGate makes sure the men who reach out to you have written strong chapters too. When someone reaches Chapter 3 with you, it's not just a swipe -- it's proof they're willing to show up and put in real effort, the same way you do every day. No more low-effort messages or matches that go nowhere."
   },
   {
     question: "Why is this better for men?",
-    answer: "You've been putting in the work -- the gym, the career, the education, the personal development. You've built yourself into someone worth knowing. PayGate connects you with women who've invested in themselves just as seriously -- their health, their style, their growth, their goals. And you're in control of the dynamic. Want to lead the way? Go for it. Want a partner who matches your effort equally? The gate system supports that too. Either way, every dollar goes toward connecting with someone who's already shown genuine interest back."
+    answer: "You've been writing your story through discipline -- the gym, the career, the education, the personal growth. PayGate connects you with women who've written just as compelling a story -- their health, their style, their ambitions, their depth. And you lead the dynamic. Want to make the first move? Go for it. Want a partner who matches your effort chapter for chapter? The system supports that. Every dollar goes toward someone who's already shown genuine interest back."
   },
   {
     question: "Do both people have to pay?",
-    answer: "Gate payments alternate between you and your match, so both people invest. However, every connection is different -- if you'd prefer the other person covers your turn, you can send a 'payment request.' They'll see a full forecast and can accept or decline. This flexibility lets you set the tone for each connection: traditional, 50/50, or somewhere in between. It's about finding the dynamic that feels right for both of you."
+    answer: "Chapter payments alternate between you and your match, so both people show up. However, every story is different -- if you'd prefer the other person leads your chapter, you can send a 'payment request.' They'll see a full forecast and can accept or decline. This flexibility lets you set the tone for each connection: traditional, 50/50, or somewhere in between. It's about finding the dynamic that feels right for both of you."
   },
   {
     question: "How can I share my profile when I'm out and about?",
-    answer: "Every member gets a personal QR code and a shareable profile link. Share it anywhere -- put it in your dating app bios, social media stories, text it to someone you just met at a coffee shop, or print it on cards to hand out. When someone scans your code, they see your profile preview and wishlist -- giving them a clear picture of who you are. If they sign up through your link, you earn bonus credits!"
+    answer: "Every member gets a personal QR code and a shareable profile link. Share it anywhere -- put it in your dating app bios, social media stories, text it to someone you just met at a coffee shop, or print it on cards to hand out. When someone scans your code, they see your opening page -- your profile preview and wishlist. If they sign up through your link, you earn bonus credits!"
   },
   {
     question: "Is it really free to join? What's the catch?",
-    answer: "No catch. Signing up, building your profile, browsing, and being discovered are all completely free -- forever. You only invest when you actively want to pursue a connection with someone specific. We make money from gate fees and gift service charges, not subscriptions. This means we're driven to help you find great matches, not just keep you paying month after month."
+    answer: "No catch. Signing up, building your profile, browsing, and being discovered are all completely free -- forever. You only invest when you actively want to start a new chapter with someone specific. We make money from chapter fees and gift service charges, not subscriptions. This means we're motivated to help you find great matches, not just keep you paying month after month."
   },
   {
     question: "How does the gift registry feature work?",
-    answer: "Create your wishlist with items from Amazon, Net-a-Porter, MR PORTER (luxury fashion), or travel experiences from Viator and Klook. When someone wants to show genuine interest, they can purchase a gift from your wishlist through PayGate. There's a small service fee (10% of gift value or $5, whichever is greater). Gifts unlock additional gates based on their value -- it's a meaningful way to show you've been paying attention to what someone actually wants."
+    answer: "Create your wishlist with items from Amazon, Net-a-Porter, MR PORTER (luxury fashion), or travel experiences from Viator and Klook. When someone wants to show they've been paying attention to your story, they can purchase a gift from your wishlist through PayGate. There's a small service fee (10% of gift value or $5, whichever is greater). Gifts unlock additional chapters based on their value -- it's a meaningful way to show you're reading between the lines."
   },
   {
     question: "How does gift delivery work? Do I need to share my address?",
@@ -44,23 +44,23 @@ const faqs = [
   },
   {
     question: "What is match intent and why would I set it?",
-    answer: "Match intent lets you label what you're looking for with each specific connection -- Serious Romance, Casual Dating, Activity Partner, or Just Chatting. It's set per match, not globally, so you might be pursuing a serious connection with one person and just looking for a hiking buddy with another. It helps set expectations early so nobody's time or energy goes to waste."
+    answer: "Match intent lets you label what kind of story you're looking to write with each specific connection -- Serious Romance, Casual Dating, Activity Partner, or Just Chatting. It's set per match, not globally, so you might be writing a romance with one person and looking for a hiking buddy with another. It helps set expectations early so nobody's time or energy goes to waste."
   },
   {
-    question: "Can I ask the other person to pay for my gate?",
-    answer: "Yes! If it's your turn but you'd prefer the other person covers it, you can send a 'payment request.' They'll see a full forecast showing what each of you has invested so far and what the remaining gates will cost. They can accept (and cover your gate) or decline. There's no limit on requests -- every connection has its own dynamic."
+    question: "Can I ask the other person to pay for my chapter?",
+    answer: "Yes! If it's your turn to lead but you'd prefer the other person takes it, you can send a 'payment request.' They'll see a full forecast showing what each of you has invested so far and what the remaining chapters will cost. They can accept (and lead your chapter) or decline. There's no limit on requests -- every connection has its own dynamic."
   },
   {
-    question: "Can I pause gate progression if things are going well where they are?",
-    answer: "Absolutely. If you're enjoying the conversation and don't want to feel pressured to advance, just hit 'Stay Here.' This pauses gate progression without ending the match -- you can keep getting to know each other at your own pace. Either person can resume whenever they're ready to take the next step."
+    question: "Can I pause chapter progression if things are going well where they are?",
+    answer: "Absolutely. If you're enjoying the current chapter and don't want to feel pressured to advance, just hit 'Stay Here.' This pauses the story without ending it -- you can keep getting to know each other at your own pace. Either person can turn the page whenever they're ready for the next chapter."
   },
   {
     question: "How does the Nearby Map work?",
-    answer: "Toggle 'Go Live' to appear on the map and discover singles in your area in real-time. Your location is fuzzy to about 500 meters for privacy. See who's nearby, view their profiles, and express interest -- it's like a digital version of catching someone's eye across the room."
+    answer: "Toggle 'Go Live' to appear on the map and discover singles in your area in real-time. Your location is fuzzy to about 500 meters for privacy. See who's nearby, view their profiles, and express interest -- it's like catching someone's eye across the room and deciding to walk over."
   },
   {
     question: "How do referrals work?",
-    answer: "Share your unique referral code with friends. When they sign up and take their first step through a gate, you both receive bonus credits. It's our way of rewarding you for helping build a community of people who take dating seriously."
+    answer: "Share your unique referral code with friends. When they sign up and start their first chapter with someone, you both receive bonus credits. It's our way of rewarding you for helping build a community of people who take their love story seriously."
   },
   {
     question: "Is my personal information safe?",
@@ -84,15 +84,15 @@ const faqs = [
   },
   {
     question: "What happens if a match doesn't work out?",
-    answer: "That's part of the journey -- not every connection leads somewhere, and that's perfectly okay. Because you only invested in the gates you actually used (no wasted subscription fees), your investment was modest and went toward a real interaction. You can start a new connection anytime, and the first gate is always just $5."
+    answer: "That's part of the journey -- not every story is meant to be a novel, and that's perfectly okay. Because you only invested in the chapters you actually wrote together (no wasted subscription fees), your investment was modest and went toward a real interaction. You can start a new story anytime, and Chapter 1 is always just $5."
   },
   {
     question: "What are the seasonal themes and promotions?",
-    answer: "PayGate features dynamic seasonal content that changes throughout the year. From spring renewal themes and summer adventure campaigns to cozy fall cuffing season and winter warmth promotions, our platform evolves to match the moment. Each theme brings fresh messaging, special promotions, and seasonal tips for making connections."
+    answer: "PayGate features dynamic seasonal content that changes throughout the year. From spring new-beginnings themes and summer adventure campaigns to cozy fall cuffing season and winter warmth promotions, our platform evolves to match the moment. Each season brings fresh messaging, special promotions, and seasonal tips for making connections."
   },
   {
     question: "How can I attract more quality matches?",
-    answer: "Every member gets a personal QR code and shareable profile link. Share it anywhere -- on your social bios, stories, or print it on cards to hand out at events. When someone scans your QR code, they see your profile preview and wishlist. If they sign up through your link, you earn $5 in referral credits! It's the easiest way to attract people who are ready to invest real effort in connecting with you."
+    answer: "Every member gets a personal QR code and shareable profile link. Share it anywhere -- on your social bios, stories, or print it on cards to hand out at events. When someone scans your QR code, they see your opening page and wishlist. If they sign up through your link, you earn $5 in referral credits! It's the easiest way to attract people who are ready to write a real story with you."
   }
 ];
 
@@ -105,7 +105,7 @@ export function FAQSection() {
             Frequently Asked Questions
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto" data-testid="text-faq-description">
-            Everything you need to know about PayGate Dating -- free to join, invest only when you're ready.
+            Everything you need to know about PayGate Dating -- free to join, pay only to turn the page.
           </p>
         </div>
 

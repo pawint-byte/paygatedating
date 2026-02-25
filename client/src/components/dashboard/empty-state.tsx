@@ -22,7 +22,7 @@ const emptyStates = {
   wallet: {
     icon: Wallet,
     title: "Fund Your Wallet",
-    description: "Add funds to your wallet to start sending interest requests and advancing through gates with your matches.",
+    description: "Add funds to your wallet to start sending interest requests and writing chapters with your matches.",
     actionLabel: "Add Funds",
   },
 };

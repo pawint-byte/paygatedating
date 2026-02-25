@@ -25,11 +25,11 @@ const gateIcons = {
 };
 
 const gateLabels = {
-  gate1: "Reach-Out",
-  gate2: "Response",
-  gate3: "Multimedia",
-  gate4: "Video Date",
-  gate5: "Contact",
+  gate1: "The Spark",
+  gate2: "The Curiosity",
+  gate3: "Getting Real",
+  gate4: "Face to Face",
+  gate5: "Beyond the Screen",
   completed: "Connected",
 };
 
@@ -126,7 +126,7 @@ export function GateProgress({
       return await apiRequest("POST", `/api/matches/${match.id}/pause`);
     },
     onSuccess: () => {
-      toast({ title: "Gate Paused", description: "You've signaled you're happy at this level. Either of you can resume anytime." });
+      toast({ title: "Chapter Paused", description: "You've signaled you're happy at this chapter. Either of you can resume anytime." });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches", match.id, "forecast"] });
     },
@@ -140,7 +140,7 @@ export function GateProgress({
       return await apiRequest("POST", `/api/matches/${match.id}/resume`);
     },
     onSuccess: () => {
-      toast({ title: "Gate Resumed", description: "Gate progression is back on. You can now advance." });
+      toast({ title: "Chapter Resumed", description: "Your story continues. You can now turn the next page." });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches", match.id, "forecast"] });
     },
@@ -169,9 +169,9 @@ export function GateProgress({
     },
     onSuccess: (_, variables) => {
       if (variables.action === "accept") {
-        toast({ title: "Gate Advanced!", description: "You accepted the request and paid for this gate." });
+        toast({ title: "Chapter Advanced!", description: "You accepted the request and turned the page." });
       } else {
-        toast({ title: "Request Declined", description: `${otherProfile.displayName} will need to pay their own gate.` });
+        toast({ title: "Request Declined", description: `${otherProfile.displayName} will need to lead their own chapter.` });
       }
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
@@ -216,8 +216,8 @@ export function GateProgress({
             {isCompleted
               ? "Connection complete!"
               : gatePaused
-              ? "Gate paused — enjoying current level"
-              : `Gate ${currentGateNum} — Either of you can pay to advance`}
+              ? "Chapter paused — enjoying where you are"
+              : `Chapter ${currentGateNum} — Either of you can turn the page`}
           </p>
         </div>
         {!isCompleted && (

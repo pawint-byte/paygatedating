@@ -40,15 +40,15 @@ export const seasonalThemes: SeasonalTheme[] = [
       gradient: "from-rose-500 via-pink-500 to-red-500",
       icon: "heart",
       title: "Valentine's Day Special",
-      tagline: "Find your perfect match before Feb 14th",
-      offer: "Join free — pay only when you connect",
-      cta: "Start Free Today"
+      tagline: "Start a new chapter before Feb 14th",
+      offer: "Join free -- your love story starts here",
+      cta: "Start Your Story"
     },
     hero: {
-      subtitle: "Love is in the Air",
-      headline: "Find Your Valentine",
+      subtitle: "The Most Romantic Chapter",
+      headline: "Write Your Love Story",
       highlightText: "Before Feb 14th",
-      description: "This Valentine's Day, invest in meaningful connections. Join thousands finding real love through our 5-gate progression system."
+      description: "This Valentine's Day, don't just swipe -- start a real story with someone. Five chapters. Two people. One connection worth writing."
     },
     colors: {
       primary: "rose",
@@ -67,16 +67,16 @@ export const seasonalThemes: SeasonalTheme[] = [
     banner: {
       gradient: "from-green-400 via-emerald-500 to-teal-500",
       icon: "flower",
-      title: "Spring Into Love",
-      tagline: "Fresh starts and new connections await",
-      offer: "First gate free on your first match",
-      cta: "Bloom Today"
+      title: "Spring Into a New Chapter",
+      tagline: "Fresh stories and new connections await",
+      offer: "First chapter free on your first match",
+      cta: "Start Fresh"
     },
     hero: {
-      subtitle: "Season of New Beginnings",
-      headline: "Fresh Connections",
+      subtitle: "A Season for New Stories",
+      headline: "Fresh Chapters",
       highlightText: "Await This Spring",
-      description: "Spring is the perfect time for new beginnings. Let PayGate help you plant the seeds of lasting relationships."
+      description: "Spring is the perfect time to start writing something new. Find someone whose story complements yours and begin your first chapter together."
     },
     colors: {
       primary: "emerald",
@@ -95,16 +95,16 @@ export const seasonalThemes: SeasonalTheme[] = [
     banner: {
       gradient: "from-amber-400 via-orange-500 to-yellow-500",
       icon: "sun",
-      title: "Hot Summer Connections",
-      tagline: "Find your summer adventure partner",
+      title: "Summer Story Season",
+      tagline: "Find your adventure co-author",
       offer: "Beach-ready profiles get 30% more matches",
-      cta: "Heat Up Your Summer"
+      cta: "Write Your Summer Chapter"
     },
     hero: {
-      subtitle: "Summer Love Awaits",
-      headline: "Adventure Partners",
-      highlightText: "For Every Moment",
-      description: "Whether it's beach walks, concerts, or road trips - find someone who shares your love for summer adventures."
+      subtitle: "The Adventure Chapter",
+      headline: "Co-Author Your",
+      highlightText: "Summer Story",
+      description: "Beach walks, concerts, road trips -- the best summer stories are written with two people. Find your co-author and start Chapter 1."
     },
     colors: {
       primary: "orange",
@@ -123,16 +123,16 @@ export const seasonalThemes: SeasonalTheme[] = [
     banner: {
       gradient: "from-orange-600 via-amber-600 to-yellow-600",
       icon: "leaf",
-      title: "Cuffing Season is Here",
-      tagline: "Find your cozy companion",
-      offer: "Join free and find your cozy companion",
-      cta: "Get Cozy Today"
+      title: "Cuffing Season Chapters",
+      tagline: "Find someone to write cozy chapters with",
+      offer: "Join free and find your cozy co-author",
+      cta: "Get Cozy"
     },
     hero: {
-      subtitle: "Cuffing Season Special",
-      headline: "Find Your Person",
-      highlightText: "Before Winter Arrives",
-      description: "As the leaves change, so can your relationship status. Find someone to share sweater weather and pumpkin lattes."
+      subtitle: "The Cozy Chapter",
+      headline: "Find Someone To",
+      highlightText: "Write With All Winter",
+      description: "As the leaves change, so can your story. Find someone to share sweater weather, pumpkin lattes, and the kind of chapters you'll read back on fondly."
     },
     colors: {
       primary: "amber",
@@ -151,16 +151,16 @@ export const seasonalThemes: SeasonalTheme[] = [
     banner: {
       gradient: "from-red-600 via-green-600 to-red-600",
       icon: "gift",
-      title: "Holiday Romance Special",
-      tagline: "The best gift is finding someone special",
-      offer: "Send a gift to someone special",
-      cta: "Unwrap Love"
+      title: "Holiday Chapter Special",
+      tagline: "The best gift is a story worth sharing",
+      offer: "Send a gift to start a new chapter",
+      cta: "Unwrap Your Story"
     },
     hero: {
-      subtitle: "Holiday Magic Awaits",
+      subtitle: "The Most Magical Chapter",
       headline: "Someone Special",
       highlightText: "Under the Mistletoe",
-      description: "This holiday season, give yourself the gift of meaningful connection. No more lonely holiday parties."
+      description: "This holiday season, give yourself the gift of a story worth telling. Five chapters with the right person is all it takes."
     },
     colors: {
       primary: "red",
@@ -179,16 +179,16 @@ export const seasonalThemes: SeasonalTheme[] = [
     banner: {
       gradient: "from-violet-500 via-purple-500 to-indigo-500",
       icon: "sparkles",
-      title: "New Year, New Connections",
-      tagline: "Make 2026 your year of love",
-      offer: "New year, new connections — join free",
-      cta: "Start Fresh"
+      title: "New Year, New Chapters",
+      tagline: "Make 2026 the year your story gets good",
+      offer: "New year, new stories -- join free",
+      cta: "Start Your Chapter"
     },
     hero: {
-      subtitle: "A Fresh Start",
+      subtitle: "A Brand New Story",
       headline: "Make This Year",
-      highlightText: "Your Year of Love",
-      description: "New year resolutions are better with someone by your side. Start your love journey today."
+      highlightText: "Your Best Chapter Yet",
+      description: "New year resolutions are better when you're writing them into someone else's story too. Start your first chapter today."
     },
     colors: {
       primary: "violet",
@@ -207,16 +207,16 @@ export const seasonalThemes: SeasonalTheme[] = [
     banner: {
       gradient: "from-sky-400 via-blue-500 to-indigo-500",
       icon: "snowflake",
-      title: "Warm Up This Winter",
+      title: "Warm Up Your Story",
       tagline: "Find someone to share the cold nights with",
-      offer: "Indoor date ideas for matches",
+      offer: "Indoor date ideas for every chapter",
       cta: "Find Your Warmth"
     },
     hero: {
-      subtitle: "Cold Outside, Warm Inside",
+      subtitle: "The Warmth Chapter",
       headline: "Find Your",
-      highlightText: "Perfect Plus One",
-      description: "Winter nights are better shared. Find someone to binge-watch shows, try new recipes, and stay cozy with."
+      highlightText: "Perfect Co-Author",
+      description: "Winter nights are better shared. Find someone to binge-watch shows, try new recipes, and write the kind of cozy chapters that make this season unforgettable."
     },
     colors: {
       primary: "sky",
@@ -235,16 +235,16 @@ export const seasonalThemes: SeasonalTheme[] = [
     banner: {
       gradient: "from-primary via-primary to-primary",
       icon: "users",
-      title: "Find Your Activity Partner",
-      tagline: "More than dating - find your adventure companion",
-      offer: "Join 10K+ members finding real connections",
-      cta: "Start Matching"
+      title: "Find Your Co-Author",
+      tagline: "More than dating -- find someone worth the story",
+      offer: "Join 10K+ people writing real stories",
+      cta: "Start Your Story"
     },
     hero: {
-      subtitle: "Dating With Intent",
-      headline: "Meaningful Connections",
-      highlightText: "Worth Investing In",
-      description: "PayGate transforms dating into a deliberate, invested journey. Our 5-gate progression system ensures every connection is genuine."
+      subtitle: "Five Chapters. Two People. One Story.",
+      headline: "Connections Worth",
+      highlightText: "Writing About",
+      description: "PayGate turns dating into a story you co-author together. Five chapters. Both people show up. Every page you turn is proof this one's worth it."
     },
     colors: {
       primary: "purple",

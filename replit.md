@@ -1,7 +1,7 @@
 # PayGate Dating
 
 ## Overview
-PayGate Dating is a free-to-join online dating platform designed for serious relationship seekers aged 25-45 in urban areas. It employs a unique 5-gate progression system where users pay incremental fees at each interaction stage, alternating between initiator and recipient. This pay-as-you-go model (no subscriptions) filters out low-effort interactions, fostering more meaningful connections. The platform generates revenue through gate transaction fees, gift service fees, and affiliate commissions.
+PayGate Dating is a free-to-join online dating platform designed for serious relationship seekers aged 25-45 in urban areas. It employs a unique 5-chapter progression system ("Your Story, Five Chapters") where users co-author a connection story together, paying incremental fees at each chapter stage, alternating who leads. This pay-as-you-go model (no subscriptions) filters out low-effort interactions, fostering more meaningful connections. The platform generates revenue through chapter fees, gift service fees, and affiliate commissions.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -10,8 +10,8 @@ Reminder preference: Always remind user to publish after making changes.
 ## System Architecture
 
 ### Core Design Principles
-- **5-Gate Progression**: A core mechanism guiding user interaction and monetization.
-- **Financial Investment Model**: Users pay at interaction stages to ensure commitment.
+- **5-Chapter Progression ("Your Story, Five Chapters")**: User-facing messaging uses "chapters" metaphor (The Spark, The Curiosity, Getting Real, Face to Face, Beyond the Screen). Internal schema/API still uses `gate1`-`gate5` enum values for backward compatibility.
+- **Co-Authored Journey Model**: Both people actively "put in work" at each chapter, creating anticipation and a sense of progress. Framed as writing a love story together, not paying for access.
 - **Shared Schema**: TypeScript types and Zod schemas are shared between client and server for consistency.
 - **Storage Abstraction**: Database operations are abstracted via an `IStorage` interface.
 

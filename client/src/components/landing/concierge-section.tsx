@@ -6,20 +6,20 @@ const steps = [
   {
     icon: UserCheck,
     step: "1",
-    title: "Create Your Profile",
-    description: "Set up your profile once -- your photos, your vibe, your wishlist. This becomes your personal screening page.",
+    title: "Write Your Opening Page",
+    description: "Set up your profile once -- your photos, your vibe, your wishlist. This becomes the opening page of your story that anyone can read.",
   },
   {
     icon: Link2,
     step: "2",
     title: "Share Your Link, Not Your Number",
-    description: "Met someone at the gym, a party, or on social media? Hand them your PayGate link instead of your phone number. Let the gates do the vetting.",
+    description: "Met someone at the gym, a party, or on social media? Hand them your PayGate link. If they want to be part of your story, they'll turn the page.",
   },
   {
     icon: ShieldCheck,
     step: "3",
-    title: "Let PayGate Screen Them",
-    description: "If they're serious, they'll open a gate. If they're not, you just saved yourself the wasted time, energy, and awkward conversations.",
+    title: "Let PayGate Screen the Cast",
+    description: "Only the ones willing to show up earn a role in your story. Everyone else? They never make it past the first chapter.",
   },
 ];
 
@@ -35,18 +35,17 @@ export function ConciergeSection() {
           <div className="space-y-8">
             <div className="space-y-4">
               <p className="text-primary font-medium tracking-wide uppercase text-sm">
-                Your Personal Dating Concierge
+                Your Story Starts Here
               </p>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight font-serif">
                 Stop Giving Out Your Number.{" "}
-                <span className="text-primary">Give Them Your Link.</span>
+                <span className="text-primary">Share Your First Page.</span>
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                You wouldn't let a stranger walk into your house without knocking.
-                So why let them into your life without being screened? Create your
-                profile once, then route every future suitor through PayGate. Think
-                of it as a velvet rope for your dating life -- only the serious ones
-                get through.
+                You wouldn't let a stranger skip to the last chapter of your
+                story. So why let them into your life without earning it? Create
+                your profile once, then let every future connection start at
+                Chapter 1. The ones who are worth it will keep turning the page.
               </p>
             </div>
 
@@ -78,7 +77,7 @@ export function ConciergeSection() {
 
             <a href="/api/login">
               <Button size="lg" className="text-base px-8 mt-2" data-testid="button-concierge-signup">
-                Create Your Free Profile
+                Write Your Opening Page
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </a>
@@ -93,14 +92,14 @@ export function ConciergeSection() {
                 <h3 className="text-lg font-semibold">For Her</h3>
               </div>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                You've invested too much in yourself to let just anyone in.
-                Your fitness routine, your skincare, your career, your growth --
-                all of that deserves to be met with equal effort.
+                You've written an incredible story so far -- the fitness, the
+                style, the career, the growth. That story deserves to be met
+                with someone who's written chapters just as strong.
               </p>
               <p className="text-sm font-medium">
                 Share your PayGate profile at brunch, on your Instagram story, or
-                at the next event. Any guy who's interested has to come through the
-                front door and prove he's serious before he gets your time.
+                at the next event. Any guy who wants a role in your story has to
+                start at Chapter 1 and prove he's worth the next page.
               </p>
             </div>
 
@@ -112,13 +111,14 @@ export function ConciergeSection() {
                 <h3 className="text-lg font-semibold">For Him</h3>
               </div>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                You don't chase -- you attract. You've built yourself into someone
-                worth knowing through discipline, ambition, and self-improvement.
+                You've put in the work -- the career, the gym, the growth. You
+                don't chase. You attract people who want to be part of a story
+                that's already worth reading.
               </p>
               <p className="text-sm font-medium">
                 Put your PayGate profile in your bio, on your business card, or share
-                it directly. The women who are genuinely interested will come to you --
-                and the gates ensure she's equally invested in the connection.
+                it directly. The women who are genuinely interested will start at
+                Chapter 1 -- and the chapters will tell you everything you need to know.
               </p>
             </div>
           </div>
@@ -127,11 +127,11 @@ export function ConciergeSection() {
         <div className="border-t border-border pt-16">
           <div className="text-center mb-10">
             <h3 className="text-2xl md:text-3xl font-bold tracking-tight font-serif mb-3">
-              Your QR Code. Your Velvet Rope.
+              Your QR Code. Your Opening Page.
             </h3>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Every profile gets a unique QR code. Print it, post it, share it anywhere.
-              Anyone who scans it lands on your profile -- and the gates handle the rest.
+              Anyone who scans it reads your first page -- and the chapters handle the rest.
             </p>
           </div>
 
@@ -159,8 +159,8 @@ export function ConciergeSection() {
                 <div>
                   <h3 className="font-semibold mb-1">Screen Before You Share</h3>
                   <p className="text-sm text-muted-foreground">
-                    Anyone who scans your code lands on your profile. They can express
-                    interest -- but they have to go through the gates to reach you.
+                    Anyone who scans your code reads your opening page. They can express
+                    interest -- but they have to start at Chapter 1 to reach you.
                   </p>
                 </div>
               </div>
@@ -173,7 +173,7 @@ export function ConciergeSection() {
                   <h3 className="font-semibold mb-1">No More Cold DMs</h3>
                   <p className="text-sm text-muted-foreground">
                     Instead of fielding random messages on every platform, funnel
-                    all interest through one place. Serious people show up. The rest won't bother.
+                    all interest through one place. Serious people start the story. The rest don't bother.
                   </p>
                 </div>
               </div>

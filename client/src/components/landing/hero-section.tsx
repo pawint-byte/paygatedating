@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Check, Shield, Users, Sparkles } from "lucide-react";
+import { Check, BookOpen, Users, Sparkles } from "lucide-react";
 import heroImage from "@assets/generated_images/romantic_couple_coffee_date.png";
 
 export function HeroSection() {
@@ -10,25 +10,25 @@ export function HeroSection() {
           <div className="space-y-8">
             <div className="space-y-4">
               <p className="text-primary font-medium tracking-wide uppercase text-sm">
-                Where Real Effort Meets Real Connection
+                Five Chapters. Two People. One Story Worth Writing.
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight font-serif">
-                Love Worth{" "}
-                <span className="text-primary">Showing Up For</span>
+                Every Great Love Story{" "}
+                <span className="text-primary">Has Chapters</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                You've already invested in becoming who you are -- the education,
-                the career, the gym, the self-care, the growth. PayGate is for
-                people who've done the work on themselves and want to meet someone
-                who's done the same. Create your profile, share your link, and let
-                the gates screen everyone before they get your time.
+                You've already written incredible chapters of your own -- the
+                growth, the discipline, the becoming. Now find someone whose
+                story reads like the perfect next chapter. No subscriptions. No
+                swiping. Just two people choosing to show up, one chapter at a
+                time.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <a href="/api/login">
                 <Button size="lg" className="text-base px-8" data-testid="button-hero-start">
-                  Start Your Journey Free
+                  Start Your Story Free
                 </Button>
               </a>
               <Button
@@ -42,7 +42,7 @@ export function HeroSection() {
                 }
                 data-testid="button-hero-learn"
               >
-                See How It Works
+                See the 5 Chapters
               </Button>
             </div>
 
@@ -51,7 +51,7 @@ export function HeroSection() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Users className="w-4 h-4 text-primary" />
                 </div>
-                <span>10K+ Intentional Daters</span>
+                <span>10K+ Stories Started</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -61,9 +61,9 @@ export function HeroSection() {
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-primary" />
+                  <BookOpen className="w-4 h-4 text-primary" />
                 </div>
-                <span>Effort-Verified Matches</span>
+                <span>Chapter-Verified Connections</span>
               </div>
             </div>
           </div>
@@ -83,9 +83,9 @@ export function HeroSection() {
                   <Check className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">87% Say It's Worth It</p>
+                  <p className="font-semibold text-sm">87% Reach Chapter 3+</p>
                   <p className="text-xs text-muted-foreground">
-                    Deeper connections from day one
+                    Real conversations from real effort
                   </p>
                 </div>
               </div>

@@ -48,7 +48,7 @@ const features = [
   {
     icon: Bot,
     title: "AI Dating Coach",
-    description: "Get personalized help writing your bio, understanding the gate system, and making great first impressions.",
+    description: "Get personalized help writing your bio, understanding the 5 chapters, and making great first impressions.",
     category: "support"
   },
   {
@@ -66,7 +66,7 @@ const features = [
   {
     icon: QrCode,
     title: "Your Personal Screening Link",
-    description: "Stop giving out your number. Share your QR code or profile link instead -- at events, on social media, anywhere. Anyone interested has to come through the gates first. Think of it as a velvet rope for your dating life.",
+    description: "Stop giving out your number. Share your QR code or profile link instead -- at events, on social media, anywhere. Anyone interested has to start at Chapter 1 first. Your story, your terms.",
     category: "discovery"
   },
   {

@@ -1834,8 +1834,8 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
             <AccordionContent>
               <div className="space-y-4 pt-2">
                 <p className="text-sm text-muted-foreground">
-                  Choose what information is visible to others before they progress through the gates. 
-                  More details become visible as connections advance through each gate.
+                  Choose what information is visible to others before they progress through the chapters. 
+                  More details become visible as connections advance through each chapter.
                 </p>
 
                 <div className="space-y-3">

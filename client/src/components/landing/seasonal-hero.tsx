@@ -87,7 +87,7 @@ export function SeasonalHero() {
                 <div className="absolute top-3 right-3">
                   <Badge variant="secondary" className="bg-black/50 text-white border-white/20 text-xs">
                     <Heart className="w-3 h-3 mr-0.5" />
-                    $5 to say hello
+                    Chapter 1: The Spark
                   </Badge>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
@@ -154,9 +154,9 @@ export function SeasonalHero() {
                   <Sparkles className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">Gifts Build Trust</p>
+                  <p className="font-semibold text-sm">Every Chapter Counts</p>
                   <p className="text-xs text-muted-foreground">
-                    Thoughtful gifts unlock deeper connection
+                    Each one brings you closer to something real
                   </p>
                 </div>
               </div>

@@ -36,7 +36,7 @@ const priceTierLabels = {
 const visibilityLabels = {
   public: { label: "Everyone", icon: Globe },
   matches_only: { label: "Matches Only", icon: Users },
-  after_gate1: { label: "After Gate 1", icon: Lock },
+  after_gate1: { label: "After Chapter 1", icon: Lock },
 };
 
 type CategoryFilter = "all" | "gifts" | "experiences";
@@ -661,7 +661,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                             <SelectContent>
                               <SelectItem value="public">Everyone</SelectItem>
                               <SelectItem value="matches_only">Matches Only</SelectItem>
-                              <SelectItem value="after_gate1">After Gate 1 Payment</SelectItem>
+                              <SelectItem value="after_gate1">After Chapter 1</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

@@ -17,7 +17,7 @@ export function QRCodeSection() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto" data-testid="text-qr-description">
             Stop handing out your number to people who haven't earned it.
             Share your PayGate QR code instead -- at events, on social media,
-            or anywhere you meet someone new. Let the gates screen them first.
+            or anywhere you meet someone new. Let the chapters screen them first.
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export function QRCodeSection() {
                 <h3 className="font-semibold mb-1">Screen Before You Share</h3>
                 <p className="text-sm text-muted-foreground">
                   Anyone who scans your code lands on your profile. They can express
-                  interest -- but they have to go through the gates to reach you.
+                  interest -- but they have to start at Chapter 1 to reach you.
                 </p>
               </div>
             </div>

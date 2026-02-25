@@ -31,8 +31,8 @@ export default function Matches() {
     },
     onSuccess: () => {
       toast({
-        title: "Gate Advanced!",
-        description: "You've moved to the next gate. Keep the connection going!",
+        title: "Chapter Advanced!",
+        description: "You've turned the page. Keep the story going!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
@@ -105,7 +105,7 @@ export default function Matches() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">My Matches</h1>
         <p className="text-muted-foreground">
-          Track your connections and advance through gates
+          Track your connections and write new chapters together
         </p>
       </div>
 
@@ -180,7 +180,7 @@ export default function Matches() {
           <TabsContent value="completed" className="space-y-4">
             {completedMatches.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                No completed matches yet. Keep advancing through gates!
+                No completed stories yet. Keep writing new chapters!
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

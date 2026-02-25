@@ -29,9 +29,9 @@ export default function Terms() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
-              PayGate Dating is a free-to-join online dating platform that uses a 5-gate progression system to facilitate 
+              PayGate Dating is a free-to-join online dating platform that uses a 5-chapter progression system to facilitate 
               meaningful connections between users. The Service includes profile creation, matching, messaging through 
-              gates, wallet management, and pay-as-you-go gate fees.
+              chapters, wallet management, and pay-as-you-go chapter fees.
             </p>
           </section>
 
@@ -50,19 +50,19 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">4. Gate System and Payments</h2>
+            <h2 className="text-2xl font-semibold mb-4">4. Chapter System and Payments</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Our unique 5-gate system requires incremental payments to advance through interaction stages:
+              Our unique 5-chapter system requires incremental payments to advance through interaction stages:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
-              <li><strong>Gate 1 (Ice Breaker):</strong> $5 - Initial contact</li>
-              <li><strong>Gate 2 (Getting Acquainted):</strong> $8 - Extended conversation</li>
-              <li><strong>Gate 3 (Building Connection):</strong> $10 - Deeper engagement</li>
-              <li><strong>Gate 4 (Growing Closer):</strong> $15 - Video calls and photos</li>
-              <li><strong>Gate 5 (Ready to Meet):</strong> $20 - Exchange contact information</li>
+              <li><strong>Chapter 1 (The Spark):</strong> $5 - First move</li>
+              <li><strong>Chapter 2 (The Curiosity):</strong> $5 - First response</li>
+              <li><strong>Chapter 3 (Getting Real):</strong> $10 - Deeper conversation and photos</li>
+              <li><strong>Chapter 4 (Face to Face):</strong> $15 - Video calls and shared experiences</li>
+              <li><strong>Chapter 5 (Beyond the Screen):</strong> $20 - Exchange contact information</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              Payment responsibility alternates between the match initiator and recipient at each gate. 
+              Payment responsibility alternates between the match initiator and recipient at each chapter. 
               All payments are processed securely through our payment partners.
             </p>
           </section>
@@ -81,8 +81,8 @@ export default function Terms() {
             <h2 className="text-2xl font-semibold mb-4">6. Pay-As-You-Go Model</h2>
             <p className="text-muted-foreground leading-relaxed">
               PayGate Dating operates on a pay-as-you-go model with no subscriptions or recurring charges. 
-              Users pay gate fees only when they choose to advance a connection. Gate fees are non-refundable 
-              once a gate has been unlocked. Gift purchases include a service fee (10% of gift value or $5 minimum, 
+              Users pay chapter fees only when they choose to advance a connection. Chapter fees are non-refundable 
+              once a chapter has been unlocked. Gift purchases include a service fee (10% of gift value or $5 minimum, 
               whichever is greater). All payments are processed securely through our payment partners.
             </p>
           </section>

@@ -33,7 +33,7 @@ export default function Privacy() {
             <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
               <li><strong>Account Information:</strong> Name, email address, date of birth, gender, and profile photos</li>
               <li><strong>Profile Details:</strong> Bio, interests, preferences, location, and relationship goals</li>
-              <li><strong>Communications:</strong> Messages exchanged with other users through our gate system</li>
+              <li><strong>Communications:</strong> Messages exchanged with other users through our chapter system</li>
               <li><strong>Payment Information:</strong> Billing details processed by our secure payment partners</li>
               <li><strong>Items of Interest:</strong> Wishlist items and gift preferences you choose to share</li>
             </ul>
