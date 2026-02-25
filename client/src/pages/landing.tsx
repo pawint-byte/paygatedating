@@ -10,6 +10,7 @@ import { PricingSection } from "@/components/landing/pricing-section";
 import { Testimonials } from "@/components/landing/testimonials";
 import { SecuritySection } from "@/components/landing/security-section";
 import { ConciergeSection } from "@/components/landing/concierge-section";
+import { GlobalStorySection } from "@/components/landing/global-story-section";
 import { FAQSection } from "@/components/landing/faq-section";
 import { Footer } from "@/components/landing/footer";
 import { Chatbot } from "@/components/chatbot";
@@ -26,6 +27,7 @@ export default function Landing() {
         <FrontDoorSection />
         <ValueProps />
         <ConciergeSection />
+        <GlobalStorySection />
         <FeaturesSection />
         <PricingSection />
         <Testimonials />

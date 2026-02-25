@@ -24,7 +24,7 @@ const features = [
   {
     icon: MapPin,
     title: "Nearby Discovery",
-    description: "Find singles in your area with our real-time map. Go live to appear nearby with privacy-protected locations.",
+    description: "Find singles near you with the live map. Go live to appear nearby, disappear when you want. Privacy-protected so your exact location is never revealed.",
     category: "discovery"
   },
   {
