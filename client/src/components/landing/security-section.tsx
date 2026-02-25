@@ -1,4 +1,4 @@
-import { Shield, Lock, CreditCard, RefreshCcw } from "lucide-react";
+import { Shield, Lock, CreditCard, RefreshCcw, EyeOff } from "lucide-react";
 import { SiStripe } from "react-icons/si";
 
 const securityFeatures = [
@@ -22,6 +22,11 @@ const securityFeatures = [
     title: "Data Privacy",
     description: "GDPR/CCPA compliant. Your data is encrypted and never sold to third parties.",
   },
+  {
+    icon: EyeOff,
+    title: "Identity Protection",
+    description: "Your phone number, email, and social media stay private until YOU decide to share them. Every connection starts through PayGate — no personal info exposed.",
+  },
 ];
 
 export function SecuritySection() {
@@ -41,7 +46,7 @@ export function SecuritySection() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {securityFeatures.map((feature) => {
             const Icon = feature.icon;
             return (

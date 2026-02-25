@@ -3,6 +3,7 @@ import { SeasonalBanner } from "@/components/landing/seasonal-banner";
 import { SeasonalHero } from "@/components/landing/seasonal-hero";
 import { GateTimeline } from "@/components/landing/gate-timeline";
 import { PersonasSection } from "@/components/landing/personas-section";
+import { FrontDoorSection } from "@/components/landing/front-door-section";
 import { ValueProps } from "@/components/landing/value-props";
 import { FeaturesSection } from "@/components/landing/features-section";
 import { PricingSection } from "@/components/landing/pricing-section";
@@ -22,6 +23,7 @@ export default function Landing() {
         <SeasonalHero />
         <GateTimeline />
         <PersonasSection />
+        <FrontDoorSection />
         <ValueProps />
         <ConciergeSection />
         <FeaturesSection />
