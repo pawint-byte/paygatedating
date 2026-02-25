@@ -1,4 +1,4 @@
-import { MapPin, Heart, Lock, Users, Gift, ShoppingBag, DollarSign } from "lucide-react";
+import { MapPin, Heart, Lock, Users, Gift, ShoppingBag, DollarSign, DoorOpen } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -129,6 +129,15 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
           <p className="text-sm text-muted-foreground line-clamp-1">
             {profile.tagline}
           </p>
+        )}
+
+        {profile.imAtYourGate && (
+          <div className="flex items-start gap-2 p-2 rounded-md bg-amber-50/80 dark:bg-amber-950/20" data-testid={`im-at-your-gate-${profile.id}`}>
+            <DoorOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-800 dark:text-amber-300/90 line-clamp-2 leading-relaxed">
+              {profile.imAtYourGate}
+            </p>
+          </div>
         )}
 
         {wishlistItems.length > 0 ? (

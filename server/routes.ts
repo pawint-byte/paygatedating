@@ -1441,6 +1441,93 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
   });
 
+  app.get("/api/matches/:id/story", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const matchId = req.params.id;
+
+      const match = await storage.getMatch(matchId);
+      if (!match) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (match.currentGate !== "completed" && match.status !== "completed") {
+        return res.status(400).json({ message: "Story is only available for completed matches" });
+      }
+
+      const initiatorProfile = await storage.getProfile(match.initiatorId);
+      const recipientProfile = await storage.getProfile(match.recipientId);
+      const matchTransactions = await storage.getTransactionsByMatch(matchId);
+
+      const chapterNames: Record<string, string> = {
+        gate1: "The Spark",
+        gate2: "The Curiosity",
+        gate3: "Getting Real",
+        gate4: "Face to Face",
+        gate5: "Beyond the Screen",
+      };
+
+      const chapters = [];
+      for (let g = 1; g <= 5; g++) {
+        const gateKey = `gate${g}` as keyof typeof GATE_COSTS;
+        const paidByField = `gate${g}PaidBy` as keyof typeof match;
+        const paidBy = match[paidByField] as string | null;
+
+        const gateTransaction = matchTransactions.find(
+          (t) => t.type === "gate_payment" && t.description?.includes(`Gate ${g}`)
+        );
+
+        let ledByName = null;
+        if (paidBy) {
+          if (paidBy === match.initiatorId) {
+            ledByName = initiatorProfile?.displayName || "Unknown";
+          } else {
+            ledByName = recipientProfile?.displayName || "Unknown";
+          }
+        }
+
+        chapters.push({
+          number: g,
+          name: chapterNames[gateKey],
+          ledBy: paidBy,
+          ledByName,
+          paidAt: gateTransaction?.createdAt || null,
+          cost: GATE_COSTS[gateKey],
+        });
+      }
+
+      const firstChapterDate = chapters[0]?.paidAt || match.createdAt;
+      const lastChapterDate = chapters[4]?.paidAt || match.updatedAt;
+      const journeyDurationMs = new Date(lastChapterDate).getTime() - new Date(firstChapterDate).getTime();
+      const journeyDays = Math.max(1, Math.ceil(journeyDurationMs / (1000 * 60 * 60 * 24)));
+
+      res.json({
+        matchId,
+        matchDate: match.createdAt,
+        completedDate: match.updatedAt,
+        journeyDays,
+        initiator: {
+          id: match.initiatorId,
+          displayName: initiatorProfile?.displayName || "Unknown",
+          photo: initiatorProfile?.photos?.[0] || null,
+        },
+        recipient: {
+          id: match.recipientId,
+          displayName: recipientProfile?.displayName || "Unknown",
+          photo: recipientProfile?.photos?.[0] || null,
+        },
+        chapters,
+      });
+    } catch (error) {
+      console.error("Error generating story:", error);
+      res.status(500).json({ message: "Failed to generate match story" });
+    }
+  });
+
   app.get("/api/referral", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1582,6 +1669,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         datingStyle: profile.datingStyle,
         profileMode: profile.profileMode,
         viewerMessage: profile.viewerMessage,
+        imAtYourGate: profile.imAtYourGate,
         socialLinks: profile.showPhotoPublicly ? profile.socialLinks : undefined,
         referralCode: wallet?.referralCode,
         wishlist: publicWishlist.map(item => ({

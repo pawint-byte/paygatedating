@@ -142,6 +142,9 @@ export const profiles = pgTable("profiles", {
   profileMode: varchar("profile_mode", { length: 20 }).default("detailed").notNull(),
   viewerMessage: text("viewer_message"),
 
+  // I'm At Your Gate - what you bring to a relationship
+  imAtYourGate: text("im_at_your_gate"),
+
   // Date Preferences
   datePreferences: text("date_preferences").array(),
   dateBlacklist: text("date_blacklist").array(),

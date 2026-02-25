@@ -19,7 +19,8 @@ import {
   Crown,
   Gem,
   Waves,
-  Handshake
+  Handshake,
+  DoorOpen
 } from "lucide-react";
 import { SiTiktok, SiSnapchat } from "react-icons/si";
 import { GATE_COSTS, DATING_STYLES, type DatingStyleKey } from "@shared/schema";
@@ -56,6 +57,7 @@ interface PublicProfile {
   datingStyle?: string;
   profileMode?: string;
   viewerMessage?: string;
+  imAtYourGate?: string;
   socialLinks?: {
     instagram?: string;
     tiktok?: string;
@@ -214,6 +216,20 @@ export default function PublicProfile() {
                   </div>
                 )}
               </div>
+            )}
+
+            {profile.imAtYourGate && (
+              <Card className="bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-rose-950/20 border-amber-200/50 dark:border-amber-800/30" data-testid="section-im-at-your-gate">
+                <CardContent className="pt-5 pb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <DoorOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    <h2 className="text-base font-semibold text-amber-900 dark:text-amber-200">I'm At Your Gate</h2>
+                  </div>
+                  <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-300/90" data-testid="text-im-at-your-gate">
+                    {profile.imAtYourGate}
+                  </p>
+                </CardContent>
+              </Card>
             )}
 
             {hasWishlist && (

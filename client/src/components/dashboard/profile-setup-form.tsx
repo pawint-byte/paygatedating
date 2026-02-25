@@ -115,6 +115,7 @@ const profileSchema = z.object({
   datingStyle: z.string().optional(),
   profileMode: z.string().default("detailed"),
   viewerMessage: z.string().max(500).optional(),
+  imAtYourGate: z.string().max(500).optional(),
 
   // Visibility Settings
   showPhotoPublicly: z.boolean().default(true),
@@ -169,6 +170,7 @@ interface ProfileSetupFormProps {
     datingStyle?: string;
     profileMode?: string;
     viewerMessage?: string;
+    imAtYourGate?: string;
     shippingStreet?: string;
     shippingCity?: string;
     shippingState?: string;
@@ -247,6 +249,7 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
       datingStyle: defaultValues?.datingStyle || "",
       profileMode: defaultValues?.profileMode || "detailed",
       viewerMessage: defaultValues?.viewerMessage || "",
+      imAtYourGate: defaultValues?.imAtYourGate || "",
       termsAccepted: false,
     },
   });
@@ -531,6 +534,37 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
                     className="min-h-[80px] resize-none"
                     {...field}
                     data-testid="input-viewer-message"
+                  />
+                </FormControl>
+                <div className="text-xs text-muted-foreground text-right">
+                  {(field.value || "").length}/500
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3" data-testid="im-at-your-gate-section">
+          <div className="flex items-center gap-2 text-lg font-medium">
+            <Shield className="w-5 h-5 text-primary" />
+            <span>I'm At Your Gate</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            You're standing at their gate. Tell them why they should let you in.
+          </p>
+          <FormField
+            control={form.control}
+            name="imAtYourGate"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Textarea
+                    placeholder="e.g. I bring loyalty, good humor, and a mean homemade pasta. I'll remember the little things and show up when it counts."
+                    className="min-h-[100px] resize-none"
+                    maxLength={500}
+                    {...field}
+                    data-testid="input-im-at-your-gate"
                   />
                 </FormControl>
                 <div className="text-xs text-muted-foreground text-right">

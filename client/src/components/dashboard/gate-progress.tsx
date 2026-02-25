@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, MessageCircle, Camera, Video, Phone, Check, Lock, Zap, Gift, Calendar, Pause, Play, ArrowDownToLine, Heart, Coffee, Users2, MessageSquare, ChevronDown, ChevronUp, DollarSign } from "lucide-react";
+import { Send, MessageCircle, Camera, Video, Phone, Check, Lock, Zap, Gift, Calendar, Pause, Play, ArrowDownToLine, Heart, Coffee, Users2, MessageSquare, ChevronDown, ChevronUp, DollarSign, BookOpen } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +12,7 @@ import type { Match, Profile, DatePlan } from "@shared/schema";
 import { GiftWishlist } from "./gift-wishlist";
 import { DatePlanDialog } from "./date-plan-dialog";
 import { DatePlanCard } from "./date-plan-card";
+import { StoryKeepsake } from "./story-keepsake";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -88,6 +89,7 @@ export function GateProgress({
 }: GateProgressProps) {
   const { toast } = useToast();
   const [showForecast, setShowForecast] = useState(false);
+  const [showStory, setShowStory] = useState(false);
   const currentGateNum = gateNumbers[match.currentGate];
   const progressPercent = ((currentGateNum - 1) / 5) * 100;
   const isCompleted = match.currentGate === "completed";
@@ -527,6 +529,20 @@ export function GateProgress({
             <p className="text-sm text-primary font-medium text-center">
               You can now exchange contact details!
             </p>
+
+            <Button
+              variant={showStory ? "secondary" : "default"}
+              className="w-full"
+              onClick={() => setShowStory(!showStory)}
+              data-testid="button-view-story"
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              {showStory ? "Hide Your Story" : "View Your Story"}
+            </Button>
+
+            {showStory && currentUserId && (
+              <StoryKeepsake matchId={match.id} currentUserId={currentUserId} />
+            )}
             
             {currentUserId && (
               <DatePlanDialog

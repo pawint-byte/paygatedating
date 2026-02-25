@@ -88,6 +88,7 @@ export interface IStorage {
   updateWalletBalance(userId: string, newBalance: string): Promise<Wallet | undefined>;
   markTrialCreditsReceived(userId: string): Promise<Wallet | undefined>;
   getTransactions(walletId: string): Promise<Transaction[]>;
+  getTransactionsByMatch(matchId: string): Promise<Transaction[]>;
   getTransactionByStripeSessionId(sessionId: string): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
 
@@ -292,6 +293,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(transactions.walletId, walletId))
       .orderBy(desc(transactions.createdAt))
       .limit(20);
+  }
+
+  async getTransactionsByMatch(matchId: string): Promise<Transaction[]> {
+    return await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.relatedMatchId, matchId))
+      .orderBy(transactions.createdAt);
   }
 
   async getTransactionByStripeSessionId(sessionId: string): Promise<Transaction | undefined> {
