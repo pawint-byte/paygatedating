@@ -118,7 +118,7 @@ export function AddFundsDialog({
             Secure payments via Stripe. Pay with card, Apple Pay, Google Pay, or crypto (Bitcoin, Ethereum, USDC, USDT).
           </p>
           <p className="text-[11px] text-center text-muted-foreground leading-tight" data-testid="text-add-funds-disclaimer">
-            All funds added are for PayGate use only. Wallet balances cannot be withdrawn, refunded, or converted to cash.
+            Wallet funds are for opening chapters only. Only deposit what you plan to use. Balances cannot be withdrawn, refunded, or converted to cash.
           </p>
         </form>
       </DialogContent>
