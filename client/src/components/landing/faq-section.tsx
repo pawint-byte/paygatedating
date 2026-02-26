@@ -83,6 +83,10 @@ const faqs = [
     answer: "We accept all major credit and debit cards, Apple Pay, Google Pay, and cryptocurrency (including Bitcoin, Ethereum, USDC, and USDT). All payments are processed securely through Stripe. Your payment details are encrypted and never stored on our servers."
   },
   {
+    question: "Can I withdraw funds from my wallet or cash out credits?",
+    answer: "No. All funds added to your PayGate wallet are for use on the platform only -- paying for chapters, gift service fees, and other PayGate features. Wallet balances cannot be withdrawn, refunded, or converted to cash. The same applies to referral bonuses and promotional credits -- they're rewards for your PayGate journey and can only be spent here. Think of it like arcade tokens: you load up, you play, and every token goes toward the experience."
+  },
+  {
     question: "What happens if a match doesn't work out?",
     answer: "That's part of the journey -- not every story is meant to be a novel, and that's perfectly okay. Because you only invested in the chapters you actually wrote together (no wasted subscription fees), your investment was modest and went toward a real interaction. You can start a new story anytime, and Chapter 1 is always just $5."
   },
