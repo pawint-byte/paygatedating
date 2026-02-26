@@ -83,6 +83,10 @@ export function RewardsDashboard() {
         </Badge>
       </div>
 
+      <p className="text-xs text-muted-foreground" data-testid="text-rewards-disclaimer">
+        All credits and bonuses are for PayGate use only. Credits cannot be transferred, withdrawn, or converted to cash.
+      </p>
+
       {seasonalOffers && seasonalOffers.length > 0 && (
         <Card className="border-primary/50 bg-gradient-to-r from-primary/10 to-transparent">
           <CardHeader>

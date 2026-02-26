@@ -148,6 +148,10 @@ export function ReferralCard() {
           </div>
         </div>
 
+        <p className="text-[11px] text-muted-foreground leading-tight" data-testid="text-referral-disclaimer">
+          Referral credits are for PayGate use only and cannot be cashed out.
+        </p>
+
         {referralInfo?.referrals && referralInfo.referrals.length > 0 && (
           <div>
             <h4 className="text-sm font-medium mb-2">Recent Referrals</h4>

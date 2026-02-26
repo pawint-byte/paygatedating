@@ -70,6 +70,10 @@ export function WalletDisplay({ wallet, transactions = [], onAddFunds }: WalletD
               </p>
             )}
 
+            <p className="text-[11px] text-muted-foreground text-center leading-tight" data-testid="text-wallet-disclaimer">
+              Funds are for PayGate use only. Non-withdrawable and non-transferable.
+            </p>
+
             <Button onClick={onAddFunds} className="w-full gap-2" data-testid="button-add-funds-dropdown">
               <Plus className="w-4 h-4" />
               Add Funds
