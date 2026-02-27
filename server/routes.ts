@@ -432,12 +432,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
               title: item.title,
               price: item.price,
               imageUrl: item.imageUrl,
-              platform: item.affiliateUrl?.includes('amazon') ? 'Amazon' 
-                : item.affiliateUrl?.includes('net-a-porter') ? 'Net-a-Porter'
-                : item.affiliateUrl?.includes('mrporter') ? 'MR PORTER'
-                : item.affiliateUrl?.includes('viator') ? 'Viator'
-                : item.affiliateUrl?.includes('klook') ? 'Klook'
-                : 'Gift',
+              platform: detectPlatform(item.affiliateUrl),
               priceTier: item.priceTier,
             }));
           const { shippingStreet, shippingCity, shippingState, shippingZip, shippingCountry, ...safeProfile } = profile;
@@ -1678,11 +1673,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
           price: item.price,
           imageUrl: item.imageUrl,
           description: item.description,
-          platform: item.affiliateUrl?.includes('amazon') ? 'Amazon' :
-                    item.affiliateUrl?.includes('viator') ? 'Viator' :
-                    item.affiliateUrl?.includes('klook') ? 'Klook' :
-                    item.affiliateUrl?.includes('net-a-porter') ? 'Net-a-Porter' :
-                    item.affiliateUrl?.includes('mrporter') ? 'MR PORTER' : 'Other',
+          platform: detectPlatform(item.affiliateUrl),
         })),
       };
 
@@ -2046,12 +2037,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
           return {
             ...item,
             affiliateUrl: undefined,
-            platform: hostname.includes('amazon') ? 'Amazon' 
-              : hostname.includes('net-a-porter') ? 'Net-a-Porter'
-              : hostname.includes('mrporter') ? 'MR PORTER'
-              : hostname.includes('viator') ? 'Viator'
-              : hostname.includes('klook') ? 'Klook'
-              : 'Gift',
+            platform: detectPlatform(item.affiliateUrl),
           };
         });
       
@@ -2061,6 +2047,60 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       res.status(500).json({ message: "Failed to fetch registry" });
     }
   });
+
+  const AWIN_PUBLISHER_ID = process.env.AWIN_PUBLISHER_ID || '2735710';
+  const AWIN_MERCHANTS: Record<string, { id: string; hostnames: string[] }> = {
+    'net-a-porter': { id: '0', hostnames: ['net-a-porter.com'] },
+    'mrporter': { id: '0', hostnames: ['mrporter.com'] },
+    'promeed': { id: '100833', hostnames: ['promeed.com', 'promfreed.com'] },
+    'lashterally': { id: '117123', hostnames: ['lashterally.com'] },
+    'abracadabranyc': { id: '83201', hostnames: ['abracadabranyc.com'] },
+    'yczfragrance': { id: '121156', hostnames: ['yczfragrance.com'] },
+  };
+
+  function isAwinMerchant(hostname: string): { name: string; id: string } | null {
+    for (const [name, merchant] of Object.entries(AWIN_MERCHANTS)) {
+      if (merchant.hostnames.some(h => hostname.includes(h))) {
+        return { name, id: merchant.id };
+      }
+    }
+    return null;
+  }
+
+  function detectPlatform(urlStr: string | null | undefined): string {
+    if (!urlStr) return 'Gift';
+    try {
+      const hostname = new URL(urlStr).hostname.toLowerCase();
+      if (hostname.includes('amazon') || hostname === 'a.co') return 'Amazon';
+      if (hostname.includes('net-a-porter')) return 'Net-a-Porter';
+      if (hostname.includes('mrporter')) return 'MR PORTER';
+      if (hostname.includes('viator') || hostname.includes('tp.st') || hostname.includes('travelpayouts')) return 'Viator';
+      if (hostname.includes('klook')) return 'Klook';
+      if (hostname.includes('promeed') || hostname.includes('promfreed')) return 'Promeed';
+      if (hostname.includes('lashterally')) return 'Lashterally';
+      if (hostname.includes('abracadabranyc')) return 'Abracadabra NYC';
+      if (hostname.includes('yczfragrance')) return 'YCZ Fragrance';
+      if (hostname.includes('awin1.com')) {
+        const decoded = decodeURIComponent(urlStr);
+        if (decoded.includes('promeed') || decoded.includes('promfreed')) return 'Promeed';
+        if (decoded.includes('lashterally')) return 'Lashterally';
+        if (decoded.includes('abracadabranyc')) return 'Abracadabra NYC';
+        if (decoded.includes('yczfragrance')) return 'YCZ Fragrance';
+        if (decoded.includes('net-a-porter')) return 'Net-a-Porter';
+        if (decoded.includes('mrporter')) return 'MR PORTER';
+        return 'Gift';
+      }
+      return 'Gift';
+    } catch {
+      const lower = urlStr.toLowerCase();
+      if (lower.includes('amazon')) return 'Amazon';
+      if (lower.includes('promeed')) return 'Promeed';
+      if (lower.includes('lashterally')) return 'Lashterally';
+      if (lower.includes('abracadabranyc')) return 'Abracadabra NYC';
+      if (lower.includes('yczfragrance')) return 'YCZ Fragrance';
+      return 'Gift';
+    }
+  }
 
   function isValidAffiliateUrl(url: string | undefined | null): { valid: boolean; error?: string } {
     if (!url || url.trim() === '') {
@@ -2072,9 +2112,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
       const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
       const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
+      const isAwin = isAwinMerchant(hostname) !== null;
       
-      if (!isAmazon && !isTravel && !isLuxury) {
-        return { valid: false, error: "Only Amazon, Viator, Klook, Net-a-Porter, and MR PORTER links are supported for wishlist items" };
+      if (!isAmazon && !isTravel && !isLuxury && !isAwin) {
+        return { valid: false, error: "This retailer is not yet supported. Supported retailers: Amazon, Viator, Klook, Net-a-Porter, MR PORTER, Promeed, Lashterally, Abracadabra NYC, and YCZ Fragrance." };
       }
       return { valid: true };
     } catch {
@@ -2130,26 +2171,29 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
   function addAffiliateTag(url: string): string {
     try {
       const urlObj = new URL(url);
+      const hostname = urlObj.hostname.toLowerCase();
       
       // Amazon affiliate tagging
       const amazonTag = process.env.AMAZON_ASSOCIATE_TAG;
-      if (amazonTag && (urlObj.hostname.includes('amazon.com') || urlObj.hostname.includes('amzn.to') || urlObj.hostname.includes('amzn.com') || urlObj.hostname === 'a.co')) {
+      if (amazonTag && (hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co')) {
         urlObj.searchParams.set('tag', amazonTag);
         return urlObj.toString();
       }
       
       // Viator via Travelpayouts affiliate network  
-      // Travelpayouts uses their white label domain (tp.st) for tracked links
-      // If user pastes a tp.st or travelpayouts.com link, it's already an affiliate link
-      if (urlObj.hostname.includes('tp.st') || urlObj.hostname.includes('travelpayouts.com')) {
-        // Already a Travelpayouts affiliate link - return as-is
+      if (hostname.includes('tp.st') || hostname.includes('travelpayouts.com')) {
         return url;
       }
       
-      // Direct Viator URLs - return as-is for now
-      // The async API conversion happens in the POST handler
-      if (urlObj.hostname.includes('viator.com')) {
+      // Direct Viator URLs - async API conversion happens in the POST handler
+      if (hostname.includes('viator.com')) {
         return url;
+      }
+
+      // AWIN merchant tagging
+      const awinMerchant = isAwinMerchant(hostname);
+      if (awinMerchant && awinMerchant.id !== '0') {
+        return `https://www.awin1.com/cread.php?awinmid=${awinMerchant.id}&awinaffid=${AWIN_PUBLISHER_ID}&ued=${encodeURIComponent(url)}`;
       }
       
     } catch (e) {

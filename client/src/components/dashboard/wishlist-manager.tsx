@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Gem, Loader2 } from "lucide-react";
+import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Gem, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RegistryItem } from "@shared/schema";
@@ -16,6 +16,22 @@ import { isUnauthorizedError } from "@/lib/auth-utils";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { SiAmazon } from "react-icons/si";
+
+const SUPPORTED_HOSTNAMES = [
+  'amazon.com', 'amzn.to', 'amzn.com', 'a.co',
+  'viator.com', 'klook.com', 'tp.st', 'travelpayouts.com',
+  'net-a-porter.com', 'mrporter.com',
+  'promeed.com', 'promfreed.com',
+  'lashterally.com',
+  'abracadabranyc.com',
+  'yczfragrance.com',
+];
+
+function isSupportedRetailer(hostname: string): boolean {
+  return SUPPORTED_HOSTNAMES.some(h => hostname.includes(h));
+}
+
+const SUPPORTED_RETAILERS_LIST = "Amazon, Viator, Klook, Net-a-Porter, MR PORTER, Promeed, Lashterally, Abracadabra NYC, and YCZ Fragrance";
 
 interface AddItemFormData {
   title: string;
@@ -161,25 +177,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
     addItemMutation.mutate(data);
   };
 
-  const handleBrowseAmazon = () => {
-    window.open("https://www.amazon.com", "_blank");
-  };
-
-  const handleBrowseViator = () => {
-    window.open("https://www.viator.com", "_blank");
-  };
-
-  const handleBrowseKlook = () => {
-    window.open("https://www.klook.com", "_blank");
-  };
-
-  const handleBrowseNetAPorter = () => {
-    window.open("https://www.net-a-porter.com", "_blank");
-  };
-
-  const handleBrowseMrPorter = () => {
-    window.open("https://www.mrporter.com", "_blank");
-  };
+  const browseRetailer = (url: string) => () => window.open(url, "_blank");
 
   const scrapeAbortRef = useRef<AbortController | null>(null);
 
@@ -250,18 +248,15 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
         try {
           const url = new URL(text);
           const hostname = url.hostname.toLowerCase();
-          const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
-          const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-          const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
           
-          if (isAmazon || isTravel || isLuxury) {
+          if (isSupportedRetailer(hostname)) {
             setUrlPasted(true);
             setCurrentStep(2);
             scrapeUrl(text);
           } else {
             toast({
               title: "Invalid Link",
-              description: "Only Amazon, Viator, Klook, Net-a-Porter, and MR PORTER links are supported.",
+              description: `Only ${SUPPORTED_RETAILERS_LIST} links are supported.`,
               variant: "destructive",
             });
           }
@@ -303,10 +298,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
       try {
         const url = new URL(value);
         const hostname = url.hostname.toLowerCase();
-        const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
-        const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-        const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
-        if (isAmazon || isTravel || isLuxury) {
+        if (isSupportedRetailer(hostname)) {
           setUrlPasted(true);
           setCurrentStep(2);
           scrapeTimerRef.current = setTimeout(() => {
@@ -364,7 +356,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           type="button"
                           variant="outline"
                           className="h-auto py-3 flex-col gap-1"
-                          onClick={handleBrowseAmazon}
+                          onClick={browseRetailer("https://www.amazon.com")}
                           data-testid="button-browse-amazon"
                         >
                           <SiAmazon className="w-5 h-5" />
@@ -374,21 +366,71 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           type="button"
                           variant="outline"
                           className="h-auto py-3 flex-col gap-1"
-                          onClick={handleBrowseNetAPorter}
+                          onClick={browseRetailer("https://www.net-a-porter.com")}
                           data-testid="button-browse-netaporter"
                         >
                           <Gem className="w-5 h-5" />
-                          <span className="text-xs">Women's Luxury</span>
+                          <span className="text-xs">Net-a-Porter</span>
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
                           className="h-auto py-3 flex-col gap-1"
-                          onClick={handleBrowseMrPorter}
+                          onClick={browseRetailer("https://www.mrporter.com")}
                           data-testid="button-browse-mrporter"
                         >
                           <Gem className="w-5 h-5" />
-                          <span className="text-xs">Men's Luxury</span>
+                          <span className="text-xs">MR PORTER</span>
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Beauty & Self-Care</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={browseRetailer("https://promeed.com")}
+                          data-testid="button-browse-promeed"
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          <span className="text-xs">Promeed</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={browseRetailer("https://www.lashterally.com")}
+                          data-testid="button-browse-lashterally"
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          <span className="text-xs">Lashterally</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={browseRetailer("https://yczfragrance.com")}
+                          data-testid="button-browse-yczfragrance"
+                        >
+                          <Sparkles className="w-5 h-5" />
+                          <span className="text-xs">YCZ Fragrance</span>
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2">Fun & Novelty</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-auto py-3 flex-col gap-1"
+                          onClick={browseRetailer("https://abracadabranyc.com")}
+                          data-testid="button-browse-abracadabranyc"
+                        >
+                          <Gift className="w-5 h-5" />
+                          <span className="text-xs">Abracadabra NYC</span>
                         </Button>
                       </div>
                     </div>
@@ -399,7 +441,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           type="button"
                           variant="outline"
                           className="h-auto py-3 flex-col gap-1"
-                          onClick={handleBrowseViator}
+                          onClick={browseRetailer("https://www.viator.com")}
                           data-testid="button-browse-viator"
                         >
                           <Plane className="w-5 h-5" />
@@ -409,7 +451,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           type="button"
                           variant="outline"
                           className="h-auto py-3 flex-col gap-1"
-                          onClick={handleBrowseKlook}
+                          onClick={browseRetailer("https://www.klook.com")}
                           data-testid="button-browse-klook"
                         >
                           <Plane className="w-5 h-5" />
@@ -463,17 +505,14 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                             try {
                               const urlObj = new URL(url);
                               const hostname = urlObj.hostname.toLowerCase();
-                              const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
-                              const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-                              const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
-                              if (isAmazon || isTravel || isLuxury) {
+                              if (isSupportedRetailer(hostname)) {
                                 setUrlPasted(true);
                                 setCurrentStep(2);
                                 scrapeUrl(url);
                               } else {
                                 toast({
                                   title: "Invalid Link",
-                                  description: "Only Amazon, Viator, Klook, Net-a-Porter, and MR PORTER links are supported.",
+                                  description: `Only ${SUPPORTED_RETAILERS_LIST} links are supported.`,
                                   variant: "destructive",
                                 });
                               }
@@ -510,11 +549,8 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           try {
                             const url = new URL(value);
                             const hostname = url.hostname.toLowerCase();
-                            const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
-                            const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-                            const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
-                            if (!isAmazon && !isTravel && !isLuxury) {
-                              return "Only Amazon, Viator, Klook, Net-a-Porter, and MR PORTER links are supported";
+                            if (!isSupportedRetailer(hostname)) {
+                              return `Only ${SUPPORTED_RETAILERS_LIST} links are supported`;
                             }
                             return true;
                           } catch {
