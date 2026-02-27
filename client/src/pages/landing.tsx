@@ -1,6 +1,7 @@
 import { NavHeader } from "@/components/landing/nav-header";
 import { SeasonalBanner } from "@/components/landing/seasonal-banner";
 import { SeasonalHero } from "@/components/landing/seasonal-hero";
+import { ScreeningSection } from "@/components/landing/screening-section";
 import { GateTimeline } from "@/components/landing/gate-timeline";
 import { PersonasSection } from "@/components/landing/personas-section";
 import { FrontDoorSection } from "@/components/landing/front-door-section";
@@ -22,6 +23,7 @@ export default function Landing() {
       <NavHeader />
       <main>
         <SeasonalHero />
+        <ScreeningSection />
         <GateTimeline />
         <PersonasSection />
         <FrontDoorSection />

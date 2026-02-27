@@ -21,7 +21,7 @@ Reminder preference: Always remind user to publish after making changes.
 - **State Management**: TanStack React Query for server state, React hooks for local state.
 - **Routing**: Wouter for client-side routing.
 - **Seasonal Theming**: Dynamic landing page content and components change based on seasonal configurations.
-- **Landing Page Flow**: SeasonalHero → GateTimeline → PersonasSection → FrontDoorSection → ValueProps → ConciergeSection → Features → Pricing → Testimonials → Security → FAQ
+- **Landing Page Flow**: SeasonalHero → ScreeningSection → GateTimeline → PersonasSection → FrontDoorSection → ValueProps → ConciergeSection → GlobalStorySection → Features → Pricing → Testimonials → Security → FAQ
 
 ### Backend
 - **Runtime**: Node.js with Express.
