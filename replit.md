@@ -83,7 +83,10 @@ Reminder preference: Always remind user to publish after making changes.
 - **Stripe Crypto Payments**: Native support for stablecoins (USDC/USDT) and optional Crypto.com partnership for BTC/ETH.
 
 ### Email Service
-- **Resend**: For sending various transactional emails (welcome, new match, gate unlocked, gift received, etc.).
+- **Resend**: For sending transactional emails. All email types are fully wired up:
+  - Welcome, new match, interest received, verification approved, login streak reward, nearby alert, support confirmation (already working)
+  - Wallet deposit confirmation, gate/chapter unlocked, new message notification, gift received (newly connected)
+  - Inactivity reminders (automated daily, seasonal messaging)
 
 ### AI Services
 - **Replit AI Integrations (OpenAI gpt-4o-mini)**: Used for the AI Onboarding Assistant and ID Verification (OpenAI Vision).
@@ -92,5 +95,11 @@ Reminder preference: Always remind user to publish after making changes.
 - **Leaflet with OpenStreetMap**: For the Nearby Map feature.
 
 ### E-commerce Affiliates
-- **Amazon, Viator, Klook, Net-a-Porter, MR PORTER**: Integrated for anonymous gift purchasing with affiliate link auto-tagging.
-- **Travelpayouts**: Affiliate network for Viator/Klook.
+- **Amazon**: Affiliate tag `pawint-20` auto-applied to all Amazon product links.
+- **AWIN Merchants**: Promeed (100833), Lashterally (117123), Abracadabra NYC (83201), YCZ Fragrance (121156). Publisher ID: 2735710.
+- **Viator, Klook**: Via Travelpayouts affiliate network (Project ID: 491463, Marker: 698229). Note: `TRAVELPAYOUTS_API_TOKEN` needs to be updated with the actual API token from the Travelpayouts dashboard for link conversion to work.
+- **Net-a-Porter, MR PORTER**: Removed until real AWIN merchant IDs are obtained. Can be re-added by updating `AWIN_MERCHANTS` in server/routes.ts and adding hostnames to client-side `SUPPORTED_HOSTNAMES`.
+
+### Automation
+- **Weekend Boost**: Profiles automatically flagged with `weekendBoosted: true` on Saturdays and Sundays in the discover API.
+- **Inactivity Notifications**: Automated daily check (runs every hour, throttled to once per 24h) sends seasonal reminder emails to users inactive for 7+ days.
