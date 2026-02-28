@@ -1405,7 +1405,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       }
 
       try {
-        const requesterUserId = pullRequest.requesterId;
+        const requesterUserId = pullRequest.requestedBy;
         const requesterProfile = await storage.getProfile(requesterUserId);
         const payerProfile = await storage.getProfile(userId);
         const requesterUser = await authStorage.getUser(requesterUserId);
