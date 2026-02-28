@@ -5,7 +5,7 @@ import { useSeasonalTheme } from "@/contexts/seasonal-theme-context";
 import heroImage from "@assets/generated_images/romantic_couple_coffee_date.png";
 
 const mockWishlistItems = [
-  { title: "Gold Pendant Necklace", price: "$89", platform: "Net-a-Porter", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
+  { title: "Luxury Perfume Set", price: "$89", platform: "YCZ Fragrance", color: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300" },
   { title: "Sunset Sailing Tour", price: "$65", platform: "Viator", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
   { title: "Scented Candle Set", price: "$35", platform: "Amazon", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" },
 ];

@@ -72,7 +72,7 @@ export default function Privacy() {
             <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
               <li><strong>With Other Users:</strong> Profile information is visible to potential matches as part of the service</li>
               <li><strong>Service Providers:</strong> Third parties who help us operate the platform (payment processors, hosting)</li>
-              <li><strong>Affiliate Partners:</strong> When you use gift purchasing features through Amazon, Net-a-Porter, or MR PORTER</li>
+              <li><strong>Affiliate Partners:</strong> When you use gift purchasing features through our supported retail partners (Amazon, Viator, Klook, Promeed, and others)</li>
               <li><strong>Legal Requirements:</strong> When required by law or to protect rights and safety</li>
               <li><strong>Business Transfers:</strong> In connection with mergers, acquisitions, or asset sales</li>
             </ul>
@@ -163,7 +163,7 @@ export default function Privacy() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">11. Third-Party Links</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Our platform may contain links to third-party websites (such as Amazon, Net-a-Porter, and MR PORTER for gift purchasing). 
+              Our platform may contain links to third-party websites (such as Amazon, Viator, Klook, and other supported retailers for gift purchasing). 
               We are not responsible for the privacy practices of these external sites. We encourage you to 
               review their privacy policies.
             </p>

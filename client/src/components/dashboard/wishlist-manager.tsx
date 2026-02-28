@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Gem, Loader2, Sparkles } from "lucide-react";
+import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RegistryItem } from "@shared/schema";
@@ -20,7 +20,6 @@ import { SiAmazon } from "react-icons/si";
 const SUPPORTED_HOSTNAMES = [
   'amazon.com', 'amzn.to', 'amzn.com', 'a.co',
   'viator.com', 'klook.com', 'tp.st', 'travelpayouts.com',
-  'net-a-porter.com', 'mrporter.com',
   'promeed.com', 'promfreed.com',
   'lashterally.com',
   'abracadabranyc.com',
@@ -31,7 +30,7 @@ function isSupportedRetailer(hostname: string): boolean {
   return SUPPORTED_HOSTNAMES.some(h => hostname.includes(h));
 }
 
-const SUPPORTED_RETAILERS_LIST = "Amazon, Viator, Klook, Net-a-Porter, MR PORTER, Promeed, Lashterally, Abracadabra NYC, and YCZ Fragrance";
+const SUPPORTED_RETAILERS_LIST = "Amazon, Viator, Klook, Promeed, Lashterally, Abracadabra NYC, and YCZ Fragrance";
 
 interface AddItemFormData {
   title: string;
@@ -351,7 +350,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                   <div className="space-y-3">
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Shopping</p>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           type="button"
                           variant="outline"
@@ -361,26 +360,6 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                         >
                           <SiAmazon className="w-5 h-5" />
                           <span className="text-xs">Amazon</span>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-auto py-3 flex-col gap-1"
-                          onClick={browseRetailer("https://www.net-a-porter.com")}
-                          data-testid="button-browse-netaporter"
-                        >
-                          <Gem className="w-5 h-5" />
-                          <span className="text-xs">Net-a-Porter</span>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-auto py-3 flex-col gap-1"
-                          onClick={browseRetailer("https://www.mrporter.com")}
-                          data-testid="button-browse-mrporter"
-                        >
-                          <Gem className="w-5 h-5" />
-                          <span className="text-xs">MR PORTER</span>
                         </Button>
                       </div>
                     </div>

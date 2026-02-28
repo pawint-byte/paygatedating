@@ -1,5 +1,6 @@
 import { getUncachableStripeClient } from './stripeClient';
 import { storage } from './storage';
+import { authStorage } from './replit_integrations/auth/storage';
 import { emailService } from './lib/email';
 
 export class WebhookHandlers {
@@ -54,10 +55,20 @@ export class WebhookHandlers {
               });
               console.log(`Wallet funded: $${amount} for user ${userId}`);
               
-              // Send email notification
-              const profile = await storage.getProfile(userId);
-              // Note: Email would be sent if user email is available from profile or auth
-              console.log(`Wallet deposit notification sent for user ${userId}`);
+              try {
+                const profile = await storage.getProfile(userId);
+                const user = await authStorage.getUser(userId);
+                if (user?.email && profile) {
+                  await emailService.sendWalletDeposit(
+                    user.email,
+                    profile.displayName?.split(' ')[0] || 'there',
+                    amount.toString()
+                  );
+                  console.log(`Wallet deposit email sent for user ${userId}`);
+                }
+              } catch (emailError) {
+                console.error('Error sending wallet deposit email:', emailError);
+              }
             }
           } catch (error) {
             console.error('Error processing wallet funding:', error);
@@ -135,14 +146,26 @@ export class WebhookHandlers {
             }
           }
           
-          // Log notification (email would require user email from auth)
           const recipientProfile = await storage.getProfile(recipientUserId);
           const buyerProfile = await storage.getProfile(buyerUserId);
           const item = registryItemId ? await storage.getRegistryItem(registryItemId) : null;
           
           console.log(`Gift purchase: ${buyerProfile?.displayName || 'User'} sent ${item?.title || 'a gift'} to ${recipientProfile?.displayName || 'recipient'}`);
           
-          console.log(`Gift purchase processed for recipient ${recipientUserId}`);
+          try {
+            const recipientUser = await authStorage.getUser(recipientUserId);
+            if (recipientUser?.email && recipientProfile) {
+              await emailService.sendGiftReceived(
+                recipientUser.email,
+                recipientProfile.displayName?.split(' ')[0] || 'there',
+                buyerProfile?.displayName || 'Someone',
+                item?.title || 'a gift'
+              );
+              console.log(`Gift received email sent to ${recipientUserId}`);
+            }
+          } catch (emailError) {
+            console.error('Error sending gift received email:', emailError);
+          }
         } catch (error) {
           console.error('Error processing gift purchase:', error);
         }

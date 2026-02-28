@@ -421,6 +421,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         console.log("[Discover API] Discover profiles count:", profiles.length);
       }
       
+      const dayOfWeek = new Date().getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
       const enrichedProfiles = await Promise.all(
         profiles.map(async (profile) => {
           const items = await storage.getRegistryItems(profile.userId);
@@ -440,6 +443,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
             ...safeProfile,
             wishlistPreview: publicItems,
             wishlistCount: items.filter(i => i.visibility === "public" && !i.isPurchased).length,
+            weekendBoosted: isWeekend,
           };
         })
       );
@@ -653,6 +657,20 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         stripeSessionId: sessionId,
       });
 
+      try {
+        const profile = await storage.getProfile(userId);
+        const user = await authStorage.getUser(userId);
+        if (user?.email && profile) {
+          await emailService.sendWalletDeposit(
+            user.email,
+            profile.displayName?.split(' ')[0] || 'there',
+            amount.toFixed(2)
+          );
+        }
+      } catch (emailError) {
+        console.error('Error sending wallet deposit email:', emailError);
+      }
+
       res.json({ success: true, wallet: updatedWallet });
     } catch (error) {
       console.error("Error verifying payment:", error);
@@ -850,9 +868,25 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
           await storage.createConnectionIfNotExists(match.initiatorId, match.recipientId, matchId);
           await storage.createConnectionIfNotExists(match.recipientId, match.initiatorId, matchId);
         } catch (connError) {
-          // Log but don't fail gate advancement for connection creation issues
           console.error("Error creating connections:", connError);
         }
+      }
+
+      try {
+        const otherUserId = userId === match.initiatorId ? match.recipientId : match.initiatorId;
+        const otherProfile = await storage.getProfile(otherUserId);
+        const payerProfile = await storage.getProfile(userId);
+        const otherUser = await authStorage.getUser(otherUserId);
+        if (otherUser?.email && otherProfile) {
+          await emailService.sendGateUnlocked(
+            otherUser.email,
+            otherProfile.displayName?.split(' ')[0] || 'there',
+            gateNum,
+            payerProfile?.displayName || 'Your match'
+          );
+        }
+      } catch (emailError) {
+        console.error('Error sending gate unlocked email:', emailError);
       }
 
       res.json(updatedMatch);
@@ -912,8 +946,24 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         await storage.createConnectionIfNotExists(match.initiatorId, match.recipientId, matchId);
         await storage.createConnectionIfNotExists(match.recipientId, match.initiatorId, matchId);
       } catch (connError) {
-        // Log but don't fail skip for connection creation issues
         console.error("Error creating connections:", connError);
+      }
+
+      try {
+        const otherUserId = userId === match.initiatorId ? match.recipientId : match.initiatorId;
+        const otherProfile = await storage.getProfile(otherUserId);
+        const payerProfile = await storage.getProfile(userId);
+        const otherUser = await authStorage.getUser(otherUserId);
+        if (otherUser?.email && otherProfile) {
+          await emailService.sendGateUnlocked(
+            otherUser.email,
+            otherProfile.displayName?.split(' ')[0] || 'there',
+            5,
+            payerProfile?.displayName || 'Your match'
+          );
+        }
+      } catch (emailError) {
+        console.error('Error sending skip gate email:', emailError);
       }
 
       res.json(updatedMatch);
@@ -995,6 +1045,22 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         content: validationResult.data.content,
         mediaUrl: validationResult.data.mediaUrl,
       });
+
+      try {
+        const recipientUserId = match.initiatorId === userId ? match.recipientId : match.initiatorId;
+        const recipientProfile = await storage.getProfile(recipientUserId);
+        const senderProfile = await storage.getProfile(userId);
+        const recipientUser = await authStorage.getUser(recipientUserId);
+        if (recipientProfile && senderProfile && recipientUser?.email) {
+          await emailService.sendNewMessage(
+            recipientUser.email,
+            recipientProfile.displayName || 'there',
+            senderProfile.displayName || 'Someone'
+          );
+        }
+      } catch (emailError) {
+        console.error('Failed to send new message notification email:', emailError);
+      }
 
       res.status(201).json(message);
     } catch (error) {
@@ -1336,6 +1402,23 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         } catch (connError) {
           console.error("Error creating connections:", connError);
         }
+      }
+
+      try {
+        const requesterUserId = pullRequest.requesterId;
+        const requesterProfile = await storage.getProfile(requesterUserId);
+        const payerProfile = await storage.getProfile(userId);
+        const requesterUser = await authStorage.getUser(requesterUserId);
+        if (requesterUser?.email && requesterProfile) {
+          await emailService.sendGateUnlocked(
+            requesterUser.email,
+            requesterProfile.displayName?.split(' ')[0] || 'there',
+            gateNum,
+            payerProfile?.displayName || 'Your match'
+          );
+        }
+      } catch (emailError) {
+        console.error('Error sending pull request accepted email:', emailError);
       }
 
       res.json(updatedMatch);
@@ -2050,8 +2133,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
   const AWIN_PUBLISHER_ID = process.env.AWIN_PUBLISHER_ID || '2735710';
   const AWIN_MERCHANTS: Record<string, { id: string; hostnames: string[] }> = {
-    'net-a-porter': { id: '0', hostnames: ['net-a-porter.com'] },
-    'mrporter': { id: '0', hostnames: ['mrporter.com'] },
     'promeed': { id: '100833', hostnames: ['promeed.com', 'promfreed.com'] },
     'lashterally': { id: '117123', hostnames: ['lashterally.com'] },
     'abracadabranyc': { id: '83201', hostnames: ['abracadabranyc.com'] },
@@ -2072,8 +2153,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     try {
       const hostname = new URL(urlStr).hostname.toLowerCase();
       if (hostname.includes('amazon') || hostname === 'a.co') return 'Amazon';
-      if (hostname.includes('net-a-porter')) return 'Net-a-Porter';
-      if (hostname.includes('mrporter')) return 'MR PORTER';
       if (hostname.includes('viator') || hostname.includes('tp.st') || hostname.includes('travelpayouts')) return 'Viator';
       if (hostname.includes('klook')) return 'Klook';
       if (hostname.includes('promeed') || hostname.includes('promfreed')) return 'Promeed';
@@ -2086,8 +2165,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         if (decoded.includes('lashterally')) return 'Lashterally';
         if (decoded.includes('abracadabranyc')) return 'Abracadabra NYC';
         if (decoded.includes('yczfragrance')) return 'YCZ Fragrance';
-        if (decoded.includes('net-a-porter')) return 'Net-a-Porter';
-        if (decoded.includes('mrporter')) return 'MR PORTER';
         return 'Gift';
       }
       return 'Gift';
@@ -2111,11 +2188,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const hostname = urlObj.hostname.toLowerCase();
       const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
       const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
-      const isLuxury = hostname.includes('net-a-porter.com') || hostname.includes('mrporter.com');
       const isAwin = isAwinMerchant(hostname) !== null;
       
-      if (!isAmazon && !isTravel && !isLuxury && !isAwin) {
-        return { valid: false, error: "This retailer is not yet supported. Supported retailers: Amazon, Viator, Klook, Net-a-Porter, MR PORTER, Promeed, Lashterally, Abracadabra NYC, and YCZ Fragrance." };
+      if (!isAmazon && !isTravel && !isAwin) {
+        return { valid: false, error: "This retailer is not yet supported. Supported retailers: Amazon, Viator, Klook, Promeed, Lashterally, Abracadabra NYC, and YCZ Fragrance." };
       }
       return { valid: true };
     } catch {
@@ -2297,11 +2373,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         if (hostname.includes("amazon.com") || hostname.includes("amzn.to") || hostname === "a.co") platform = "Amazon";
         else if (hostname.includes("viator.com")) platform = "Viator";
         else if (hostname.includes("klook.com")) platform = "Klook";
-        else if (hostname.includes("net-a-porter.com")) platform = "Net-a-Porter";
-        else if (hostname.includes("mrporter.com")) platform = "MR PORTER";
 
         title = title
-          .replace(/\s*[-|]\s*(Amazon|Viator|Klook|NET-A-PORTER|Net-a-Porter|MR PORTER|Mr Porter).*$/i, "")
+          .replace(/\s*[-|]\s*(Amazon|Viator|Klook).*$/i, "")
           .replace(/&amp;/g, "&")
           .replace(/&lt;/g, "<")
           .replace(/&gt;/g, ">")
@@ -3391,7 +3465,7 @@ User Profile:
 
 2. **Gate System**: Explain PayGate's unique 5-gate progression system where users pay incrementally ($5-$20) to advance through interaction stages. This filters out low-effort matches and creates more meaningful connections.
 
-3. **Wishlist/Registry**: Help users add items from Amazon, Net-a-Porter, or MR PORTER to their wishlist, or travel experiences from Viator and Klook. Gifts from matches can unlock gates.
+3. **Wishlist/Registry**: Help users add items from Amazon, Promeed, Lashterally, Abracadabra NYC, or YCZ Fragrance to their wishlist, or travel experiences from Viator and Klook. Gifts from matches can unlock gates.
 
 4. **Match Tips**: Provide conversation starters, dating advice, and tips for advancing through gates successfully.
 
@@ -3949,7 +4023,7 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
       { title: "Wine Tasting Experience", price: "89.00", priceTier: "impressive", affiliateUrl: "https://www.viator.com/tours/Napa-Valley" },
       { title: "Artisan Jewelry Set", price: "45.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/jewelry" },
       { title: "Cooking Class for Two", price: "150.00", priceTier: "vip", affiliateUrl: "https://www.klook.com/activity/cooking-class" },
-      { title: "Designer Sunglasses", price: "195.00", priceTier: "vip", affiliateUrl: "https://www.net-a-porter.com/sunglasses" },
+      { title: "Luxury Fragrance Set", price: "195.00", priceTier: "vip", affiliateUrl: "https://yczfragrance.com/collections/luxury-set" },
       { title: "Scented Candle Set", price: "35.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/candles" },
     ];
   }
@@ -4080,7 +4154,7 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
         { title: "Wine Tasting Experience", price: "89.00", priceTier: "impressive", affiliateUrl: "https://www.viator.com/tours/Napa-Valley" },
         { title: "Artisan Jewelry Set", price: "45.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/jewelry" },
         { title: "Cooking Class for Two", price: "150.00", priceTier: "vip", affiliateUrl: "https://www.klook.com/activity/cooking-class" },
-        { title: "Designer Sunglasses", price: "195.00", priceTier: "vip", affiliateUrl: "https://www.net-a-porter.com/sunglasses" },
+        { title: "Luxury Fragrance Set", price: "195.00", priceTier: "vip", affiliateUrl: "https://yczfragrance.com/collections/luxury-set" },
         { title: "Scented Candle Set", price: "35.00", priceTier: "starter", affiliateUrl: "https://www.amazon.com/dp/candles" },
       ];
 
@@ -4231,6 +4305,51 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
       res.status(500).json({ message: "Failed to notify inactive users" });
     }
   });
+
+  let lastInactivityCheck = 0;
+  const INACTIVITY_CHECK_INTERVAL = 24 * 60 * 60 * 1000;
+  const INACTIVITY_DAYS = 7;
+
+  async function runInactivityCheck() {
+    const now = Date.now();
+    if (now - lastInactivityCheck < INACTIVITY_CHECK_INTERVAL) return;
+    lastInactivityCheck = now;
+
+    try {
+      const inactiveProfiles = await storage.getInactiveProfiles(INACTIVITY_DAYS);
+      const currentMonth = new Date().getMonth() + 1;
+      let seasonalMessage = "New connections are waiting for you!";
+      if (currentMonth === 2) seasonalMessage = "Valentine's Day is coming up! Find your perfect match before Feb 14th.";
+      else if (currentMonth === 12) seasonalMessage = "Make this holiday season magical - find someone special to share it with!";
+      else if (currentMonth >= 3 && currentMonth <= 5) seasonalMessage = "Spring is in the air! Perfect time for new beginnings and fresh connections.";
+      else if (currentMonth >= 6 && currentMonth <= 8) seasonalMessage = "Summer adventures await! Find your adventure partner today.";
+      else if (currentMonth >= 9 && currentMonth <= 11) seasonalMessage = "Cuffing season is here! Don't miss out on finding your cozy companion.";
+
+      let notified = 0;
+      for (const profile of inactiveProfiles) {
+        try {
+          const profileUser = await authStorage.getUser(profile.userId);
+          if (profileUser?.email) {
+            const firstName = profile.displayName?.split(' ')[0] || 'there';
+            const lastActive = profile.lastActiveAt || profile.createdAt;
+            const daysSince = Math.floor((now - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24));
+            await emailService.sendInactivityReminder(profileUser.email, firstName, daysSince, seasonalMessage);
+            notified++;
+          }
+        } catch (emailError) {
+          console.error("Failed to send automated inactivity email:", emailError);
+        }
+      }
+      if (notified > 0) {
+        console.log(`Automated inactivity check: notified ${notified} of ${inactiveProfiles.length} inactive users`);
+      }
+    } catch (error) {
+      console.error("Error in automated inactivity check:", error);
+    }
+  }
+
+  setInterval(runInactivityCheck, 60 * 60 * 1000);
+  setTimeout(runInactivityCheck, 30 * 1000);
 
   return httpServer;
 }

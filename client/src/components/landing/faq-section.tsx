@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     question: "How does the gift registry feature work?",
-    answer: "Create your wishlist with items from Amazon, Net-a-Porter, MR PORTER (luxury fashion), or travel experiences from Viator and Klook. When someone wants to show they've been paying attention to your story, they can purchase a gift from your wishlist through PayGate. There's a small service fee (10% of gift value or $5, whichever is greater). Gifts unlock additional chapters based on their value -- it's a meaningful way to show you're reading between the lines."
+    answer: "Create your wishlist with items from Amazon, Promeed, Lashterally, Abracadabra NYC, YCZ Fragrance, or travel experiences from Viator and Klook. When someone wants to show they've been paying attention to your story, they can purchase a gift from your wishlist through PayGate. There's a small service fee (10% of gift value or $5, whichever is greater). Gifts unlock additional chapters based on their value -- it's a meaningful way to show you're reading between the lines."
   },
   {
     question: "How does gift delivery work? Do I need to share my address?",

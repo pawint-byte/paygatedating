@@ -25,7 +25,7 @@ const categories = [
     icon: ShoppingBag,
     description: "Jewelry, fashion, home goods",
     color: "text-pink-500",
-    platforms: ["Amazon", "Net-a-Porter", "MR PORTER"],
+    platforms: ["Amazon", "Promeed", "Lashterally", "Abracadabra NYC", "YCZ Fragrance"],
   },
   {
     id: "experiences" as const,
@@ -46,7 +46,7 @@ const guidedSteps = [
   },
   {
     title: "Add Thoughtful Gifts",
-    description: "Browse Amazon, Net-a-Porter, or MR PORTER for items you'd love to receive. Copy the product link and paste it here.",
+    description: "Browse Amazon, Promeed, Lashterally, or other supported retailers for items you'd love to receive. Copy the product link and paste it here.",
     tip: "Start with a few affordable items ($25-50) so admirers can easily make a first move.",
     icon: ShoppingBag,
   },
@@ -66,8 +66,10 @@ const guidedSteps = [
 
 const platformUrls: Record<string, string> = {
   "Amazon": "https://www.amazon.com",
-  "Net-a-Porter": "https://www.net-a-porter.com",
-  "MR PORTER": "https://www.mrporter.com",
+  "Promeed": "https://promeed.com",
+  "Lashterally": "https://www.lashterally.com",
+  "Abracadabra NYC": "https://abracadabranyc.com",
+  "YCZ Fragrance": "https://yczfragrance.com",
   "Viator": "https://www.viator.com",
   "Klook": "https://www.klook.com",
 };
