@@ -61,7 +61,7 @@ const templates = {
           <li>Start discovering compatible singles near you</li>
         </ul>
         <p>Ready to find your perfect match?</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/discover" 
+        <a href="https://paygatedating.com/discover" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           Start Discovering
         </a>
@@ -80,7 +80,7 @@ const templates = {
         <p>Hey ${firstName},</p>
         <p><strong>${matchName}</strong> is interested in connecting with you!</p>
         <p>Don't keep them waiting - respond now to start your journey through the gates together.</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/matches" 
+        <a href="https://paygatedating.com/matches" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           View Match
         </a>
@@ -95,7 +95,7 @@ const templates = {
         <h1 style="color: #8b5cf6;">You've Got a Message!</h1>
         <p>Hey ${firstName},</p>
         <p><strong>${senderName}</strong> just sent you a message.</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/messages" 
+        <a href="https://paygatedating.com/messages" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           Read Message
         </a>
@@ -111,7 +111,7 @@ const templates = {
         <p>Hey ${firstName},</p>
         <p>Congratulations! You've progressed to Gate ${gateNumber} with <strong>${matchName}</strong>.</p>
         <p>Keep building your connection!</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/matches" 
+        <a href="https://paygatedating.com/matches" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           Continue Chatting
         </a>
@@ -127,7 +127,7 @@ const templates = {
         <p>Hey ${firstName},</p>
         <p><strong>${senderName}</strong> just purchased <strong>${giftName}</strong> from your wishlist!</p>
         <p>This thoughtful gesture shows they're serious about connecting with you.</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/matches" 
+        <a href="https://paygatedating.com/matches" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           Thank Them
         </a>
@@ -160,7 +160,7 @@ const templates = {
         <p>Hey ${firstName},</p>
         <p>Great news! Your identity has been verified. You'll now display a verified badge on your profile.</p>
         <p>Verified profiles get more matches and build trust faster. Happy dating!</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/discover" 
+        <a href="https://paygatedating.com/discover" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           Find Matches
         </a>
@@ -176,7 +176,7 @@ const templates = {
         <p>Hey ${firstName},</p>
         <p><strong>$${amount}</strong> has been added to your PayGate Dating wallet.</p>
         <p>You're ready to unlock gates and make meaningful connections!</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/discover" 
+        <a href="https://paygatedating.com/discover" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           Start Matching
         </a>
@@ -193,7 +193,7 @@ const templates = {
         <p><strong>${senderName}</strong> has expressed interest in connecting with you!</p>
         ${message ? `<p style="background: #f3f4f6; padding: 12px; border-radius: 6px; font-style: italic;">"${message}"</p>` : ''}
         <p>They've invested in getting to know you. Check out their profile and decide if you'd like to connect!</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/matches" 
+        <a href="https://paygatedating.com/matches" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           View Their Profile
         </a>
@@ -212,7 +212,7 @@ const templates = {
         <p>Hey ${firstName},</p>
         <p>Good news! <strong>${nearbyCount} ${nearbyCount === 1 ? 'person is' : 'people are'}</strong> currently live and looking near your area.</p>
         <p>Open the app now to see who's around and express your interest!</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/nearby" 
+        <a href="https://paygatedating.com/nearby" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           See Who's Nearby
         </a>
@@ -232,7 +232,7 @@ const templates = {
         <p>It's been ${daysSinceActive} days since we last saw you on PayGate Dating.</p>
         <p>${seasonalMessage}</p>
         <p>While you've been away, new singles have joined looking for meaningful connections. Don't miss out!</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/discover" 
+        <a href="https://paygatedating.com/discover" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           See New Profiles
         </a>
@@ -252,7 +252,7 @@ const templates = {
         <p>Congratulations! You've logged in for <strong>${streakDays} consecutive days</strong>!</p>
         <p>As a reward for your dedication, we've added <strong style="color: #10b981;">$5.00</strong> to your wallet.</p>
         <p>Keep logging in daily to earn more rewards - you'll get $5 for every 7 days!</p>
-        <a href="https://pay-gate-dating--pawint.replit.app/rewards" 
+        <a href="https://paygatedating.com/rewards" 
            style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           View Your Rewards
         </a>

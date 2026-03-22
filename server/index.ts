@@ -22,7 +22,7 @@ async function ensureStripeTypes(databaseUrl: string) {
   try {
     await pool.query(`CREATE SCHEMA IF NOT EXISTS stripe`);
     const types = [
-      { name: 'subscription_status', values: "'active','canceled','incomplete','incomplete_expired','past_due','paused','trialing','unpaid'" },
+      { name: 'subscription_status', values: "'active','canceled','incomplete','incomplete_expired','past_due','trialing','unpaid'" },
       { name: 'pricing_type', values: "'one_time','recurring'" },
       { name: 'pricing_tiers', values: "'graduated','volume'" },
       { name: 'invoice_status', values: "'draft','open','paid','uncollectible','void'" },
