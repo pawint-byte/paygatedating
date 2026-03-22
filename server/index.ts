@@ -16,6 +16,32 @@ declare module "http" {
   }
 }
 
+async function ensureStripeTypes(databaseUrl: string) {
+  const { Pool } = await import("pg");
+  const pool = new Pool({ connectionString: databaseUrl });
+  try {
+    await pool.query(`CREATE SCHEMA IF NOT EXISTS stripe`);
+    const types = [
+      { name: 'subscription_status', values: "'active','canceled','incomplete','incomplete_expired','past_due','paused','trialing','unpaid'" },
+      { name: 'pricing_type', values: "'one_time','recurring'" },
+      { name: 'pricing_tiers', values: "'graduated','volume'" },
+      { name: 'invoice_status', values: "'draft','open','paid','uncollectible','void'" },
+      { name: 'subscription_schedule_status', values: "'not_started','active','completed','released','canceled'" },
+    ];
+    for (const t of types) {
+      const exists = await pool.query(
+        `SELECT 1 FROM pg_type typ JOIN pg_namespace ns ON typ.typnamespace = ns.oid WHERE ns.nspname = 'stripe' AND typ.typname = $1`,
+        [t.name]
+      );
+      if (exists.rows.length === 0) {
+        await pool.query(`CREATE TYPE stripe.${t.name} AS ENUM (${t.values})`);
+      }
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
 async function initStripe() {
   const databaseUrl = process.env.DATABASE_URL;
 
@@ -26,6 +52,7 @@ async function initStripe() {
 
   try {
     console.log('Initializing Stripe schema...');
+    await ensureStripeTypes(databaseUrl);
     await runMigrations({ databaseUrl });
     console.log('Stripe schema ready');
 
