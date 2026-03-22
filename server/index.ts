@@ -53,8 +53,12 @@ async function initStripe() {
   try {
     console.log('Initializing Stripe schema...');
     await ensureStripeTypes(databaseUrl);
-    await runMigrations({ databaseUrl });
-    console.log('Stripe schema ready');
+    try {
+      await runMigrations({ databaseUrl });
+      console.log('Stripe schema ready');
+    } catch (migrationError: any) {
+      console.warn('Stripe migration warning (non-fatal):', migrationError?.message || migrationError);
+    }
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
       console.warn('STRIPE_WEBHOOK_SECRET not set - webhook signature verification will fail');
