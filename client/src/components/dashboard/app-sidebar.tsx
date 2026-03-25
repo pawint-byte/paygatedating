@@ -161,43 +161,37 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {adminStatus?.isAdmin && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location === "/admin/users"}
+                      data-testid="nav-admin-users"
+                    >
+                      <Link href="/admin/users">
+                        <Users className="w-4 h-4" />
+                        <span>Members</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location === "/admin/feedback"}
+                      data-testid="nav-admin-feedback"
+                    >
+                      <Link href="/admin/feedback">
+                        <Shield className="w-4 h-4" />
+                        <span>Feedback Manager</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {adminStatus?.isAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Admin</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === "/admin/users"}
-                    data-testid="nav-admin-users"
-                  >
-                    <Link href="/admin/users">
-                      <Users className="w-4 h-4" />
-                      <span>Members</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === "/admin/feedback"}
-                    data-testid="nav-admin-feedback"
-                  >
-                    <Link href="/admin/feedback">
-                      <Shield className="w-4 h-4" />
-                      <span>Feedback Manager</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-sidebar-border space-y-3">
