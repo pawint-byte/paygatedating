@@ -3784,6 +3784,16 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     }
   });
 
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const usersWithProfiles = await storage.getAllUsersWithProfiles();
+      res.json(usersWithProfiles);
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   app.get("/api/admin/feedback", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const allFeedback = await storage.getAllFeedback();

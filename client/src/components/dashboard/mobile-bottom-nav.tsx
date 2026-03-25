@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Heart, MessageSquare, Compass, Gift, Menu, User, Radio, Package,
+  Heart, MessageSquare, Compass, Gift, Menu, User, Users, Radio, Package,
   Settings, Trophy, HelpCircle, ShieldCheck, Shield, MapPin, X
 } from "lucide-react";
 import {
@@ -33,6 +33,7 @@ const moreMenuItems = [
 ];
 
 const adminMenuItems = [
+  { title: "Members", url: "/admin/users", icon: Users },
   { title: "Feedback Manager", url: "/admin/feedback", icon: Shield },
 ];
 

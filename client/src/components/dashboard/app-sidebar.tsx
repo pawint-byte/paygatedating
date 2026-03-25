@@ -173,6 +173,18 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
+                    isActive={location === "/admin/users"}
+                    data-testid="nav-admin-users"
+                  >
+                    <Link href="/admin/users">
+                      <Users className="w-4 h-4" />
+                      <span>Members</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
                     isActive={location === "/admin/feedback"}
                     data-testid="nav-admin-feedback"
                   >

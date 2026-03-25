@@ -152,6 +152,7 @@ export interface IStorage {
   getAllFeedback(): Promise<Feedback[]>;
   updateFeedbackStatus(feedbackId: string, status: string): Promise<Feedback | undefined>;
   isUserAdmin(userId: string): Promise<boolean>;
+  getAllUsersWithProfiles(): Promise<{ user: { id: string; email: string | null; firstName: string | null; lastName: string | null; profileImageUrl: string | null; isAdmin: boolean; createdAt: Date | null }; profile: { id: string; displayName: string; age: number | null; gender: string | null; location: string | null; verificationStatus: string | null; subscriptionTier: string | null; isLive: boolean | null; lastActiveAt: Date | null; photos: string[] | null; bio: string | null } | null }[]>;
   
   // Date Plans
   createDatePlan(datePlan: InsertDatePlan): Promise<DatePlan>;
@@ -798,6 +799,39 @@ export class DatabaseStorage implements IStorage {
   async isUserAdmin(userId: string): Promise<boolean> {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     return user?.isAdmin ?? false;
+  }
+
+  async getAllUsersWithProfiles() {
+    const allUsers = await db.select({
+      id: users.id,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      profileImageUrl: users.profileImageUrl,
+      isAdmin: users.isAdmin,
+      createdAt: users.createdAt,
+    }).from(users).orderBy(desc(users.createdAt));
+
+    const allProfiles = await db.select({
+      id: profiles.id,
+      userId: profiles.userId,
+      displayName: profiles.displayName,
+      age: profiles.age,
+      gender: profiles.gender,
+      location: profiles.location,
+      verificationStatus: profiles.verificationStatus,
+      subscriptionTier: profiles.subscriptionTier,
+      isLive: profiles.isLive,
+      lastActiveAt: profiles.lastActiveAt,
+      photos: profiles.photos,
+      bio: profiles.bio,
+    }).from(profiles);
+
+    const profileMap = new Map(allProfiles.map(p => [p.userId, p]));
+    return allUsers.map(u => ({
+      user: u,
+      profile: profileMap.get(u.id) ? (() => { const { userId, ...rest } = profileMap.get(u.id)!; return rest; })() : null
+    }));
   }
 
   async createDatePlan(datePlan: InsertDatePlan): Promise<DatePlan> {
