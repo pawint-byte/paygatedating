@@ -348,7 +348,7 @@ export async function sendEmail(
     }
 
     const result = await client.emails.send({
-      from: fromEmail || 'notification@pawint-app.com',
+      from: 'PayGate Dating <notification@pawint-app.com>',
       to,
       subject: emailContent.subject,
       html: emailContent.html
