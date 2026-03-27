@@ -6,6 +6,7 @@ import { useSeasonalTheme } from "@/contexts/seasonal-theme-context";
 
 const promoVideos = [
   { src: "/videos/promo-female.mp4", label: "Her Perspective" },
+  { src: "/videos/promo-male.mp4", label: "His Perspective" },
 ];
 
 export function SeasonalHero() {
