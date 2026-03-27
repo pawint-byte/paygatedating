@@ -1,18 +1,25 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Gift, Heart, MapPin, ShoppingBag, Sparkles, ArrowRight } from "lucide-react";
 import { useSeasonalTheme } from "@/contexts/seasonal-theme-context";
-import heroImage from "@assets/generated_images/romantic_couple_coffee_date.png";
 
-const mockWishlistItems = [
-  { title: "Luxury Perfume Set", price: "$89", platform: "YCZ Fragrance", color: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300" },
-  { title: "Sunset Sailing Tour", price: "$65", platform: "Viator", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  { title: "Scented Candle Set", price: "$35", platform: "Amazon", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" },
+const promoVideos = [
+  { src: "/videos/promo-female.mp4", label: "Her Perspective" },
 ];
 
 export function SeasonalHero() {
   const { theme } = useSeasonalTheme();
   const { hero } = theme;
+  const [currentVideo, setCurrentVideo] = useState(0);
+
+  useEffect(() => {
+    if (promoVideos.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentVideo((prev) => (prev + 1) % promoVideos.length);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <section className="relative min-h-[90vh] pt-24 pb-16 flex items-center">
@@ -75,78 +82,39 @@ export function SeasonalHero() {
             </div>
           </div>
 
-          <div className="relative" data-testid="hero-profile-preview">
-            <div className="relative bg-card border border-card-border rounded-md overflow-visible shadow-xl">
-              <div className="relative aspect-[3/2] overflow-hidden rounded-t-md">
-                <img
-                  src={heroImage}
-                  alt="Profile preview"
+          <div className="relative" data-testid="hero-video-section">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border/50">
+              <div className="relative aspect-[9/16] max-h-[520px] bg-black">
+                <video
+                  key={promoVideos[currentVideo].src}
+                  src={promoVideos[currentVideo].src}
                   className="w-full h-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  data-testid="hero-promo-video"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute top-3 right-3">
-                  <Badge variant="secondary" className="bg-black/50 text-white border-white/20 text-xs">
-                    <Heart className="w-3 h-3 mr-0.5" />
-                    Chapter 1: The Spark
-                  </Badge>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-xl">Sarah, 28</h3>
-                    <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-200 border-emerald-500/30 text-xs">
-                      Verified
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-white/80">
-                    <MapPin className="w-3 h-3" />
-                    <span>New York, NY</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium flex items-center gap-1.5">
-                    <Gift className="w-4 h-4 text-primary" />
-                    Her Wishlist
-                  </span>
-                  <span className="text-xs text-muted-foreground">3 items</span>
-                </div>
-
-                <div className="space-y-2">
-                  {mockWishlistItems.map((item, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2.5 p-2 rounded-md bg-muted/50"
-                    >
-                      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <ShoppingBag className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{item.title}</p>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-semibold text-primary">{item.price}</span>
-                          <Badge variant="outline" className={`text-[10px] leading-tight py-0 px-1 ${item.color}`}>
-                            {item.platform}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex gap-2">
-                  <Button className="flex-1 gap-1.5" size="sm">
-                    <Heart className="w-3.5 h-3.5" />
-                    Send Interest
-                  </Button>
-                  <Button variant="outline" className="flex-1 gap-1.5" size="sm">
-                    <Gift className="w-3.5 h-3.5" />
-                    Send Gift
-                  </Button>
-                </div>
               </div>
             </div>
+
+            {promoVideos.length > 1 && (
+              <div className="flex justify-center gap-2 mt-4">
+                {promoVideos.map((video, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentVideo(i)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      i === currentVideo
+                        ? "bg-primary scale-110"
+                        : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                    }`}
+                    data-testid={`video-dot-${i}`}
+                  />
+                ))}
+              </div>
+            )}
 
             <div className="absolute -bottom-4 -right-4 bg-card border border-card-border rounded-md p-3 shadow-lg z-20">
               <div className="flex items-center gap-2">
