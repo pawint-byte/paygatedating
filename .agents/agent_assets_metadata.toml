@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "WX3--pOHkor6MxAp74VMO"
+uri = "file://PayGate_Affiliate_Summary.txt"
+type = "text"
+title = "PayGate Dating — Affiliate & Partner Summary"

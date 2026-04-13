@@ -1,0 +1,170 @@
+============================================================
+        PAYGATE DATING — AFFILIATE & PARTNER SUMMARY
+============================================================
+Generated: April 13, 2026
+Platform: https://paygatedating.com
+
+
+------------------------------------------------------------
+1. AMAZON ASSOCIATES
+------------------------------------------------------------
+Program:        Amazon Associates
+Affiliate Tag:  pawint-20
+How It Works:   Auto-appended to all Amazon product URLs
+                when users add Amazon items to wishlists
+                or when gift links are generated.
+Supported Domains:
+  - amazon.com
+  - amzn.to
+  - amzn.com
+  - a.co
+Link Format:    Original URL + ?tag=pawint-20
+
+
+------------------------------------------------------------
+2. AWIN (AFFILIATE WINDOW)
+------------------------------------------------------------
+Publisher ID:   2735710
+Dashboard:      https://www.awin.com
+
+Merchants:
+  ┌─────────────────────┬───────────┬──────────────────────────┐
+  │ Merchant            │ AWIN ID   │ Website(s)               │
+  ├─────────────────────┼───────────┼──────────────────────────┤
+  │ Promeed             │ 100833    │ promeed.com              │
+  │                     │           │ promfreed.com            │
+  ├─────────────────────┼───────────┼──────────────────────────┤
+  │ Lashterally         │ 117123    │ lashterally.com          │
+  ├─────────────────────┼───────────┼──────────────────────────┤
+  │ Abracadabra NYC     │ 83201     │ abracadabranyc.com       │
+  ├─────────────────────┼───────────┼──────────────────────────┤
+  │ YCZ Fragrance       │ 121156    │ yczfragrance.com         │
+  └─────────────────────┴───────────┴──────────────────────────┘
+
+Link Format:    https://www.awin1.com/cread.php
+                  ?awinmid={MERCHANT_ID}
+                  &awinaffid=2735710
+                  &ued={ENCODED_PRODUCT_URL}
+
+Note: Net-a-Porter and MR PORTER were removed until
+real AWIN merchant IDs are obtained.
+
+
+------------------------------------------------------------
+3. TRAVELPAYOUTS
+------------------------------------------------------------
+Network:        Travelpayouts Affiliate Network
+Project ID:     491463
+Marker ID:      698229
+API Endpoint:   https://api.travelpayouts.com/links/v1/create
+Verification:   Travelpayouts script loads from
+                https://emrldco.com/NDkxNDYz.js?t=491463
+                (embedded in index.html)
+
+Supported Travel Partners via Travelpayouts:
+  - Viator (viator.com)
+  - Klook (klook.com)
+
+How It Works:   Direct Viator/Klook URLs are converted to
+                affiliate links via the Travelpayouts API.
+                Pre-converted tp.st links are passed through.
+
+Status:         TRAVELPAYOUTS_API_TOKEN needs to be updated
+                with the actual token from the Travelpayouts
+                dashboard for link conversion to work.
+
+
+------------------------------------------------------------
+4. FLEXOFFERS (NOTED IN SCRATCHPAD)
+------------------------------------------------------------
+Verification ID: 1528566
+Status:         Referenced in project notes; integration
+                details pending.
+
+
+------------------------------------------------------------
+5. ISHOW HAIR (NOTED IN SCRATCHPAD)
+------------------------------------------------------------
+Network:        AWIN
+AWIN Merchant ID: 50707
+Status:         Referenced in project notes; not yet added
+                to the active merchant list in the codebase.
+
+
+------------------------------------------------------------
+6. STRIPE (PAYMENT PROCESSING)
+------------------------------------------------------------
+Integration:    Stripe Payments
+Webhook URL:    https://paygatedating.com/api/stripe/webhook
+Webhook Name:   PayGateDating
+Status:         Active
+API Version:    2025-12-15.clover
+Listening To:   2 events
+Signing Secret: Stored as STRIPE_WEBHOOK_SECRET env variable
+Publishable Key: Stored as STRIPE_PUBLISHABLE_KEY env variable
+Secret Key:     Stored as STRIPE_SECRET_KEY env variable
+
+Revenue Model:
+  - Wallet deposits (users fund wallets via Stripe)
+  - Gift service fees: 10% of gift value or $5,
+    whichever is greater
+  - Chapter (gate) unlock fees
+
+
+------------------------------------------------------------
+7. GOOGLE ANALYTICS
+------------------------------------------------------------
+Measurement ID: G-WHS17V1WFW
+Integration:    Google Tag (gtag.js)
+Loaded Via:     Script in index.html
+
+
+------------------------------------------------------------
+8. BLOCKCHAIN WALLETS (CRYPTO PAYMENTS)
+------------------------------------------------------------
+XRPL:     r4NX5ZUTUNHLxUkjp5mUge87EMuhojmfoU
+Stellar:  GBFXDOQLWUSGWA7QKY2DZXZKJQMXHWW46I5BGINAZDTLCU7PI3KDTRYT
+Cosmos:   cosmos1ygq0x3ch2x95h89h64cf25s2t5er8vxhpstt8d
+
+
+------------------------------------------------------------
+9. EMAIL SERVICE
+------------------------------------------------------------
+Provider:       Resend
+Sender:         PayGate Dating <notification@pawint-app.com>
+All email links point to: https://paygatedating.com
+
+
+------------------------------------------------------------
+10. TWILIO (PHONE VERIFICATION)
+------------------------------------------------------------
+Provider:       Twilio
+Verify SID:     VA12c94d3f7e9ec539ba9a609b61a1a6be
+Credentials:    TWILIO_ACCOUNT_SID (env var)
+                TWILIO_AUTH_TOKEN (env var)
+
+
+============================================================
+   SUPPORTED RETAILER DOMAINS (GIFT MARKETPLACE)
+============================================================
+The platform validates wishlist/gift URLs against these
+supported retailers:
+
+  Amazon:       amazon.com, amzn.to, amzn.com, a.co
+  Viator:       viator.com
+  Klook:        klook.com
+  Travelpayouts: tp.st, travelpayouts.com
+  Promeed:      promeed.com, promfreed.com
+  Lashterally:  lashterally.com
+  Abracadabra:  abracadabranyc.com
+  YCZ Fragrance: yczfragrance.com
+
+
+============================================================
+   ADMIN CONTACT
+============================================================
+Primary Email:  pawint@me.com
+Secondary:      andrew.wint@gmail.com
+Tertiary:       pawint@aol.com
+App Admin:      pawint@pawint-app.com
+============================================================
