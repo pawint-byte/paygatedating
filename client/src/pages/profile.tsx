@@ -199,6 +199,12 @@ export default function Profile() {
                       datingStyle: profile.datingStyle || "",
                       profileMode: profile.profileMode || "detailed",
                       viewerMessage: profile.viewerMessage || "",
+                      imAtYourGate: profile.imAtYourGate || "",
+                      shippingStreet: profile.shippingStreet || "",
+                      shippingCity: profile.shippingCity || "",
+                      shippingState: profile.shippingState || "",
+                      shippingZip: profile.shippingZip || "",
+                      shippingCountry: profile.shippingCountry || "",
                     }
                   : user
                   ? {

@@ -1,0 +1,1 @@
+- [Profile form field mapping](profile-form-field-mapping.md) — new profile fields must be wired in BOTH profile.tsx defaultValues AND the form's useForm defaults, or they silently never persist/repopulate.

@@ -13,6 +13,7 @@ import {
   MessageCircle, ToggleLeft, Crown, Gem, Waves, Handshake
 } from "lucide-react";
 import { DATING_STYLES, type DatingStyleKey } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 const DATING_STYLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   heart: Heart,
@@ -250,9 +251,27 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
       profileMode: defaultValues?.profileMode || "detailed",
       viewerMessage: defaultValues?.viewerMessage || "",
       imAtYourGate: defaultValues?.imAtYourGate || "",
+      shippingStreet: defaultValues?.shippingStreet || "",
+      shippingCity: defaultValues?.shippingCity || "",
+      shippingState: defaultValues?.shippingState || "",
+      shippingZip: defaultValues?.shippingZip || "",
+      shippingCountry: defaultValues?.shippingCountry || "",
       termsAccepted: false,
     },
   });
+
+  const { toast } = useToast();
+
+  const handleInvalid = (errors: Record<string, any>) => {
+    const firstError = Object.values(errors)[0] as any;
+    toast({
+      title: "Please complete your profile",
+      description:
+        firstError?.message ||
+        "Some required fields are missing or invalid. Please review the form and try again.",
+      variant: "destructive",
+    });
+  };
 
   const initialPhotosRef = useRef(defaultValues?.photos || []);
   const initialVideosRef = useRef(defaultValues?.videos || []);
@@ -394,7 +413,7 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmit, handleInvalid)} className="space-y-8">
         {hasUnsavedChanges && (
           <Alert className="bg-yellow-500/10 border-yellow-500/30">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
