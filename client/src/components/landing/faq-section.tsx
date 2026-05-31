@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     question: "How can I share my profile when I'm out and about?",
-    answer: "Every member gets a personal QR code and a shareable profile link. Share it anywhere -- put it in your dating app bios, social media stories, text it to someone you just met at a coffee shop, or print it on cards to hand out. When someone scans your code, they see your opening page -- your profile preview and wishlist. If they sign up through your link, you earn bonus credits!"
+    answer: "Every member gets a personal QR code and a shareable profile link. Share it anywhere -- put it in your dating app bios, social media stories, text it to someone you just met at a coffee shop, or print it on cards to hand out. When someone scans your code, they see your opening page -- your profile preview and wishlist. When they sign up through your link and start their first chapter, you both earn bonus credits!"
   },
   {
     question: "Is it really free to join? What's the catch?",
