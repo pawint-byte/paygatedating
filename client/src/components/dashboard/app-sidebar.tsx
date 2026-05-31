@@ -112,11 +112,8 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <Link href="/discover" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center">
-            <Heart className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-semibold text-lg">PayGate</span>
+        <Link href="/discover" className="flex items-center">
+          <img src="/paygate-logo.png" alt="PayGate Dating" className="h-9 w-auto" data-testid="img-logo" />
         </Link>
       </SidebarHeader>
 

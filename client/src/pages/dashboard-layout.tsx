@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Switch, Route, Redirect, useLocation, Link } from "wouter";
-import { Heart } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { WalletDisplay } from "@/components/dashboard/wallet-display";
@@ -233,11 +232,8 @@ export default function DashboardLayout() {
           <header className="flex items-center justify-between gap-2 p-3 md:p-4 border-b border-border bg-background/95 backdrop-blur-md sticky top-0 z-40">
             <div className="flex items-center gap-2 md:gap-3">
               <SidebarTrigger data-testid="button-sidebar-toggle" className="hidden md:flex" />
-              <Link href="/discover" className="flex items-center gap-1.5 md:hidden">
-                <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
-                  <Heart className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <span className="font-semibold text-sm">PayGate</span>
+              <Link href="/discover" className="flex items-center md:hidden">
+                <img src="/paygate-logo.png" alt="PayGate Dating" className="h-7 w-auto" data-testid="img-logo-mobile" />
               </Link>
               <h2 className="font-medium text-lg hidden md:block">Dashboard</h2>
             </div>
