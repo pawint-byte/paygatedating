@@ -1,0 +1,69 @@
+Refined FAQ
+1. What makes PayGate Dating different from other dating apps?
+PayGate Dating is free to join, with no subscriptions or monthly fees. Instead of paying just to stay on the app, you only invest when you want to deepen a connection with someone specific through the platform’s gated progression system.
+
+2. How does the chapter progression system work?
+PayGate uses a structured five-stage journey that moves a match forward gradually instead of opening everything at once. Your draft’s chapter framing is strong, but I would keep the mechanics simple and crystal clear so users immediately understand that progression happens intentionally and step by step.
+
+3. Why is this better for women?
+This answer should emphasize control, reduced low-effort outreach, and the idea that effort is required before deeper access is granted. That aligns well with the site’s positioning around filtering for serious intent rather than maximizing attention or message volume.
+
+4. Why is this better for men?
+This answer works best when it focuses on reciprocity and clarity: men are not paying for random attention, but investing in a connection that is progressing by mutual choice. That is more credible than overly gendered language and stays consistent with the site’s “meaningful connections” positioning.
+
+5. Do both people have to pay?
+Your current version says payments alternate and can also be requested from the other person, but that claim is not visible in the public homepage copy I found. If this is official product behavior, keep it, but I recommend simplifying the wording and making sure the app’s payment flow exactly matches the FAQ.
+
+6. How can I share my profile when I’m out and about?
+The QR code and shareable link idea is clear and useful. If PayGate really includes referral bonuses tied to those links, that should be stated consistently across the site because the homepage search result does not confirm those details.
+
+7. Is it really free to join? What’s the catch?
+This is one of your strongest entries. The cleanest version is: joining, building a profile, browsing, and being discoverable are free; users only pay when they choose to open or advance a chapter with someone.
+
+8. How does the gift registry feature work?
+This answer is compelling, but it includes specific retailer names, fees, and chapter-unlock effects that were not confirmed in the public page I found. Keep it only if those details are operational and legally approved, because specificity creates trust only when it is fully accurate.
+
+9. How does gift delivery work? Do I need to share my address?
+This is clear and reassuring. The privacy-first explanation is especially strong because it addresses one of the biggest trust concerns users have around gifting.
+
+10. What is match intent and why would I set it?
+This is a smart feature explanation because it makes expectations explicit on a per-match basis. To make it even stronger, shorten the examples and put the benefit first: it helps both people avoid mismatched expectations early.
+
+11. Can I ask the other person to pay for my chapter?
+This pairs well with Question 5, but the two should not feel repetitive. If you keep both, Question 5 should explain the default payment structure, while Question 11 should explain the optional payment request feature.
+
+12. Can I pause chapter progression if things are going well where they are?
+This is a good FAQ item because it reduces pressure and makes the experience feel more human. The “Stay Here” wording is intuitive, assuming that is the actual product label used in the app.
+
+13. How does the Nearby Map work?
+The privacy note is the most important part here. If you claim location fuzzing to about 500 meters, that should be technically accurate and consistently disclosed in your privacy materials.
+
+14. How do referrals work?
+Referral credits can be a useful growth feature, but the amount and trigger conditions need to be exact and consistent everywhere they appear. If the reward is $5 after a friend starts their first chapter, state that plainly and avoid extra wording.
+
+15. Is my personal information safe?
+This is essential and should stay. The strongest version is concise: personal details are not shared with other users, and sensitive fulfillment details are entered directly with the retailer, not exposed to the sender.
+
+16. How does ID verification work?
+AI-powered verification is a strong trust feature. If you mention selfie comparison, badges, and a fixed number of attempts, those details should also appear in your trust, safety, or onboarding materials for consistency.
+
+17. What is the friends-of-friends network?
+This is a useful differentiator because it adds social context and trust. I would just make sure users understand whether “mutual connections” means imported contacts, platform connections, or another network source.
+
+18. Can I pay with cryptocurrency?
+Crypto support is a notable claim and should be retained only if it is already live in Stripe or your actual payment stack. If it is planned but not yet active, label it as coming soon rather than present tense.
+
+19. What payment methods do you accept?
+This should be short, exact, and operationally verified. The strongest version is just the accepted methods and the note that payments are processed securely.
+
+20. What can I use my wallet balance for?
+This is good because it sets boundaries clearly. Restrictions around withdrawal, transfer, refundability, and gift usage should match your legal terms and payments policy word for word.
+
+21. What happens if a match doesn’t work out?
+This is emotionally smart and on-brand. It reframes the model as paying for actual interaction rather than wasting money on passive subscriptions, which fits the core homepage positioning.
+
+22. What are the seasonal themes and promotions?
+This is the weakest FAQ item unless those campaigns are already visible on the live site. If seasonal messaging is not active yet, I would remove this question for now because it reads more like internal marketing planning than a user FAQ.
+
+23. How can I attract more quality matches?
+This overlaps heavily with the profile-sharing and referral questions. I would either merge it into Question 6 or rewrite it to focus on profile quality, verification, photos, and clear intent rather than repeating QR-code sharing.

@@ -96,7 +96,7 @@ const faqs = [
   },
   {
     question: "How can I attract more quality matches?",
-    answer: "Every member gets a personal QR code and shareable profile link. Share it anywhere -- on your social bios, stories, or print it on cards to hand out at events. When someone scans your QR code, they see your opening page and wishlist. If they sign up through your link, you earn $5 in referral credits! It's the easiest way to attract people who are ready to write a real story with you."
+    answer: "Quality attracts quality. Complete your profile fully with recent, genuine photos, finish ID verification to earn your trust badge, and set a clear match intent so the right people know what you're looking for. A complete, verified profile gets seen by more people and signals that you're here to write a real story -- not just browse."
   }
 ];
 
