@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Seo } from "@/components/seo";
 
 const CONTACT_EMAIL = "pawint@pawint-app.com";
 
@@ -63,6 +64,11 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Contact Us | PayGate Dating"
+        description="Get in touch with the PayGate Dating team. Questions, feedback, or support — we're here to help."
+        canonicalPath="/contact"
+      />
       <div className="container mx-auto px-6 py-12 max-w-3xl">
         <Link href="/">
           <Button variant="ghost" className="mb-8" data-testid="button-back-home">

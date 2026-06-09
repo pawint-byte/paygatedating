@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { SiTiktok, SiSnapchat } from "react-icons/si";
 import { GATE_COSTS, DATING_STYLES, type DatingStyleKey } from "@shared/schema";
+import { Seo } from "@/components/seo";
 
 const DATING_STYLE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   heart: Heart,
@@ -124,6 +125,15 @@ export default function PublicProfile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-background to-pink-50 dark:from-rose-950/20 dark:via-background dark:to-pink-950/20">
+      <Seo
+        title={`${profile.displayName}${profile.age ? `, ${profile.age}` : ""} | PayGate Dating`}
+        description={
+          profile.tagline ||
+          profile.bio ||
+          `Meet ${profile.displayName} on PayGate Dating — meaningful connections worth investing in.`
+        }
+        canonicalPath={`/p/${userId}`}
+      />
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="bg-card border border-card-border rounded-md overflow-visible shadow-xl" data-testid="card-public-profile">
           <div className="relative aspect-[16/9] sm:aspect-[2/1] overflow-hidden rounded-t-md">

@@ -2,5 +2,9 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /settings
+Disallow: /wallet
+Disallow: /gift-success
+Disallow: /gift-cancel
+Disallow: /admin/
 
-Sitemap: https://paygate-dating.replit.app/sitemap.xml
+Sitemap: https://paygatedating.com/sitemap.xml
