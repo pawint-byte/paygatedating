@@ -1,10 +1,16 @@
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Seo } from "@/components/seo";
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Privacy Policy | PayGate Dating"
+        description="Learn how PayGate Dating collects, uses, and protects your personal information. Privacy-first dating with no sharing of your details with other users."
+        canonicalPath="/privacy"
+      />
       <div className="container mx-auto px-6 py-12 max-w-4xl">
         <Link href="/">
           <Button variant="ghost" className="mb-8" data-testid="button-back-home">

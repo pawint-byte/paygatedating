@@ -1,10 +1,16 @@
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Seo } from "@/components/seo";
 
 export default function Terms() {
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Terms of Service | PayGate Dating"
+        description="Read the Terms of Service for PayGate Dating, the free-to-join dating platform with a 5-chapter, pay-as-you-go progression system."
+        canonicalPath="/terms"
+      />
       <div className="container mx-auto px-6 py-12 max-w-4xl">
         <Link href="/">
           <Button variant="ghost" className="mb-8" data-testid="button-back-home">
