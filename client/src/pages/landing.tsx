@@ -16,6 +16,7 @@ import { GlobalStorySection } from "@/components/landing/global-story-section";
 import { FAQSection } from "@/components/landing/faq-section";
 import { Footer } from "@/components/landing/footer";
 import { Chatbot } from "@/components/chatbot";
+import { Seo } from "@/components/seo";
 import { Home, BookOpen, Star, DollarSign, Shield, HelpCircle } from "lucide-react";
 
 const sections = [
@@ -97,6 +98,11 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Seo
+        title="PayGate Dating - Meaningful Connections Worth Investing In"
+        description="PayGate Dating is the free-to-join dating platform with a 5-chapter progression system. Pay only when you pursue a real connection — filtering out low-effort matches for serious relationship seekers."
+        canonicalPath="/"
+      />
       <SeasonalBanner />
       <NavHeader />
 

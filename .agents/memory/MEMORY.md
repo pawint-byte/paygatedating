@@ -1,1 +1,2 @@
 - [Profile form field mapping](profile-form-field-mapping.md) — new profile fields must be wired in BOTH profile.tsx defaultValues AND the form's useForm defaults, or they silently never persist/repopulate.
+- [Static asset directories](static-asset-dirs.md) — SEO files (robots/sitemap/manifest) live in root `public/` (Express), front-end assets in `client/public/` (Vite); canonical domain hard-coded to paygatedating.com.
