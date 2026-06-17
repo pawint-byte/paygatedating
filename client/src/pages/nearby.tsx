@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { 
   MapPin, Radio, Heart, CheckCircle, AlertCircle, Navigation, Users 
 } from "lucide-react";
@@ -66,6 +67,8 @@ export default function NearbyPage() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [manualCity, setManualCity] = useState("");
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   const { data: profile } = useQuery<Profile>({
     queryKey: ["/api/profile"],
@@ -142,6 +145,34 @@ export default function NearbyPage() {
     );
   };
 
+  const geocodeCity = async () => {
+    if (!manualCity.trim()) return;
+    setIsGeocoding(true);
+    setLocationError(null);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(manualCity.trim())}`
+      );
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setUserLocation({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+      } else {
+        setLocationError("Couldn't find that place. Try a different city or town name.");
+      }
+    } catch {
+      setLocationError("Couldn't look up that location. Please try again.");
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  const useSavedLocation = () => {
+    if (profile?.latitude && profile?.longitude) {
+      setLocationError(null);
+      setUserLocation({ lat: parseFloat(profile.latitude), lng: parseFloat(profile.longitude) });
+    }
+  };
+
   const handleGoLive = (checked: boolean) => {
     if (checked && userLocation) {
       updateLiveMutation.mutate({
@@ -176,6 +207,38 @@ export default function NearbyPage() {
     return links[platform] || "#";
   };
 
+  const manualEntry = (
+    <div className="w-full space-y-3">
+      {profile?.latitude && profile?.longitude && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={useSavedLocation}
+          data-testid="button-use-saved-location"
+        >
+          <MapPin className="w-4 h-4 mr-2" />
+          Use my saved location{profile.city ? ` (${profile.city})` : ""}
+        </Button>
+      )}
+      <div className="flex gap-2">
+        <Input
+          placeholder="Enter your city or town..."
+          value={manualCity}
+          onChange={(e) => setManualCity(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") geocodeCity(); }}
+          data-testid="input-manual-city-nearby"
+        />
+        <Button
+          onClick={geocodeCity}
+          disabled={!manualCity.trim() || isGeocoding}
+          data-testid="button-search-city"
+        >
+          {isGeocoding ? "..." : "Go"}
+        </Button>
+      </div>
+    </div>
+  );
+
   if (!userLocation && !locationError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-6">
@@ -188,6 +251,12 @@ export default function NearbyPage() {
               : "Loading..."}
           </p>
         </div>
+        <div className="w-full max-w-sm space-y-3">
+          <p className="text-center text-sm text-muted-foreground">
+            Taking too long, or prefer not to share your location?
+          </p>
+          {manualEntry}
+        </div>
       </div>
     );
   }
@@ -198,12 +267,18 @@ export default function NearbyPage() {
         <Card className="max-w-md w-full">
           <CardContent className="py-8 text-center space-y-4">
             <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
-            <h2 className="text-xl font-semibold">Location Required</h2>
+            <h2 className="text-xl font-semibold">Location Needed</h2>
             <p className="text-muted-foreground">{locationError}</p>
             <Button onClick={requestLocation} data-testid="button-retry-location">
               <MapPin className="w-4 h-4 mr-2" />
               Try Again
             </Button>
+            <div className="pt-4 border-t space-y-3 text-left">
+              <p className="text-sm text-muted-foreground text-center">
+                Or set your location manually:
+              </p>
+              {manualEntry}
+            </div>
           </CardContent>
         </Card>
       </div>

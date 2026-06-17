@@ -1839,18 +1839,31 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(404).json({ message: "Profile not found" });
       }
 
-      // Check profile completion (basic check for required fields)
-      const requiredFields = [
-        profile.displayName,
-        profile.age,
-        profile.bio,
-        profile.photos?.length,
-        profile.interests?.length,
-        profile.location || profile.city,
-      ];
-      
-      const completedFields = requiredFields.filter(Boolean).length;
-      const completionPercent = Math.round((completedFields / requiredFields.length) * 100);
+      // Use the same completeness scoring as GET /api/profile/completeness
+      // so the reward matches exactly what the user sees in the UI.
+      const registryItems = await storage.getRegistryItems(userId);
+      const checks = {
+        hasProfile: !!profile,
+        hasDisplayName: !!profile.displayName,
+        hasBio: !!(profile.bio && profile.bio.length > 20),
+        hasPhotos: !!(profile.photos && profile.photos.length >= 1),
+        hasInterests: !!(profile.interests && profile.interests.length >= 3),
+        hasLocation: !!profile.location,
+        hasAge: !!profile.age,
+        hasLookingFor: !!profile.lookingFor,
+        hasWishlistItems: registryItems.length >= 1,
+      };
+
+      let completionPercent = 0;
+      if (checks.hasProfile) completionPercent += 10;
+      if (checks.hasDisplayName) completionPercent += 10;
+      if (checks.hasBio) completionPercent += 15;
+      if (checks.hasPhotos) completionPercent += 20;
+      if (checks.hasInterests) completionPercent += 15;
+      if (checks.hasLocation) completionPercent += 10;
+      if (checks.hasAge) completionPercent += 5;
+      if (checks.hasLookingFor) completionPercent += 10;
+      if (checks.hasWishlistItems) completionPercent += 5;
       
       if (completionPercent < 100) {
         return res.status(400).json({ 
@@ -2303,9 +2316,14 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         const response = await fetch(url, {
           signal: controller.signal,
           headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; PayGateDating/1.0)",
-            "Accept": "text/html,application/xhtml+xml",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Upgrade-Insecure-Requests": "1",
           },
           redirect: "follow",
         });

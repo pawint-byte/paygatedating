@@ -202,7 +202,7 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
             {isDemoProfile ? "Browse Only" : `Interest $${GATE_COSTS.gate1}`}
           </Button>
           {wishlistItems.length > 0 && (
-            <Link href={`/profile/${profile.userId}`}>
+            <Link href={`/p/${profile.userId}`}>
               <Button
                 variant="outline"
                 size="icon"
