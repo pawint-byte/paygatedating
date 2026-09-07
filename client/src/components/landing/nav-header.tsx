@@ -25,13 +25,13 @@ export function NavHeader() {
           >
             How It Works
           </button>
-          <button
-            onClick={() => scrollToSection("pricing")}
+          <Link
+            href="/pricing"
             className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
             data-testid="link-pricing"
           >
             Pricing
-          </button>
+          </Link>
           <button
             onClick={() => scrollToSection("testimonials")}
             className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"

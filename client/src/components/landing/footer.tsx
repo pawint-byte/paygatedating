@@ -36,16 +36,12 @@ export function Footer() {
                 </button>
               </li>
               <li>
-                <button
-                  onClick={() =>
-                    document
-                      .getElementById("pricing")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
+                <Link
+                  href="/pricing"
                   className="hover:text-foreground transition-colors"
                 >
                   Pricing
-                </button>
+                </Link>
               </li>
               <li>
                 <button

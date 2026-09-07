@@ -75,6 +75,10 @@ async function initStripe() {
   }
 }
 
+app.get("/favicon.ico", (_req, res) => {
+  res.redirect(302, "/paygate-icon.png");
+});
+
 app.use(express.static(path.join(process.cwd(), "public")));
 
 app.use((req, res, next) => {

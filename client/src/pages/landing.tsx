@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavHeader } from "@/components/landing/nav-header";
 import { SeasonalBanner } from "@/components/landing/seasonal-banner";
 import { SeasonalHero } from "@/components/landing/seasonal-hero";
@@ -86,8 +86,16 @@ const sections = [
   },
 ];
 
-export default function Landing() {
-  const [activeTab, setActiveTab] = useState("home");
+type LandingProps = {
+  initialTab?: string;
+};
+
+export default function Landing({ initialTab = "home" }: LandingProps) {
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const ActiveContent = sections.find((s) => s.id === activeTab)?.content;
 
@@ -99,9 +107,15 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Seo
-        title="PayGate Dating - Meaningful Connections Worth Investing In"
+        title={
+          activeTab === "pricing"
+            ? "Pricing - PayGate Dating"
+            : activeTab === "faq"
+              ? "FAQ - PayGate Dating"
+              : "PayGate Dating - Meaningful Connections Worth Investing In"
+        }
         description="PayGate Dating is the free-to-join dating platform with a 5-chapter progression system. Pay only when you pursue a real connection — filtering out low-effort matches for serious relationship seekers."
-        canonicalPath="/"
+        canonicalPath={activeTab === "pricing" ? "/pricing" : activeTab === "faq" ? "/faq" : "/"}
       />
       <SeasonalBanner />
       <NavHeader />

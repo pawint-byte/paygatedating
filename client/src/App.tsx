@@ -38,10 +38,18 @@ function Router() {
         <Route path="/privacy" component={Privacy} />
         <Route path="/gift-demo" component={GiftDemo} />
         <Route path="/contact" component={Contact} />
+        <Route path="/pricing">
+          <Landing initialTab="pricing" />
+        </Route>
+        <Route path="/faq">
+          <Landing initialTab="faq" />
+        </Route>
         <Route path="/invite/:referralCode" component={InvitePage} />
         <Route path="/p/:userId" component={PublicProfile} />
         {!user ? (
-          <Route path="/" component={Landing} />
+          <Route path="/">
+            <Landing />
+          </Route>
         ) : (
           <>
             <Route path="/" component={DashboardLayout} />
