@@ -152,7 +152,7 @@ export interface IStorage {
   getAllFeedback(): Promise<Feedback[]>;
   updateFeedbackStatus(feedbackId: string, status: string): Promise<Feedback | undefined>;
   isUserAdmin(userId: string): Promise<boolean>;
-  getAllUsersWithProfiles(): Promise<{ user: { id: string; email: string | null; firstName: string | null; lastName: string | null; profileImageUrl: string | null; isAdmin: boolean; createdAt: Date | null }; profile: { id: string; displayName: string; age: number | null; gender: string | null; location: string | null; verificationStatus: string | null; subscriptionTier: string | null; isLive: boolean | null; lastActiveAt: Date | null; photos: string[] | null; bio: string | null } | null }[]>;
+  getAllUsersWithProfiles(): Promise<{ user: { id: string; email: string | null; firstName: string | null; lastName: string | null; profileImageUrl: string | null; isAdmin: boolean; createdAt: Date | null }; profile: { id: string; displayName: string; age: number | null; gender: string | null; location: string | null; verificationStatus: string | null; subscriptionTier: string | null; isLive: boolean | null; isVisible: boolean | null; lastActiveAt: Date | null; photos: string[] | null; bio: string | null } | null }[]>;
   
   // Date Plans
   createDatePlan(datePlan: InsertDatePlan): Promise<DatePlan>;
@@ -822,6 +822,7 @@ export class DatabaseStorage implements IStorage {
       verificationStatus: profiles.verificationStatus,
       subscriptionTier: profiles.subscriptionTier,
       isLive: profiles.isLive,
+      isVisible: profiles.isVisible,
       lastActiveAt: profiles.lastActiveAt,
       photos: profiles.photos,
       bio: profiles.bio,

@@ -16,6 +16,7 @@ interface AddFundsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddFunds: (amount: number) => void;
+  currentBalance: number;
   isPending?: boolean;
 }
 
@@ -25,15 +26,18 @@ export function AddFundsDialog({
   open,
   onOpenChange,
   onAddFunds,
+  currentBalance,
   isPending,
 }: AddFundsDialogProps) {
-  const [amount, setAmount] = useState<string>("50");
+  const [amount, setAmount] = useState<string>(String(MINIMUM_WALLET_BALANCE));
+  const parsedAmount = parseFloat(amount);
+  const validAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const meetsMinimum = validAmount >= MINIMUM_WALLET_BALANCE;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const numAmount = parseFloat(amount);
-    if (numAmount >= MINIMUM_WALLET_BALANCE) {
-      onAddFunds(numAmount);
+    if (meetsMinimum) {
+      onAddFunds(validAmount);
     }
   };
 
@@ -43,7 +47,7 @@ export function AddFundsDialog({
         <DialogHeader>
           <DialogTitle>Add Funds to Wallet</DialogTitle>
           <DialogDescription>
-            Add funds to start connecting with matches. Minimum balance: ${MINIMUM_WALLET_BALANCE}
+            Your ${currentBalance.toFixed(2)} balance is already usable. The minimum amount for each top-up is ${MINIMUM_WALLET_BALANCE}.
           </DialogDescription>
         </DialogHeader>
 
@@ -82,9 +86,9 @@ export function AddFundsDialog({
                 data-testid="input-custom-amount"
               />
             </div>
-            {parseFloat(amount) < MINIMUM_WALLET_BALANCE && (
-              <p className="text-xs text-destructive">
-                Minimum amount is ${MINIMUM_WALLET_BALANCE}
+            {!meetsMinimum && (
+              <p className="text-xs text-destructive" role="alert">
+                Add at least ${MINIMUM_WALLET_BALANCE} in this top-up to continue.
               </p>
             )}
           </div>
@@ -92,7 +96,7 @@ export function AddFundsDialog({
           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Amount</span>
-              <span>${parseFloat(amount || "0").toFixed(2)}</span>
+              <span>${validAmount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Processing Fee</span>
@@ -100,18 +104,22 @@ export function AddFundsDialog({
             </div>
             <div className="border-t border-border pt-2 flex justify-between font-medium">
               <span>Total</span>
-              <span>${parseFloat(amount || "0").toFixed(2)}</span>
+              <span>${validAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm font-medium text-primary">
+              <span>Balance after top-up</span>
+              <span>${(currentBalance + validAmount).toFixed(2)}</span>
             </div>
           </div>
 
           <Button
             type="submit"
             className="w-full gap-2"
-            disabled={isPending || parseFloat(amount) < MINIMUM_WALLET_BALANCE}
+            disabled={isPending || !meetsMinimum}
             data-testid="button-confirm-add-funds"
           >
             <CreditCard className="w-4 h-4" />
-            {isPending ? "Processing..." : `Add $${parseFloat(amount || "0").toFixed(2)}`}
+            {isPending ? "Processing..." : `Add $${validAmount.toFixed(2)}`}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">

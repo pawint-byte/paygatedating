@@ -11,7 +11,17 @@ interface ProfileProgressProps {
 export function ProfileProgress({ completeness, isVerified }: ProfileProgressProps) {
   if (!completeness) return null;
 
-  const score = completeness.score;
+  const tasks = [
+    { key: "hasPhotos", label: "Add photos", icon: Camera, href: "/profile" },
+    { key: "hasBio", label: "Write bio", icon: FileText, href: "/profile" },
+    { key: "hasInterests", label: "Add interests", icon: Heart, href: "/profile" },
+    { key: "hasLookingFor", label: "What you're looking for", icon: Target, href: "/profile" },
+    { key: "hasLocation", label: "Set location", icon: MapPin, href: "/settings" },
+    { key: "hasWishlistItems", label: "Add wishlist items", icon: Gift, href: "/settings" },
+  ] as const;
+  const incompleteTasks = tasks.filter(task => !completeness[task.key]);
+  const completedCount = tasks.length - incompleteTasks.length;
+  const score = Math.round((completedCount / tasks.length) * 100);
   const circumference = 2 * Math.PI * 18;
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
@@ -26,18 +36,6 @@ export function ProfileProgress({ completeness, isVerified }: ProfileProgressPro
     if (score >= 50) return "stroke-yellow-500";
     return "stroke-orange-500";
   };
-
-  const tasks = [
-    { key: "hasPhotos", label: "Add photos", icon: Camera, href: "/profile" },
-    { key: "hasBio", label: "Write bio", icon: FileText, href: "/profile" },
-    { key: "hasInterests", label: "Add interests", icon: Heart, href: "/profile" },
-    { key: "hasLookingFor", label: "What you're looking for", icon: Target, href: "/profile" },
-    { key: "hasLocation", label: "Set location", icon: MapPin, href: "/settings" },
-    { key: "hasWishlistItems", label: "Add wishlist items", icon: Gift, href: "/settings" },
-  ];
-
-  const incompleteTasks = tasks.filter(task => !completeness[task.key as keyof ProfileCompleteness]);
-  const completedCount = tasks.length - incompleteTasks.length;
 
   return (
     <div className="p-3 bg-muted/50 rounded-lg">

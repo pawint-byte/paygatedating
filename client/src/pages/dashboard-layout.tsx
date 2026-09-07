@@ -274,6 +274,7 @@ export default function DashboardLayout() {
           open={addFundsOpen}
           onOpenChange={setAddFundsOpen}
           onAddFunds={(amount) => addFundsMutation.mutate(amount)}
+          currentBalance={wallet ? parseFloat(wallet.balance) : 0}
           isPending={addFundsMutation.isPending}
         />
 

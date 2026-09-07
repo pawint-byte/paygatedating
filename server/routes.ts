@@ -717,9 +717,31 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       const { recipientId, message } = validationResult.data;
 
+      if (recipientId === userId) {
+        return res.status(400).json({ message: "You cannot send interest to yourself" });
+      }
+
+      if (recipientId.startsWith("demo_")) {
+        return res.status(400).json({ message: "Demo profiles are browse-only and cannot receive interest" });
+      }
+
+      const recipientProfile = await storage.getProfile(recipientId);
+      if (!recipientProfile || !recipientProfile.isVisible) {
+        return res.status(404).json({ message: "This profile is no longer available" });
+      }
+
+      const existingMatches = await storage.getMatchesByUser(userId);
+      const alreadyInterested = existingMatches.some((existingMatch) =>
+        (existingMatch.initiatorId === userId && existingMatch.recipientId === recipientId) ||
+        (existingMatch.initiatorId === recipientId && existingMatch.recipientId === userId)
+      );
+      if (alreadyInterested) {
+        return res.status(409).json({ message: "You already have an interest or match with this person" });
+      }
+
       const profile = await storage.getProfile(userId);
-      if (!profile || profile.subscriptionTier !== "premium") {
-        return res.status(403).json({ message: "Premium subscription required to send interest" });
+      if (!profile) {
+        return res.status(400).json({ message: "Complete your profile before sending interest" });
       }
 
       const isPremium = profile.subscriptionTier === "premium";
@@ -732,6 +754,16 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         if (!wallet || parseFloat(wallet.balance) < GATE_COSTS.gate1) {
           return res.status(400).json({ message: "Insufficient wallet balance" });
         }
+      }
+
+      let chargedAmount: number = GATE_COSTS.gate1;
+      let paymentType = "wallet";
+      if (isPremium) {
+        chargedAmount = 0;
+        paymentType = "premium";
+      } else if (eligibleForFirstMatchFree) {
+        chargedAmount = 0;
+        paymentType = "first_match_free";
       }
 
       // Create the match first
@@ -776,7 +808,6 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       // Send email notification to recipient about interest
       try {
-        const recipientProfile = await storage.getProfile(recipientId);
         const senderProfile = await storage.getProfile(userId);
         const recipientUser = await authStorage.getUser(recipientId);
         
@@ -795,7 +826,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         console.error("Error sending interest notification email:", emailError);
       }
 
-      res.status(201).json(match);
+      res.status(201).json({ ...match, chargedAmount, paymentType });
     } catch (error) {
       console.error("Error creating match:", error);
       res.status(500).json({ message: "Failed to create match" });
@@ -1110,7 +1141,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      if (match.status === "declined" || match.status === "expired") {
+      if (match.status === "declined") {
         return res.status(400).json({ message: "Match already ended" });
       }
 
@@ -1161,7 +1192,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         consolationCredits += await processConsolation(userId);
       }
 
-      await storage.updateMatch(matchId, { status: "declined" as any });
+      await storage.updateMatch(matchId, { status: "declined" });
 
       res.json({ 
         message: "Match declined",
@@ -3809,6 +3840,33 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     } catch (error) {
       console.error("Error fetching all users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch("/api/admin/users/:userId/visibility", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const validation = z.object({ isVisible: z.boolean() }).safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Visibility must be true or false" });
+      }
+
+      const profile = await storage.updateProfile(req.params.userId, {
+        isVisible: validation.data.isVisible,
+      });
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      res.json({
+        userId: profile.userId,
+        isVisible: profile.isVisible,
+        message: profile.isVisible
+          ? "Profile is visible in Discover"
+          : "Profile is hidden from Discover",
+      });
+    } catch (error) {
+      console.error("Error updating profile visibility:", error);
+      res.status(500).json({ message: "Failed to update profile visibility" });
     }
   });
 

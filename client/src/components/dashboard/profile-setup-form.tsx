@@ -207,7 +207,7 @@ export function ProfileSetupForm({ onSubmit, isPending, defaultValues }: Profile
     resolver: zodResolver(profileSchema),
     defaultValues: {
       displayName: defaultValues?.displayName || "",
-      age: defaultValues?.age || 25,
+      age: defaultValues?.age,
       gender: defaultValues?.gender || "",
       location: defaultValues?.location || "",
       tagline: defaultValues?.tagline || "",

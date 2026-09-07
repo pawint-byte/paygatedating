@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -69,6 +69,8 @@ export default function NearbyPage() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [manualCity, setManualCity] = useState("");
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const locationRequestRef = useRef(0);
+  const locationTimeoutRef = useRef<number | null>(null);
 
   const { data: profile } = useQuery<Profile>({
     queryKey: ["/api/profile"],
@@ -111,42 +113,69 @@ export default function NearbyPage() {
   });
 
   const requestLocation = () => {
+    const requestId = ++locationRequestRef.current;
+    if (locationTimeoutRef.current !== null) {
+      window.clearTimeout(locationTimeoutRef.current);
+    }
+
     if (!navigator.geolocation) {
+      setIsGettingLocation(false);
       setLocationError("Geolocation is not supported by your browser");
       return;
     }
 
     setIsGettingLocation(true);
     setLocationError(null);
+    locationTimeoutRef.current = window.setTimeout(() => {
+      if (locationRequestRef.current !== requestId) return;
+      setIsGettingLocation(false);
+      setLocationError("Location request timed out. Use your saved location or enter a city below.");
+    }, 8000);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (locationRequestRef.current !== requestId) return;
+        if (locationTimeoutRef.current !== null) {
+          window.clearTimeout(locationTimeoutRef.current);
+          locationTimeoutRef.current = null;
+        }
         const { latitude, longitude } = position.coords;
         setUserLocation({ lat: latitude, lng: longitude });
         setIsGettingLocation(false);
       },
       (error) => {
+        if (locationRequestRef.current !== requestId) return;
+        if (locationTimeoutRef.current !== null) {
+          window.clearTimeout(locationTimeoutRef.current);
+          locationTimeoutRef.current = null;
+        }
         setIsGettingLocation(false);
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setLocationError("Location access denied. Please enable location permissions.");
+            setLocationError("Location access denied. Use your saved location or enter a city below.");
             break;
           case error.POSITION_UNAVAILABLE:
-            setLocationError("Location information unavailable.");
+            setLocationError("Location information is unavailable. Use your saved location or enter a city below.");
             break;
           case error.TIMEOUT:
-            setLocationError("Location request timed out.");
+            setLocationError("Location request timed out. Use your saved location or enter a city below.");
             break;
           default:
             setLocationError("An unknown error occurred.");
         }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );
   };
 
   const geocodeCity = async () => {
     if (!manualCity.trim()) return;
+    locationRequestRef.current += 1;
+    if (locationTimeoutRef.current !== null) {
+      window.clearTimeout(locationTimeoutRef.current);
+      locationTimeoutRef.current = null;
+    }
+    setIsGettingLocation(false);
     setIsGeocoding(true);
     setLocationError(null);
     try {
@@ -168,6 +197,12 @@ export default function NearbyPage() {
 
   const useSavedLocation = () => {
     if (profile?.latitude && profile?.longitude) {
+      locationRequestRef.current += 1;
+      if (locationTimeoutRef.current !== null) {
+        window.clearTimeout(locationTimeoutRef.current);
+        locationTimeoutRef.current = null;
+      }
+      setIsGettingLocation(false);
       setLocationError(null);
       setUserLocation({ lat: parseFloat(profile.latitude), lng: parseFloat(profile.longitude) });
     }
@@ -195,6 +230,12 @@ export default function NearbyPage() {
 
   useEffect(() => {
     requestLocation();
+    return () => {
+      locationRequestRef.current += 1;
+      if (locationTimeoutRef.current !== null) {
+        window.clearTimeout(locationTimeoutRef.current);
+      }
+    };
   }, []);
 
   const getSocialLink = (platform: string, username: string) => {

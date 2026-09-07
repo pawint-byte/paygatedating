@@ -122,6 +122,7 @@ export default function PublicProfile() {
 
   const primaryPhoto = profile.photos?.[0];
   const hasWishlist = profile.wishlist && profile.wishlist.length > 0;
+  const isDemoProfile = profile.userId.startsWith("demo_");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-background to-pink-50 dark:from-rose-950/20 dark:via-background dark:to-pink-950/20">
@@ -149,10 +150,16 @@ export default function PublicProfile() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
 
             <div className="absolute top-4 right-4 flex flex-col gap-1.5">
-              <Badge variant="secondary" className="bg-black/50 text-white border-white/20">
-                <DollarSign className="w-3 h-3 mr-0.5" />
-                ${GATE_COSTS.gate1} to connect
-              </Badge>
+              {isDemoProfile ? (
+                <Badge variant="outline" className="bg-blue-500/20 text-blue-100 border-blue-300/50">
+                  Demo — browse only
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="bg-black/50 text-white border-white/20">
+                  <DollarSign className="w-3 h-3 mr-0.5" />
+                  ${GATE_COSTS.gate1} to connect
+                </Badge>
+              )}
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
@@ -370,35 +377,52 @@ export default function PublicProfile() {
             <div className="p-5 bg-gradient-to-r from-rose-100 via-pink-100 to-red-100 dark:from-rose-900/30 dark:via-pink-900/30 dark:to-red-900/30 rounded-md">
               <div className="text-center">
                 <Sparkles className="w-6 h-6 mx-auto text-primary mb-2" />
-                <h3 className="font-semibold mb-1">
-                  {hasWishlist 
-                    ? `Send ${profile.displayName} a gift to show you're serious`
-                    : `Connect with ${profile.displayName}`
-                  }
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {hasWishlist
-                    ? "Thoughtful gifts unlock deeper stages of connection on PayGate"
-                    : "Sign up for PayGate Dating and start a meaningful conversation"
-                  }
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <Link href={profile.referralCode ? `/invite/${profile.referralCode}` : "/"}>
-                    <Button className="w-full sm:w-auto gap-2" data-testid="button-signup-cta">
-                      <Heart className="w-4 h-4" />
-                      Join PayGate Dating
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </Link>
-                  {hasWishlist && (
-                    <Link href={profile.referralCode ? `/invite/${profile.referralCode}` : "/"}>
-                      <Button variant="outline" className="w-full sm:w-auto gap-2" data-testid="button-gift-cta">
-                        <Gift className="w-4 h-4" />
-                        Send a Gift
+                {isDemoProfile ? (
+                  <>
+                    <h3 className="font-semibold mb-1">Demo profile</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      This sample profile is for browsing only. Interests and gifts are disabled.
+                    </p>
+                    <Link href="/discover">
+                      <Button className="w-full sm:w-auto gap-2" data-testid="button-back-to-discover">
+                        Browse real profiles
+                        <ArrowRight className="w-4 h-4" />
                       </Button>
                     </Link>
-                  )}
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-semibold mb-1">
+                      {hasWishlist
+                        ? `Send ${profile.displayName} a gift to show you're serious`
+                        : `Connect with ${profile.displayName}`
+                      }
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {hasWishlist
+                        ? "Thoughtful gifts unlock deeper stages of connection on PayGate"
+                        : "Sign up for PayGate Dating and start a meaningful conversation"
+                      }
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <Link href={profile.referralCode ? `/invite/${profile.referralCode}` : "/"}>
+                        <Button className="w-full sm:w-auto gap-2" data-testid="button-signup-cta">
+                          <Heart className="w-4 h-4" />
+                          Join PayGate Dating
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      {hasWishlist && (
+                        <Link href={profile.referralCode ? `/invite/${profile.referralCode}` : "/"}>
+                          <Button variant="outline" className="w-full sm:w-auto gap-2" data-testid="button-gift-cta">
+                            <Gift className="w-4 h-4" />
+                            Send a Gift
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

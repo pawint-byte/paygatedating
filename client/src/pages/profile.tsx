@@ -75,6 +75,8 @@ export default function Profile() {
         description: "Your profile has been saved successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet/transactions"] });
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
@@ -209,7 +211,6 @@ export default function Profile() {
                   : user
                   ? {
                       displayName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "New Member",
-                      age: 25,
                     }
                   : undefined
               }

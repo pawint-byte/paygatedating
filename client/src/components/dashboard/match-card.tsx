@@ -79,13 +79,14 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
         <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-          <Badge variant="secondary" className="bg-black/50 text-white border-white/20 text-xs">
-            <DollarSign className="w-3 h-3 mr-0.5" />
-            ${GATE_COSTS.gate1} to connect
-          </Badge>
-          {isDemoProfile && (
+          {isDemoProfile ? (
             <Badge variant="outline" className="bg-blue-500/20 text-blue-200 border-blue-400/50 text-xs">
-              Demo
+              Demo — browse only
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="bg-black/50 text-white border-white/20 text-xs">
+              <DollarSign className="w-3 h-3 mr-0.5" />
+              ${GATE_COSTS.gate1} to connect
             </Badge>
           )}
         </div>
@@ -194,7 +195,7 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
         <div className="flex gap-2 mt-auto pt-1">
           <Button
             onClick={() => onSendInterest(profile)}
-            disabled={isPending || isDemoProfile}
+            disabled={isPending}
             className="flex-1 gap-1.5"
             data-testid={`button-send-interest-${profile.id}`}
           >

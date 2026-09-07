@@ -9,12 +9,22 @@ import { ReferrerHighlight } from "@/components/dashboard/referrer-highlight";
 import { SharePromoBanner } from "@/components/dashboard/share-promo-banner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SlidersHorizontal } from "lucide-react";
-import type { Profile, SearchPreferences } from "@shared/schema";
+import { GATE_COSTS, type Profile, type SearchPreferences } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 
 interface EnrichedProfile extends Profile {
@@ -33,6 +43,7 @@ export default function Discover() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [filterOpen, setFilterOpen] = useState(false);
+  const [interestProfile, setInterestProfile] = useState<Profile | null>(null);
   const [localFilters, setLocalFilters] = useState({
     minAge: 18,
     maxAge: 60,
@@ -108,13 +119,23 @@ export default function Discover() {
 
   const sendInterestMutation = useMutation({
     mutationFn: async (recipientId: string) => {
-      return await apiRequest("POST", "/api/matches", { recipientId });
+      const response = await apiRequest("POST", "/api/matches", { recipientId });
+      return await response.json() as {
+        chargedAmount: number;
+        paymentType: "wallet" | "premium" | "first_match_free";
+      };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const description = result.paymentType === "premium"
+        ? "Interest sent using your Premium benefit. No wallet funds were charged."
+        : result.paymentType === "first_match_free"
+          ? "Interest sent using your first-match-free reward. No wallet funds were charged."
+          : `Interest sent. $${result.chargedAmount.toFixed(2)} was deducted from your wallet.`;
       toast({
         title: "Interest Sent!",
-        description: "Your interest request has been sent. $5 has been deducted from your wallet.",
+        description,
       });
+      setInterestProfile(null);
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
@@ -131,9 +152,19 @@ export default function Discover() {
         }, 500);
         return;
       }
+      let description = error.message || "Failed to send interest. Please try again.";
+      const jsonStart = description.indexOf("{");
+      if (jsonStart >= 0) {
+        try {
+          const body = JSON.parse(description.slice(jsonStart));
+          if (body.message) description = body.message;
+        } catch {
+          // Keep the original response when it is not JSON.
+        }
+      }
       toast({
-        title: "Error",
-        description: error.message || "Failed to send interest. Please try again.",
+        title: "Interest Not Sent",
+        description,
         variant: "destructive",
       });
     },
@@ -168,7 +199,14 @@ export default function Discover() {
   });
 
   const handleSendInterest = (profile: Profile) => {
-    sendInterestMutation.mutate(profile.userId);
+    if (profile.userId.startsWith("demo_")) {
+      toast({
+        title: "Demo Profile",
+        description: "Demo profiles are browse-only and cannot receive interest.",
+      });
+      return;
+    }
+    setInterestProfile(profile);
   };
 
   const handleApplyFilters = () => {
@@ -359,6 +397,36 @@ export default function Discover() {
           ))}
         </div>
       )}
+
+      <AlertDialog
+        open={!!interestProfile}
+        onOpenChange={(open) => {
+          if (!open && !sendInterestMutation.isPending) setInterestProfile(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send Interest?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Send Interest to {interestProfile?.displayName}? This costs up to ${GATE_COSTS.gate1}.
+              Premium and first-match-free benefits are applied automatically.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sendInterestMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!interestProfile || sendInterestMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (interestProfile) sendInterestMutation.mutate(interestProfile.userId);
+              }}
+              data-testid="button-confirm-interest"
+            >
+              {sendInterestMutation.isPending ? "Sending..." : "Confirm Interest"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

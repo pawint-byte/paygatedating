@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Users, Search, ShieldCheck, Mail, Calendar, UserCheck, UserX, Crown, ShieldAlert
+  Users, Search, ShieldCheck, Mail, Calendar, UserCheck, UserX, Crown, Eye, EyeOff
 } from "lucide-react";
 import { Redirect } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserWithProfile {
   user: {
@@ -29,6 +32,7 @@ interface UserWithProfile {
     verificationStatus: string | null;
     subscriptionTier: string | null;
     isLive: boolean | null;
+    isVisible: boolean | null;
     lastActiveAt: string | null;
     photos: string[] | null;
     bio: string | null;
@@ -37,6 +41,7 @@ interface UserWithProfile {
 
 export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
 
   const { data: adminStatus, isLoading: adminLoading } = useQuery<{ isAdmin: boolean }>({
     queryKey: ["/api/admin/status"],
@@ -45,6 +50,25 @@ export default function AdminUsers() {
   const { data: usersData, isLoading } = useQuery<UserWithProfile[]>({
     queryKey: ["/api/admin/users"],
     enabled: adminStatus?.isAdmin === true,
+  });
+
+  const visibilityMutation = useMutation({
+    mutationFn: async ({ userId, isVisible }: { userId: string; isVisible: boolean }) => {
+      const response = await apiRequest("PATCH", `/api/admin/users/${userId}/visibility`, { isVisible });
+      return await response.json();
+    },
+    onSuccess: (data: { message: string }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+      toast({ title: "Profile Visibility Updated", description: data.message });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Visibility Update Failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   if (adminLoading) {
@@ -192,6 +216,9 @@ export default function AdminUsers() {
                       {profile?.subscriptionTier === "premium" && (
                         <Badge className="text-xs bg-purple-600">Premium</Badge>
                       )}
+                      {profile?.isVisible === false && (
+                        <Badge variant="outline" className="text-xs">Hidden from Discover</Badge>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
@@ -236,6 +263,31 @@ export default function AdminUsers() {
                       )}
                     </div>
                   </div>
+                  {profile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 gap-1.5"
+                      disabled={visibilityMutation.isPending}
+                      onClick={() => visibilityMutation.mutate({
+                        userId: user.id,
+                        isVisible: profile.isVisible === false,
+                      })}
+                      data-testid={`button-toggle-visibility-${user.id}`}
+                    >
+                      {profile.isVisible === false ? (
+                        <>
+                          <Eye className="w-4 h-4" />
+                          Show
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-4 h-4" />
+                          Hide
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
