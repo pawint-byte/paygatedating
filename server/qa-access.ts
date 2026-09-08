@@ -53,11 +53,12 @@ export function createQaAccess(deps: Dependencies): RequestHandler {
             const match = await deps.getMatch(advanceId);
             advanceAllowed = !!match && isQaMemberId(match.initiatorId) &&
               isQaMemberId(match.recipientId) && match.initiatorId !== match.recipientId &&
+              match.recipientId === memberId &&
               match.currentGate === "gate1" && match.status !== "declined" && !match.gatePaused;
           }
           if (!readAllowed && !interestAllowed && !advanceAllowed) {
             return res.status(403).json({
-              message: "QA mode only permits wallet/match reads and Interest/Chapter 1 between the two QA members",
+              message: "QA mode only permits wallet/match reads, Interest between the two QA members, and Chapter 1 acceptance by its recipient",
             });
           }
           const profile = await deps.getProfile(memberId);

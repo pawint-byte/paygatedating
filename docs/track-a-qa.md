@@ -3,6 +3,9 @@
 ## Setup and scope
 
 Only the authenticated Replit Admin can use **Admin → Members → Track A QA members**.
+Start at the home page and sign in with the existing Admin's Replit account. A
+signed-out visit directly to `/admin/users` currently falls through to the app's
+not-found page; it does not demonstrate a server or database outage.
 `POST /api/admin/qa-members/setup` accepts an empty JSON object. Member IDs and amounts
 are fixed; arbitrary user IDs or amounts are rejected.
 
@@ -52,20 +55,37 @@ the real authenticated Admin. Only these routes are allowed:
 - `GET /api/wallet/transactions`
 - `GET /api/matches`
 - `POST /api/matches` between the two fixtures
-- `POST /api/matches/:id/advance` for their pair at Gate 1 only
+- `POST /api/matches/:id/advance` for their pair at Gate 1, by the recipient only
 
 No Stripe, subscription, gift-payment, authentication, arbitrary-member, or other
 Admin routes are available under the QA header. QA writes are serialized against
 each other and setup. Both responses are read independently, not inferred from the
 initiating response.
 
-1. Set up members and refresh both perspectives.
-2. **Send Interest** as Alice to Bob: confirm the $5 spend. Alice should go from
-   $20 to $15; both should see the same pending pair at `gate1`.
-3. **Unlock Chapter 1** as Bob: confirm the $5 spend. Bob should go from $20 to
-   $15; both should see the same active match at `gate2`, with Bob as `gate1PaidBy`.
+1. Set up members and refresh both perspectives. Each card also reads its own wallet ledger.
+2. Choose **Initiate as QA Alice** or **QA Bob**, then **Send Interest**. Confirm the
+   $5 test-credit spend. The sender goes from $20 to $15; both members see the same
+   pending pair at `gate1`. The endpoint returns HTTP 201 and confirms `paymentType:
+   "wallet"` and `chargedAmount: 5`.
+3. **Accept & Unlock Chapter 1** acts as the recipient, not the sender. The recipient
+   goes from $20 to $15. Both members see the same active match at `gate2`, with the
+   recipient as `gate1PaidBy`. The panel's verification message appears only when
+   both independently fetched match states agree and both $5 debits are in the ledgers.
 4. Repeated setup must not grant more credit. Repeated interest/Chapter 1 actions
    must not create duplicate matches or advance additional chapters.
+
+Choose the direction before the pair's first Interest; existing matches are never
+reset to test the reverse direction. Both directions are covered with fresh isolated
+storage in the route-contract tests:
+
+```sh
+node --import tsx --test tests/qa-access.test.ts tests/qa-wallet-flow.test.ts
+```
+
+These tests compile the actual registered wallet/match handlers and use isolated
+in-memory storage and test-only authentication. They verify debit and counterpart
+contracts without connecting to any real database, Stripe, or production account.
+They are not proof of an authenticated live deployment run.
 
 The Admin remains the signed-in user throughout. These are Admin-supervised fixture
 perspectives, not proof that separate real Replit QA accounts can log in.

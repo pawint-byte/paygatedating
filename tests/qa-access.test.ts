@@ -179,7 +179,7 @@ test("createQaAccess restricts and scopes QA fixture access", async (t) => {
     assert.equal(interest.response.status, 200);
 
     for (const [id, expectedStatus] of [
-      ["pair-gate1", 200],
+      ["pair-gate1", 403],
       ["other-member", 403],
       ["gate2", 403],
       ["repeated", 403],
@@ -195,6 +195,10 @@ test("createQaAccess restricts and scopes QA fixture access", async (t) => {
         assert.match(advance.response.headers.get("vary") ?? "", new RegExp(QA_MEMBER_HEADER, "i"));
       }
     }
+    const counterpartAdvance = await request("/api/matches/pair-gate1/advance", {
+      method: "POST", member: bob, session: true,
+    });
+    assert.equal(counterpartAdvance.response.status, 200);
   } finally {
     server.close();
     await once(server, "close");

@@ -20,15 +20,24 @@ type Match = {
   currentGate: string;
   status: string;
   gate1PaidBy: string | null;
+  gatePaused?: boolean;
 };
 
 type Perspective = {
   wallet: { balance: string | number };
   matches: Match[];
+  transactions: Array<{
+    id: string;
+    type: string;
+    amount: string;
+    description: string | null;
+    relatedMatchId: string | null;
+  }>;
 };
 
 const aliceId = "qa_track_a_alice";
 const bobId = "qa_track_a_bob";
+const memberName = (id: string) => QA_MEMBERS.find(member => member.userId === id)?.displayName || id;
 
 async function qaRequest<T>(url: string, memberId?: string, method = "GET", body?: unknown): Promise<T> {
   const response = await fetch(url, {
@@ -57,11 +66,12 @@ async function qaRequest<T>(url: string, memberId?: string, method = "GET", body
 }
 
 async function getPerspective(memberId: string): Promise<Perspective> {
-  const [wallet, matches] = await Promise.all([
+  const [wallet, matches, transactions] = await Promise.all([
     qaRequest<Perspective["wallet"]>("/api/wallet", memberId),
     qaRequest<Match[]>("/api/matches", memberId),
+    qaRequest<Perspective["transactions"]>("/api/wallet/transactions", memberId),
   ]);
-  return { wallet, matches };
+  return { wallet, matches, transactions };
 }
 
 function pairMatch(matches: Match[] | undefined) {
@@ -93,6 +103,7 @@ export function QaMembersPanel() {
   const { toast } = useToast();
   const [perspectivesEnabled, setPerspectivesEnabled] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [senderId, setSenderId] = useState(aliceId);
 
   const alicePerspective = useQuery({
     queryKey: ["/api/qa-members", aliceId, "perspective"],
@@ -108,9 +119,14 @@ export function QaMembersPanel() {
   const refreshPerspectives = async () => {
     setPerspectivesEnabled(true);
     setNotice("Refreshing Alice and Bob's wallet and match perspectives…");
-    if (perspectivesEnabled) {
-      await Promise.all([alicePerspective.refetch(), bobPerspective.refetch()]);
+    try {
+      await Promise.all([
+        alicePerspective.refetch({ throwOnError: true }),
+        bobPerspective.refetch({ throwOnError: true }),
+      ]);
       setNotice("Both QA member perspectives refreshed.");
+    } catch (error) {
+      setNotice(`Could not verify both perspectives: ${(error as Error).message}`);
     }
   };
 
@@ -119,6 +135,7 @@ export function QaMembersPanel() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/qa-members"] });
       setPerspectivesEnabled(true);
       const credited = data.members.filter((member) => member.credited).length;
       const message = `${credited > 0 ? `${credited} member${credited === 1 ? "" : "s"} credited` : "Members already credited"}; $${data.grantAmount || QA_INITIAL_CREDIT} is one-time only.`;
@@ -131,21 +148,30 @@ export function QaMembersPanel() {
     },
   });
 
-  const refreshAfterAction = async () => {
+  const refreshAfterAction = async (completedAction: string) => {
     setPerspectivesEnabled(true);
-    await Promise.all([alicePerspective.refetch(), bobPerspective.refetch()]);
+    try {
+      await Promise.all([
+        alicePerspective.refetch({ throwOnError: true }),
+        bobPerspective.refetch({ throwOnError: true }),
+      ]);
+    } catch (error) {
+      setNotice(`${completedAction} Verification could not refresh: ${(error as Error).message}. Refresh before taking another action.`);
+    }
   };
 
   const interestMutation = useMutation({
-    mutationFn: () => qaRequest<Match>("/api/matches", aliceId, "POST", {
-      recipientId: bobId,
+    mutationFn: (initiatorId: string) => qaRequest<Match & { chargedAmount: number; paymentType: string }>("/api/matches", initiatorId, "POST", {
+      recipientId: initiatorId === aliceId ? bobId : aliceId,
       message: "Track A QA wallet-credit check",
     }),
-    onSuccess: async () => {
-      const message = "Interest sent from Alice. Expected charge: $5.00.";
+    onSuccess: async (data, initiatorId) => {
+      const message = data.paymentType === "wallet" && Number(data.chargedAmount) === 5
+        ? `Interest sent from ${memberName(initiatorId)}. Server confirmed $5.00 charged to wallet.`
+        : `Interest sent, but this did not confirm the expected $5 wallet charge (type: ${data.paymentType}, amount: ${data.chargedAmount}). Check the ledger.`;
       setNotice(message);
       toast({ title: "Interest sent", description: message });
-      await refreshAfterAction();
+      await refreshAfterAction(message);
     },
     onError: (error: Error) => {
       setNotice(`Could not send interest: ${error.message}`);
@@ -154,12 +180,14 @@ export function QaMembersPanel() {
   });
 
   const advanceMutation = useMutation({
-    mutationFn: (matchId: string) => qaRequest<Match>(`/api/matches/${matchId}/advance`, bobId, "POST", {}),
-    onSuccess: async () => {
-      const message = "Chapter 1 unlocked by Bob. Expected charge: $5.00; the match should now be at gate2.";
+    mutationFn: (match: Match) => qaRequest<Match>(`/api/matches/${match.id}/advance`, match.recipientId, "POST", {}),
+    onSuccess: async (data, match) => {
+      const message = data.currentGate === "gate2" && data.gate1PaidBy === match.recipientId
+        ? `Chapter 1 accepted by ${memberName(match.recipientId)}. Checking both members' state and $5 wallet ledger entries.`
+        : "Acceptance returned an unexpected state. Refresh both perspectives and inspect the ledger.";
       setNotice(message);
       toast({ title: "Chapter unlocked", description: message });
-      await refreshAfterAction();
+      await refreshAfterAction(message);
     },
     onError: (error: Error) => {
       setNotice(`Could not unlock Chapter 1: ${error.message}`);
@@ -170,28 +198,52 @@ export function QaMembersPanel() {
   const aliceMatch = pairMatch(alicePerspective.data?.matches);
   const bobMatch = pairMatch(bobPerspective.data?.matches);
   const activeGateOne = bobMatch?.currentGate === "gate1" &&
-    !["declined", "paused"].includes(bobMatch.status.toLowerCase());
+    !bobMatch.gatePaused && !["declined", "paused"].includes(bobMatch.status.toLowerCase());
   const refreshing = alicePerspective.isFetching || bobPerspective.isFetching;
+  const busy = refreshing || setupMutation.isPending || interestMutation.isPending || advanceMutation.isPending;
+  const bothLoaded = alicePerspective.isSuccess && bobPerspective.isSuccess && !refreshing;
+  const sameMatch = !!aliceMatch && !!bobMatch && aliceMatch.id === bobMatch.id &&
+    aliceMatch.status === bobMatch.status && aliceMatch.currentGate === bobMatch.currentGate &&
+    aliceMatch.initiatorId === bobMatch.initiatorId && aliceMatch.recipientId === bobMatch.recipientId &&
+    aliceMatch.gate1PaidBy === bobMatch.gate1PaidBy;
+  const ledgerVerified = !!aliceMatch && [alicePerspective.data, bobPerspective.data].every((perspective, index) =>
+    perspective?.transactions.some(transaction => transaction.type === "gate_payment" &&
+      Number(transaction.amount) === -5 &&
+      ((index === 0 ? aliceId : bobId) === aliceMatch.initiatorId
+        ? transaction.description === "Gate 1: Interest request sent"
+        : transaction.relatedMatchId === aliceMatch.id)),
+  );
+  const chapterVerified = bothLoaded && sameMatch && aliceMatch?.currentGate === "gate2" &&
+    aliceMatch.status === "active" && aliceMatch.gate1PaidBy === aliceMatch.recipientId && ledgerVerified;
 
   return (
     <Card data-testid="panel">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Track A QA members</CardTitle>
         <CardDescription>
-          Admin-only wallet-credit check for exactly two fixtures. Setup grants Alice and Bob ${QA_INITIAL_CREDIT} once; reruns never top up and do not use Stripe.
+          Admin-only wallet-credit check for exactly two fixtures. Setup grants Alice and Bob ${QA_INITIAL_CREDIT} once; reruns never top up and do not use Stripe. Either member can initiate; the counterpart accepts. Your Admin login never changes.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          <Button data-testid="setup" onClick={() => setupMutation.mutate()} disabled={setupMutation.isPending}>
+          <Button data-testid="setup" onClick={() => setupMutation.mutate()} disabled={busy}>
             {setupMutation.isPending ? "Setting up…" : "Setup QA members"}
           </Button>
-          <Button data-testid="refresh" variant="outline" onClick={refreshPerspectives} disabled={refreshing}>
+          <Button data-testid="refresh" variant="outline" onClick={refreshPerspectives} disabled={busy}>
             {refreshing ? "Refreshing…" : "Refresh both perspectives"}
           </Button>
         </div>
 
         {notice && <p className="text-sm" role="status">{notice}</p>}
+        {bothLoaded && (aliceMatch || bobMatch) && (
+          <p className="rounded-md border p-3 text-sm" role="status" data-testid="counterpart-verification">
+            {chapterVerified
+              ? "Verified: both members see Chapter 1 unlocked (active, gate2), and each has a $5 wallet debit."
+              : sameMatch && aliceMatch?.currentGate === "gate1"
+                ? `Both members see the same Interest. Waiting for ${memberName(aliceMatch.recipientId)} to accept Chapter 1.`
+                : "Not yet verified: check both match states and wallet ledgers below."}
+          </p>
+        )}
 
         <div className="grid gap-3 md:grid-cols-2">
           {[
@@ -210,18 +262,40 @@ export function QaMembersPanel() {
               ) : (
                 <MatchState match={match} testId={matchTestId} />
               )}
+              {perspective.data && (
+                <ul className="space-y-1 text-xs text-muted-foreground" aria-label={`${fallbackName} wallet ledger`}>
+                  {perspective.data.transactions.slice(0, 4).map(transaction => (
+                    <li key={transaction.id}>
+                      {Number(transaction.amount) >= 0 ? "+" : "−"}${Math.abs(Number(transaction.amount)).toFixed(2)} · {transaction.description || transaction.type}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <label className="flex items-center gap-2 text-sm">
+            Initiate as
+            <select
+              aria-label="QA Interest sender"
+              data-testid="qa-sender"
+              className="rounded-md border bg-background px-3 py-2"
+              value={aliceMatch?.initiatorId || senderId}
+              disabled={busy || !!aliceMatch || !!bobMatch}
+              onChange={event => setSenderId(event.target.value)}
+            >
+              {QA_MEMBERS.map(member => <option key={member.userId} value={member.userId}>{member.displayName}</option>)}
+            </select>
+          </label>
           <Button
             data-testid="interest"
             variant="secondary"
-            disabled={interestMutation.isPending || !alicePerspective.isSuccess || !!aliceMatch}
+            disabled={busy || !bothLoaded || !!aliceMatch || !!bobMatch}
             onClick={() => {
-              if (window.confirm("Send interest from Alice to Bob? Alice will be charged $5.00.")) {
-                interestMutation.mutate();
+              if (window.confirm(`Send interest from ${memberName(senderId)} to ${memberName(senderId === aliceId ? bobId : aliceId)}? The sender will use $5.00 of test wallet credit.`)) {
+                interestMutation.mutate(senderId);
               }
             }}
           >
@@ -230,14 +304,14 @@ export function QaMembersPanel() {
           <Button
             data-testid="advance"
             variant="secondary"
-            disabled={advanceMutation.isPending || !activeGateOne}
+            disabled={busy || !bothLoaded || !sameMatch || !activeGateOne}
             onClick={() => {
-              if (bobMatch && window.confirm("Unlock Chapter 1 as Bob? Bob will be charged $5.00.")) {
-                advanceMutation.mutate(bobMatch.id);
+              if (bobMatch && window.confirm(`Accept Interest and unlock Chapter 1 as ${memberName(bobMatch.recipientId)}? The recipient will use $5.00 of test wallet credit.`)) {
+                advanceMutation.mutate(bobMatch);
               }
             }}
           >
-            {advanceMutation.isPending ? "Unlocking…" : "Unlock Chapter 1"}
+            {advanceMutation.isPending ? "Unlocking…" : `Accept & Unlock Chapter 1${bobMatch ? ` as ${memberName(bobMatch.recipientId)}` : ""}`}
           </Button>
         </div>
       </CardContent>

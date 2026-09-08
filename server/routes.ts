@@ -872,8 +872,8 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(404).json({ message: "Match not found" });
       }
 
-      if (req.get(QA_MEMBER_HEADER) && match.currentGate !== "gate1") {
-        return res.status(409).json({ message: "QA mode only unlocks Chapter 1; refresh the match state" });
+      if (req.get(QA_MEMBER_HEADER) && (match.currentGate !== "gate1" || match.recipientId !== userId)) {
+        return res.status(409).json({ message: "QA mode only lets the recipient accept Chapter 1; refresh the match state" });
       }
 
       if (match.initiatorId !== userId && match.recipientId !== userId) {
