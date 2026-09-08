@@ -11,6 +11,7 @@ import type { Profile as ProfileType, Wallet } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { useState } from "react";
+import { HeardViaCard } from "@/components/dashboard/heard-via-card";
 
 interface ReferralInfo {
   referralCode: string;
@@ -123,6 +124,8 @@ export default function Profile() {
           <span className="sm:hidden">{copied ? "Copied" : "Share"}</span>
         </Button>
       </div>
+
+      {!isLoading && !profile && user && !user.heardVia && <HeardViaCard />}
 
       {isLoading ? (
         <Card>

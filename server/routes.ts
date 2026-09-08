@@ -31,6 +31,7 @@ import { emailService } from "./lib/email";
 import { acquireQaActionLock, setupQaMembers } from "./qa-members";
 import { createQaAccess, sameOriginQaRequest, withQaActionLock } from "./qa-access";
 import { isQaMemberId, QA_MEMBER_HEADER, QA_MEMBERS } from "@shared/qa";
+import { heardViaInputSchema } from "@shared/referral-source";
 
 const depositSchema = z.object({
   amount: z.number().min(MINIMUM_WALLET_BALANCE, `Minimum deposit is $${MINIMUM_WALLET_BALANCE}`),
@@ -54,6 +55,41 @@ export async function registerRoutes(
     getMatch: id => storage.getMatch(id),
   }));
   registerAuthRoutes(app);
+
+  app.patch("/api/auth/heard-via", isAuthenticated, async (req: any, res) => {
+    try {
+      const validation = heardViaInputSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({
+          message: "Invalid referral source",
+          errors: validation.error.flatten().fieldErrors,
+        });
+      }
+
+      const user = await authStorage.getUser(req.user.claims.sub);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (user.heardVia) {
+        return res.status(409).json({ message: "Referral source has already been recorded" });
+      }
+
+      const heardViaOther = validation.data.heardVia === "other"
+        ? validation.data.heardViaOther!.trim()
+        : null;
+      const updated = await authStorage.updateHeardVia(user.id, {
+        heardVia: validation.data.heardVia,
+        heardViaOther,
+      });
+      if (!updated) {
+        return res.status(409).json({ message: "Referral source has already been recorded" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error saving referral source:", error);
+      res.status(500).json({ message: "Failed to save referral source" });
+    }
+  });
 
   app.get("/api/profile", isAuthenticated, async (req: any, res) => {
     try {
