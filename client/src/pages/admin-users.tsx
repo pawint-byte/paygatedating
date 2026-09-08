@@ -12,6 +12,7 @@ import {
 import { Redirect } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { QaMembersPanel } from "@/components/dashboard/qa-members-panel";
 
 interface UserWithProfile {
   user: {
@@ -138,6 +139,8 @@ export default function AdminUsers() {
           <p className="text-muted-foreground text-sm">View all registered members</p>
         </div>
       </div>
+
+      <QaMembersPanel />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card data-testid="stat-total-users">

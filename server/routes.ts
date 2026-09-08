@@ -28,6 +28,9 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { emailService } from "./lib/email";
+import { acquireQaActionLock, setupQaMembers } from "./qa-members";
+import { createQaAccess, sameOriginQaRequest, withQaActionLock } from "./qa-access";
+import { isQaMemberId, QA_MEMBER_HEADER, QA_MEMBERS } from "@shared/qa";
 
 const depositSchema = z.object({
   amount: z.number().min(MINIMUM_WALLET_BALANCE, `Minimum deposit is $${MINIMUM_WALLET_BALANCE}`),
@@ -44,6 +47,12 @@ export async function registerRoutes(
 ): Promise<Server> {
   const profileViewCounts = new Map<string, { count: number; date: string }>();
   await setupAuth(app);
+  app.use(createQaAccess({
+    authenticate: isAuthenticated,
+    isAdmin: userId => storage.isUserAdmin(userId),
+    getProfile: userId => storage.getProfile(userId),
+    getMatch: id => storage.getMatch(id),
+  }));
   registerAuthRoutes(app);
 
   app.get("/api/profile", isAuthenticated, async (req: any, res) => {
@@ -421,6 +430,22 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         console.log("[Discover API] Discover profiles count:", profiles.length);
       }
       
+      // Never advertise test fixtures to ordinary members. Admins can find both
+      // without changing their saved dating preferences.
+      const isAdminViewer = await storage.isUserAdmin(userId);
+      if (!isAdminViewer && !isQaMemberId(userId)) {
+        profiles = profiles.filter(profile => !isQaMemberId(profile.userId));
+      }
+      if (isAdminViewer) {
+        const qaProfiles = await Promise.all(QA_MEMBERS.map(member => storage.getProfile(member.userId)));
+        for (const profile of qaProfiles) {
+          if (profile?.isVisible && profile.userId !== userId &&
+            !profiles.some(existing => existing.userId === profile.userId)) {
+            profiles.push(profile);
+          }
+        }
+      }
+
       const dayOfWeek = new Date().getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
@@ -704,7 +729,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
   });
 
-  app.post("/api/matches", isAuthenticated, async (req: any, res) => {
+  app.post("/api/matches", isAuthenticated, withQaActionLock(async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
 
@@ -723,6 +748,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       if (recipientId.startsWith("demo_")) {
         return res.status(400).json({ message: "Demo profiles are browse-only and cannot receive interest" });
+      }
+
+      if (isQaMemberId(recipientId) && !isQaMemberId(userId) && !(await storage.isUserAdmin(userId))) {
+        return res.status(403).json({ message: "QA members are available for Admin-supervised testing only" });
       }
 
       const recipientProfile = await storage.getProfile(recipientId);
@@ -831,9 +860,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       console.error("Error creating match:", error);
       res.status(500).json({ message: "Failed to create match" });
     }
-  });
+  }, acquireQaActionLock));
 
-  app.post("/api/matches/:id/advance", isAuthenticated, async (req: any, res) => {
+  app.post("/api/matches/:id/advance", isAuthenticated, withQaActionLock(async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const matchId = req.params.id;
@@ -841,6 +870,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const match = await storage.getMatch(matchId);
       if (!match) {
         return res.status(404).json({ message: "Match not found" });
+      }
+
+      if (req.get(QA_MEMBER_HEADER) && match.currentGate !== "gate1") {
+        return res.status(409).json({ message: "QA mode only unlocks Chapter 1; refresh the match state" });
       }
 
       if (match.initiatorId !== userId && match.recipientId !== userId) {
@@ -925,7 +958,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       console.error("Error advancing gate:", error);
       res.status(500).json({ message: "Failed to advance gate" });
     }
-  });
+  }, acquireQaActionLock));
 
   app.post("/api/matches/:id/skip", isAuthenticated, async (req: any, res) => {
     try {
@@ -3840,6 +3873,18 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     } catch (error) {
       console.error("Error fetching all users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/admin/qa-members/setup", isAuthenticated, isAdmin, sameOriginQaRequest, async (req: any, res) => {
+    if (!z.object({}).strict().safeParse(req.body ?? {}).success) {
+      return res.status(400).json({ message: "QA members and the one-time $20 credit are fixed; no parameters are accepted" });
+    }
+    try {
+      res.json(await setupQaMembers(req.user.claims.sub));
+    } catch (error) {
+      console.error("QA setup failed:", error);
+      res.status(409).json({ message: "QA setup failed safely; check server logs. No partial setup was committed." });
     }
   });
 

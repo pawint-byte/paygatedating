@@ -2,3 +2,4 @@
 - [Static asset directories](static-asset-dirs.md) — SEO files (robots/sitemap/manifest) live in root `public/` (Express), front-end assets in `client/public/` (Vite); canonical domain hard-coded to paygatedating.com.
 - [Profile completeness scoring](profile-completeness-scoring.md) — "profile complete" gates must reuse the weighted score from /api/profile/completeness (require 100), not a field-count; public profile route is /p/:userId.
 - [Older Andrew visibility](separate-andrew-profiles.md) — keep the accounts separate, but hide the older Andrew profile from Discover without deleting or merging it.
+- [Admin-supervised wallet QA](qa-wallet-testing.md) — seeded QA identities lack OIDC logins; use narrow Admin-operated fixtures, not shared credentials or real-member credit changes.
