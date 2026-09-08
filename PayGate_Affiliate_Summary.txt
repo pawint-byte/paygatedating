@@ -114,7 +114,7 @@ Revenue Model:
 ------------------------------------------------------------
 7. GOOGLE ANALYTICS
 ------------------------------------------------------------
-Measurement ID: G-WHS17V1WFW
+Measurement ID: G-ZQDRXT3L0B
 Integration:    Google Tag (gtag.js)
 Loaded Via:     Script in index.html
 
