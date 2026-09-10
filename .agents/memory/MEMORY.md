@@ -3,3 +3,5 @@
 - [Profile completeness scoring](profile-completeness-scoring.md) — "profile complete" gates must reuse the weighted score from /api/profile/completeness (require 100), not a field-count; public profile route is /p/:userId.
 - [Older Andrew visibility](separate-andrew-profiles.md) — keep the accounts separate, but hide the older Andrew profile from Discover without deleting or merging it.
 - [Admin-supervised wallet QA](qa-wallet-testing.md) — seeded QA identities lack OIDC logins; use narrow Admin-operated fixtures, not shared credentials or real-member credit changes.
+- [Full-intent delivery](full-intent-delivery.md) — complete the requested outcome end-to-end, verify it, and surface gaps before calling it done.
+- [Honest value exchange](honest-value-exchange.md) — paid product messaging must make real member value and founder sustainability clear.
