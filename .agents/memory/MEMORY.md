@@ -6,3 +6,4 @@
 - [Full-intent delivery](full-intent-delivery.md) — complete the requested outcome end-to-end, verify it, and surface gaps before calling it done.
 - [Honest value exchange](honest-value-exchange.md) — paid product messaging must make real member value and founder sustainability clear.
 - [Second set of eyes](second-set-of-eyes.md) — improve approaches inside guardrails: mission-fit → creative better path → full-intent → honest value exchange.
+- [Protect mission](protect-mission.md) — refuse off-mission work within PayGate Dating and offer a constructive, mission-aligned alternative.
