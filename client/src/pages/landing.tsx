@@ -18,6 +18,7 @@ import { Footer } from "@/components/landing/footer";
 import { Chatbot } from "@/components/chatbot";
 import { Seo } from "@/components/seo";
 import { Home, BookOpen, Star, DollarSign, Shield, HelpCircle } from "lucide-react";
+import { Link } from "wouter";
 
 const sections = [
   {
@@ -124,6 +125,19 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
         <nav className="hidden md:flex flex-col gap-1 w-56 shrink-0 border-r border-border p-4 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto bg-background" data-testid="section-sidebar-desktop">
           {sections.map((section) => {
             const isActive = activeTab === section.id;
+            if (section.id === "faq") {
+              return (
+                <Link
+                  key={section.id}
+                  href="/faq"
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
+                  data-testid="sidebar-faq"
+                >
+                  <section.icon className="w-4 h-4 shrink-0" />
+                  {section.label}
+                </Link>
+              );
+            }
             return (
               <button
                 key={section.id}
@@ -147,6 +161,19 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
             <div className="flex overflow-x-auto gap-1 scrollbar-hide">
               {sections.map((section) => {
                 const isActive = activeTab === section.id;
+                if (section.id === "faq") {
+                  return (
+                    <Link
+                      key={section.id}
+                      href="/faq"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors bg-muted text-muted-foreground"
+                      data-testid="tab-faq"
+                    >
+                      <section.icon className="w-3.5 h-3.5" />
+                      {section.label}
+                    </Link>
+                  );
+                }
                 return (
                   <button
                     key={section.id}

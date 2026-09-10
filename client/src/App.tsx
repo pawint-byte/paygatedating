@@ -18,6 +18,7 @@ import Privacy from "@/pages/privacy";
 import GiftDemo from "@/pages/gift-demo";
 import Contact from "@/pages/contact";
 import NotFound from "@/pages/not-found";
+import FaqPage from "@/pages/faq";
 import { AssistantChat } from "@/components/assistant-chat";
 
 function Router() {
@@ -42,7 +43,7 @@ function Router() {
           <Landing initialTab="pricing" />
         </Route>
         <Route path="/faq">
-          <Landing initialTab="faq" />
+          <FaqPage />
         </Route>
         <Route path="/invite/:referralCode" component={InvitePage} />
         <Route path="/p/:userId" component={PublicProfile} />
@@ -62,7 +63,7 @@ function Router() {
             <Route path="/settings" component={DashboardLayout} />
             <Route path="/wallet" component={DashboardLayout} />
             <Route path="/wishlist" component={DashboardLayout} />
-            <Route path="/help" component={DashboardLayout} />
+            <Route path="/feedback" component={DashboardLayout} />
             <Route path="/rewards" component={DashboardLayout} />
             <Route path="/admin/feedback" component={DashboardLayout} />
             <Route path="/admin/users" component={DashboardLayout} />

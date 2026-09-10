@@ -82,7 +82,7 @@ const settingsMenuItems = [
   },
   {
     title: "Help & Support",
-    url: "/help",
+    url: "/feedback",
     icon: HelpCircle,
   },
 ];

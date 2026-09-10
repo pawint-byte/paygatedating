@@ -259,7 +259,7 @@ export default function DashboardLayout() {
               <Route path="/settings" component={Settings} />
               <Route path="/wishlist" component={Wishlist} />
               <Route path="/gifts" component={GiftClaim} />
-              <Route path="/help" component={Help} />
+              <Route path="/feedback" component={Help} />
               <Route path="/rewards" component={RewardsDashboard} />
               <Route path="/admin/feedback" component={AdminFeedback} />
               <Route path="/admin/users" component={AdminUsers} />

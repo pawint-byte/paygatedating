@@ -29,7 +29,7 @@ const moreMenuItems = [
   { title: "Verification", url: "/verification", icon: ShieldCheck },
   { title: "Rewards", url: "/rewards", icon: Trophy },
   { title: "Settings", url: "/settings", icon: Settings },
-  { title: "Help & Support", url: "/help", icon: HelpCircle },
+  { title: "Help & Support", url: "/feedback", icon: HelpCircle },
 ];
 
 const adminMenuItems = [
