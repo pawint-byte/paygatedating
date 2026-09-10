@@ -5,3 +5,4 @@
 - [Admin-supervised wallet QA](qa-wallet-testing.md) — seeded QA identities lack OIDC logins; use narrow Admin-operated fixtures, not shared credentials or real-member credit changes.
 - [Full-intent delivery](full-intent-delivery.md) — complete the requested outcome end-to-end, verify it, and surface gaps before calling it done.
 - [Honest value exchange](honest-value-exchange.md) — paid product messaging must make real member value and founder sustainability clear.
+- [Second set of eyes](second-set-of-eyes.md) — improve approaches inside guardrails: mission-fit → creative better path → full-intent → honest value exchange.
