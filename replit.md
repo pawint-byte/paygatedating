@@ -14,6 +14,8 @@ Reminder preference: Always remind user to publish after making changes.
 - **Co-Authored Journey Model**: Both people actively "put in work" at each chapter, creating anticipation and a sense of progress. Framed as writing a love story together, not paying for access.
 - **Shared Schema**: TypeScript types and Zod schemas are shared between client and server for consistency.
 - **Storage Abstraction**: Database operations are abstracted via an `IStorage` interface.
+- **Protect mission**: Push back constructively on off-mission requests. Standing-memory pointer: `.agents/memory/protect-mission.md` (not yet created; awaiting the water example).
+- **Second set of eyes**: Improve approaches inside guardrails: mission-fit → creative better path → full-intent → honest value exchange. See [second-set-of-eyes](.agents/memory/second-set-of-eyes.md).
 - **Full-intent delivery**: Complete Andrew's requested outcome end-to-end, verify the result before calling it done, and surface any remaining gaps. See [full-intent-delivery](.agents/memory/full-intent-delivery.md) and [honest-value-exchange](.agents/memory/honest-value-exchange.md).
 - **Honest value exchange**: Paid software and its FAQ, pricing, features, and promotions must clearly explain the real member value and founder sustainability; PayGate is neither charity nor a scam.
 
