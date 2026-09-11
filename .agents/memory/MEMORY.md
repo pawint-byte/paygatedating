@@ -8,3 +8,4 @@
 - [Second set of eyes](second-set-of-eyes.md) — improve approaches inside guardrails: mission-fit → creative better path → full-intent → honest value exchange.
 - [Protect mission](protect-mission.md) — refuse off-mission work within PayGate Dating and offer a constructive, mission-aligned alternative.
 - [Amazon list response caveat](amazon-list-responses.md) — nonexistent lists can return HTTP 200 with unrelated product promotions; status and product links alone do not establish a real list.
+- [Replit configuration ownership](replit-config-ownership.md) — preserve owner/platform-managed runtime, deployment, and secret settings during routine application work.
