@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { QaTestRewardsControl } from "./qa-test-rewards-control";
+import { QaGateMessagesControl } from "./qa-gate-messages-control";
 
 type QaMember = {
   userId: string;
@@ -137,6 +138,7 @@ export function QaMembersPanel() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
       queryClient.invalidateQueries({ queryKey: ["/api/qa-members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/qa-members/matches"] });
       setPerspectivesEnabled(true);
       const credited = data.members.filter((member) => member.credited).length;
       const message = `${credited > 0 ? `${credited} member${credited === 1 ? "" : "s"} credited` : "Members already credited"}; $${data.grantAmount || QA_INITIAL_CREDIT} is one-time only.`;
@@ -155,6 +157,7 @@ export function QaMembersPanel() {
       await Promise.all([
         alicePerspective.refetch({ throwOnError: true }),
         bobPerspective.refetch({ throwOnError: true }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/qa-members/matches"] }),
       ]);
     } catch (error) {
       setNotice(`${completedAction} Verification could not refresh: ${(error as Error).message}. Refresh before taking another action.`);
@@ -236,6 +239,7 @@ export function QaMembersPanel() {
         </div>
 
         <QaTestRewardsControl disabled={busy} onGranted={refreshPerspectives} />
+        <QaGateMessagesControl disabled={busy} />
         {notice && <p className="text-sm" role="status">{notice}</p>}
         {bothLoaded && (aliceMatch || bobMatch) && (
           <p className="rounded-md border p-3 text-sm" role="status" data-testid="counterpart-verification">

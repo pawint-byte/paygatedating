@@ -28,8 +28,17 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { emailService } from "./lib/email";
-import { acquireQaActionLock, setupQaMembers, grantQaTestRewards } from "./qa-members";
+import {
+  acquireQaActionLock,
+  setupQaMembers,
+  grantQaTestRewards,
+  getQaMemberMatches,
+  setQaMemberGate,
+  validateQaFixtureMembers,
+  QaControlError,
+} from "./qa-members";
 import { qaTestRewardSchema } from "@shared/qa-test-rewards";
+import { qaGateControlSchema } from "@shared/qa-controls";
 import { createQaAccess, sameOriginQaRequest, withQaActionLock } from "./qa-access";
 import { isQaMemberId, QA_MEMBER_HEADER, QA_MEMBERS } from "@shared/qa";
 import { heardViaInputSchema } from "@shared/referral-source";
@@ -54,6 +63,8 @@ export async function registerRoutes(
     isAdmin: userId => storage.isUserAdmin(userId),
     getProfile: userId => storage.getProfile(userId),
     getMatch: id => storage.getMatch(id),
+    validateQaFixtures: memberIds => validateQaFixtureMembers(memberIds),
+    acquireActionLock: acquireQaActionLock,
   }));
   registerAuthRoutes(app);
 
@@ -1113,100 +1124,108 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
   });
 
-  app.post("/api/matches/:id/messages", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const matchId = req.params.id;
-
-      const match = await storage.getMatch(matchId);
-      if (!match) {
-        return res.status(404).json({ message: "Match not found" });
-      }
-
-      if (match.initiatorId !== userId && match.recipientId !== userId) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
-
-      if (match.status === "declined") {
-        return res.status(403).json({ message: "Match already ended" });
-      }
-
-      const validGates = ["gate3", "gate4", "gate5", "completed"];
-      if (!validGates.includes(match.currentGate)) {
-        return res.status(403).json({ message: "Chat unlocked at Gate 3 or higher" });
-      }
-
-      const messageSchema = z.object({
-        content: z.string().min(1, "Message content is required").max(2000),
-        mediaUrl: z.string().url().optional(),
-      });
-
-      const validationResult = messageSchema.safeParse(req.body);
-      if (!validationResult.success) {
-        return res.status(400).json({ 
-          message: validationResult.error.errors[0]?.message || "Invalid message data",
-        });
-      }
-
-      const message = await storage.createMessage({
-        matchId,
-        senderId: userId,
-        content: validationResult.data.content,
-        mediaUrl: validationResult.data.mediaUrl,
-      });
-
+  app.post("/api/matches/:id/messages", isAuthenticated, async (req: any, res: any) => {
+    const handler = async (req: any, res: any) => {
       try {
-        const recipientUserId = match.initiatorId === userId ? match.recipientId : match.initiatorId;
-        const recipientProfile = await storage.getProfile(recipientUserId);
-        const senderProfile = await storage.getProfile(userId);
-        const recipientUser = await authStorage.getUser(recipientUserId);
-        if (recipientProfile && senderProfile && recipientUser?.email) {
-          await emailService.sendNewMessage(
-            recipientUser.email,
-            recipientProfile.displayName || 'there',
-            senderProfile.displayName || 'Someone'
-          );
-        }
-      } catch (emailError) {
-        console.error('Failed to send new message notification email:', emailError);
-      }
+        const userId = req.user.claims.sub;
+        const matchId = req.params.id;
 
-      res.status(201).json(message);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      res.status(500).json({ message: "Failed to send message" });
-    }
+        const match = await storage.getMatch(matchId);
+        if (!match) {
+          return res.status(404).json({ message: "Match not found" });
+        }
+
+        if (match.initiatorId !== userId && match.recipientId !== userId) {
+          return res.status(403).json({ message: "Not authorized" });
+        }
+
+        if (match.status === "declined") {
+          return res.status(403).json({ message: "Match already ended" });
+        }
+
+        const validGates = ["gate3", "gate4", "gate5", "completed"];
+        if (!validGates.includes(match.currentGate)) {
+          return res.status(403).json({ message: "Chat unlocked at Gate 3 or higher" });
+        }
+
+        const messageSchema = z.object({
+          content: z.string().min(1, "Message content is required").max(2000),
+          mediaUrl: z.string().url().optional(),
+        });
+
+        const validationResult = messageSchema.safeParse(req.body);
+        if (!validationResult.success) {
+          return res.status(400).json({
+            message: validationResult.error.errors[0]?.message || "Invalid message data",
+          });
+        }
+
+        const message = await storage.createMessage({
+          matchId,
+          senderId: userId,
+          content: validationResult.data.content,
+          mediaUrl: validationResult.data.mediaUrl,
+        });
+
+        try {
+          const recipientUserId = match.initiatorId === userId ? match.recipientId : match.initiatorId;
+          const recipientProfile = await storage.getProfile(recipientUserId);
+          const senderProfile = await storage.getProfile(userId);
+          const recipientUser = await authStorage.getUser(recipientUserId);
+          if (recipientProfile && senderProfile && recipientUser?.email) {
+            await emailService.sendNewMessage(
+              recipientUser.email,
+              recipientProfile.displayName || 'there',
+              senderProfile.displayName || 'Someone'
+            );
+          }
+        } catch (emailError) {
+          console.error('Failed to send new message notification email:', emailError);
+        }
+
+        res.status(201).json(message);
+      } catch (error) {
+        console.error("Error sending message:", error);
+        res.status(500).json({ message: "Failed to send message" });
+      }
+    };
+    if (req.qaActionLock) return req.qaActionLock(handler);
+    return handler(req, res);
   });
 
-  app.post("/api/matches/:id/messages/read", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const matchId = req.params.id;
+  app.post("/api/matches/:id/messages/read", isAuthenticated, async (req: any, res: any) => {
+    const handler = async (req: any, res: any) => {
+      try {
+        const userId = req.user.claims.sub;
+        const matchId = req.params.id;
 
-      const match = await storage.getMatch(matchId);
-      if (!match) {
-        return res.status(404).json({ message: "Match not found" });
+        const match = await storage.getMatch(matchId);
+        if (!match) {
+          return res.status(404).json({ message: "Match not found" });
+        }
+
+        if (match.initiatorId !== userId && match.recipientId !== userId) {
+          return res.status(403).json({ message: "Not authorized" });
+        }
+
+        if (match.status === "declined") {
+          return res.status(403).json({ message: "Match already ended" });
+        }
+
+        const validGates = ["gate3", "gate4", "gate5", "completed"];
+        if (!validGates.includes(match.currentGate)) {
+          return res.status(403).json({ message: "Chat unlocked at Gate 3 or higher" });
+        }
+
+        await storage.markMessagesAsRead(matchId, userId);
+        res.json({ success: true });
+      } catch (error) {
+        console.error("Error marking messages as read:", error);
+        res.status(500).json({ message: "Failed to mark messages as read" });
       }
-
-      if (match.initiatorId !== userId && match.recipientId !== userId) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
-
-      if (match.status === "declined") {
-        return res.status(403).json({ message: "Match already ended" });
-      }
-
-      const validGates = ["gate3", "gate4", "gate5", "completed"];
-      if (!validGates.includes(match.currentGate)) {
-        return res.status(403).json({ message: "Chat unlocked at Gate 3 or higher" });
-      }
-
-      await storage.markMessagesAsRead(matchId, userId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error marking messages as read:", error);
-      res.status(500).json({ message: "Failed to mark messages as read" });
-    }
+    };
+    if (req.qaActionLock) return req.qaActionLock(handler);
+    return handler(req, res);
   });
 
   app.post("/api/matches/:id/decline", isAuthenticated, async (req: any, res) => {
@@ -3947,6 +3966,34 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     } catch (error) {
       console.error("QA test reward failed:", error);
       res.status(409).json({ message: "QA reward not granted. Ensure Setup QA members has completed. No partial grant was committed." });
+    }
+  });
+
+  app.get("/api/admin/qa-members/matches", isAuthenticated, isAdmin, sameOriginQaRequest, async (_req: any, res) => {
+    try {
+      res.json(await getQaMemberMatches());
+    } catch (error) {
+      console.error("QA match listing failed:", error);
+      if (error instanceof QaControlError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
+      res.status(500).json({ message: "Failed to fetch QA matches" });
+    }
+  });
+
+  app.post("/api/admin/qa-members/matches/:id/gate", isAuthenticated, isAdmin, sameOriginQaRequest, async (req: any, res) => {
+    const validation = qaGateControlSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ message: "Gate must be exactly gate1, gate2, gate3, gate4, gate5, or completed" });
+    }
+    try {
+      res.json(await setQaMemberGate(req.user.claims.sub, req.params.id, validation.data));
+    } catch (error) {
+      console.error("QA gate control failed:", error);
+      if (error instanceof QaControlError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
+      res.status(409).json({ message: "QA gate was not changed. Ensure Setup QA members has completed." });
     }
   });
 

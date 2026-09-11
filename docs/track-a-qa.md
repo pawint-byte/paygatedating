@@ -1,191 +1,102 @@
-# Track A wallet QA
+# Track A QA
 
-## Setup and scope
+## Scope and setup
 
-Only the authenticated Replit Admin can use **Admin → Members → Track A QA members**.
-Start at the home page and sign in with the existing Admin's Replit account. A
-signed-out visit directly to `/admin/users` currently falls through to the app's
-not-found page; it does not demonstrate a server or database outage.
-`POST /api/admin/qa-members/setup` accepts an empty JSON object. Member IDs and amounts
-are fixed; arbitrary user IDs or amounts are rejected.
+Only the authenticated Replit Admin can use **Admin → Members → Track A QA
+members**. The panel runs fixture requests under that Admin session; it does
+not log in as a fixture or change the Admin session. There is no shared
+password, secret, or arbitrary-member selector.
 
-| Member | ID | Initial wallet credit |
-| --- | --- | --- |
-| QA Alice | `qa_track_a_alice` | $20.00 once |
-| QA Bob | `qa_track_a_bob` | $20.00 once |
-
-The same setup service is available **only in the Replit development workspace**:
-
-```sh
-NODE_ENV=development npx tsx script/seed-track-a-qa.ts --confirm-track-a-qa
-```
-
-This script is not part of startup, build, or publishing. Run live setup through the
-authenticated Admin endpoint after publishing; development data is not evidence of
-live data. There is no new password, shared secret, or bypass of Replit authentication.
-
-The fixtures have no login identities or email addresses. The panel makes narrowly
-scoped requests on their behalf under the real Admin's session. It never changes that
-session. Normal members cannot use the QA mechanism or send paid interest to these
-fixtures; Admin Discover includes both even when saved age/gender filters exclude one.
-The fixtures remain visibly labeled as test members. Existing demos are untouched.
-
-## Credit accounting
-
-No schema migration or payment is needed:
-
-- `wallets.user_id`, `wallets.balance`, `wallets.trial_credits_received`
-- `transactions.wallet_id`, `amount`, `type`, `description`
-- One `trial_bonus` ledger entry per fixture with description:
-  `Track A QA: one-time $20 in-app test credit (not a payment)`
-- `user_rewards.first_match_free_used = true` and free-tier profiles ensure the
-  two checks charge actual wallet credit, not a free-match or Premium benefit.
-
-Provisioning is transactional, with advisory and wallet-row locking. Re-running setup
-does not reset balances, matches, or ledger entries and cannot repeat the grant.
-An existing unrelated identity at a reserved ID/name makes setup fail without partial
-changes. The welcome/referral marketing and ordinary rewards paths are unchanged.
-
-## Check both perspectives
-
-The panel scopes `X-Paygate-QA-Member` to its own requests. Every such request requires
-the real authenticated Admin. Only these routes are allowed:
-
-- `GET /api/wallet`
-- `GET /api/wallet/transactions`
-- `GET /api/matches`
-- `POST /api/matches` between the two fixtures
-- `POST /api/matches/:id/advance` for their pair at Gate 1, by the recipient only
-
-No Stripe, subscription, gift-payment, authentication, arbitrary-member, or other
-Admin routes are available under the QA header. QA writes are serialized against
-each other and setup. Both responses are read independently, not inferred from the
-initiating response.
-
-1. Set up members and refresh both perspectives. Each card also reads its own wallet ledger.
-2. Choose **Initiate as QA Alice** or **QA Bob**, then **Send Interest**. Confirm the
-   $5 test-credit spend. The sender goes from $20 to $15; both members see the same
-   pending pair at `gate1`. The endpoint returns HTTP 201 and confirms `paymentType:
-   "wallet"` and `chargedAmount: 5`.
-3. **Accept & Unlock Chapter 1** acts as the recipient, not the sender. The recipient
-   goes from $20 to $15. Both members see the same active match at `gate2`, with the
-   recipient as `gate1PaidBy`. The panel's verification message appears only when
-   both independently fetched match states agree and both $5 debits are in the ledgers.
-4. Repeated setup must not grant more credit. Repeated interest/Chapter 1 actions
-   must not create duplicate matches or advance additional chapters.
-
-Choose the direction before the pair's first Interest; existing matches are never
-reset to test the reverse direction. Both directions are covered with fresh isolated
-storage in the route-contract tests:
-
-```sh
-node --import tsx --test tests/qa-access.test.ts tests/qa-wallet-flow.test.ts
-```
-
-These tests compile the actual registered wallet/match handlers and use isolated
-in-memory storage and test-only authentication. They verify debit and counterpart
-contracts without connecting to any real database, Stripe, or production account.
-They are not proof of an authenticated live deployment run.
-
-The Admin remains the signed-in user throughout. These are Admin-supervised fixture
-perspectives, not proof that separate real Replit QA accounts can log in.
-
-DM's Coming Soon page and unimplemented Boost purchase/activation surfaces are product
-gaps, not infrastructure failures. Verification has an existing `/verification` page
-and API; navigation/exposure issues should be reported separately. No card entry,
-Stripe payment, or checkout is necessary for this flow.# Track A wallet QA
-
-## Setup and scope
-
-Only the authenticated Replit Admin can use **Admin → Members → Track A QA members**.
-Start at the home page and sign in with the existing Admin's Replit account. A
-signed-out visit directly to `/admin/users` currently falls through to the app's
-not-found page; it does not demonstrate a server or database outage.
-`POST /api/admin/qa-members/setup` accepts an empty JSON object. Member IDs and amounts
-are fixed; arbitrary user IDs or amounts are rejected.
+`POST /api/admin/qa-members/setup` accepts `{}` only. The IDs, names, and
+initial credit are fixed:
 
 | Member | ID | Initial wallet credit |
 | --- | --- | --- |
 | QA Alice | `qa_track_a_alice` | $20.00 once |
 | QA Bob | `qa_track_a_bob` | $20.00 once |
 
-The same setup service is available **only in the Replit development workspace**:
+The fixtures have no login identity or email address. Setup is repeatable and
+does not top up an existing fixture or create duplicate matches. It is also
+available only in the Replit development workspace:
 
 ```sh
 NODE_ENV=development npx tsx script/seed-track-a-qa.ts --confirm-track-a-qa
 ```
 
-This script is not part of startup, build, or publishing. Run live setup through the
-authenticated Admin endpoint after publishing; development data is not evidence of
-live data. There is no new password, shared secret, or bypass of Replit authentication.
+This script is not part of startup, build, or publishing. For a live check,
+run setup from the authenticated Admin panel after publishing; development
+data is not evidence of live data.
 
-The fixtures have no login identities or email addresses. The panel makes narrowly
-scoped requests on their behalf under the real Admin's session. It never changes that
-session. Normal members cannot use the QA mechanism or send paid interest to these
-fixtures; Admin Discover includes both even when saved age/gender filters exclude one.
-The fixtures remain visibly labeled as test members. Existing demos are untouched.
+## Wallet and chapter flow
 
-## Credit accounting
-
-No schema migration or payment is needed:
-
-- `wallets.user_id`, `wallets.balance`, `wallets.trial_credits_received`
-- `transactions.wallet_id`, `amount`, `type`, `description`
-- One `trial_bonus` ledger entry per fixture with description:
-  `Track A QA: one-time $20 in-app test credit (not a payment)`
-- `user_rewards.first_match_free_used = true` and free-tier profiles ensure the
-  two checks charge actual wallet credit, not a free-match or Premium benefit.
-
-Provisioning is transactional, with advisory and wallet-row locking. Re-running setup
-does not reset balances, matches, or ledger entries and cannot repeat the grant.
-An existing unrelated identity at a reserved ID/name makes setup fail without partial
-changes. The welcome/referral marketing and ordinary rewards paths are unchanged.
-
-## Check both perspectives
-
-The panel scopes `X-Paygate-QA-Member` to its own requests. Every such request requires
-the real authenticated Admin. Only these routes are allowed:
+The existing panel scopes these fixture-only requests with
+`X-Paygate-QA-Member` and still requires the real Admin:
 
 - `GET /api/wallet`
 - `GET /api/wallet/transactions`
 - `GET /api/matches`
-- `POST /api/matches` between the two fixtures
-- `POST /api/matches/:id/advance` for their pair at Gate 1, by the recipient only
+- `POST /api/matches` between QA Alice and QA Bob
+- `POST /api/matches/:id/advance` for the Gate 1 recipient
 
-No Stripe, subscription, gift-payment, authentication, arbitrary-member, or other
-Admin routes are available under the QA header. QA writes are serialized against
-each other and setup. Both responses are read independently, not inferred from the
-initiating response.
+Choose an initiator, send Interest, and verify the sender's $5 wallet debit.
+The recipient can then accept Chapter 1 and should also be debited $5. Refresh
+both independently fetched perspectives and their ledgers; the pair should
+agree on the same match and gate. Setup marks `first_match_free_used` so this
+flow tests wallet credits rather than a free-match or Premium path. No Stripe
+payment or checkout is involved.
 
-1. Set up members and refresh both perspectives. Each card also reads its own wallet ledger.
-2. Choose **Initiate as QA Alice** or **QA Bob**, then **Send Interest**. Confirm the
-   $5 test-credit spend. The sender goes from $20 to $15; both members see the same
-   pending pair at `gate1`. The endpoint returns HTTP 201 and confirms `paymentType:
-   "wallet"` and `chargedAmount: 5`.
-3. **Accept & Unlock Chapter 1** acts as the recipient, not the sender. The recipient
-   goes from $20 to $15. Both members see the same active match at `gate2`, with the
-   recipient as `gate1PaidBy`. The panel's verification message appears only when
-   both independently fetched match states agree and both $5 debits are in the ledgers.
-4. Repeated setup must not grant more credit. Repeated interest/Chapter 1 actions
-   must not create duplicate matches or advance additional chapters.
+## Direct gate override (QA/testing only)
 
-Choose the direction before the pair's first Interest; existing matches are never
-reset to test the reverse direction. Both directions are covered with fresh isolated
-storage in the route-contract tests:
+The **Direct QA gate override** control is an Admin-only testing control, not a
+normal member action. It reads only valid, distinct QA Alice/QA Bob pairs from:
 
-```sh
-node --import tsx --test tests/qa-access.test.ts tests/qa-wallet-flow.test.ts
+```text
+GET /api/admin/qa-members/matches
 ```
 
-These tests compile the actual registered wallet/match handlers and use isolated
-in-memory storage and test-only authentication. They verify debit and counterpart
-contracts without connecting to any real database, Stripe, or production account.
-They are not proof of an authenticated live deployment run.
+Select a returned pair, choose `gate1`, `gate2`, `gate3`, `gate4`, `gate5`, or
+`completed` (shown as Connected), then use **Set gate**:
 
-The Admin remains the signed-in user throughout. These are Admin-supervised fixture
-perspectives, not proof that separate real Replit QA accounts can log in.
+```text
+POST /api/admin/qa-members/matches/:id/gate
+{ "gate": "gate1|gate2|gate3|gate4|gate5|completed" }
+```
 
-DM's Coming Soon page and unimplemented Boost purchase/activation surfaces are product
-gaps, not infrastructure failures. Verification has an existing `/verification` page
-and API; navigation/exposure issues should be reported separately. No card entry,
-Stripe payment, or checkout is necessary for this flow.
+The control reports pending, error, success, and refresh states. This direct
+override intentionally never charges a wallet and never calls Stripe. It does
+not replace or change the ordinary paid gate flow; it exists to put a returned
+fixture pair at a chapter for QA.
+
+## Messages API QA test
+
+The compact **Messages API QA test** in the same panel is an API-level check,
+not a fixture login and not a normal `/messages` full-UI E2E test. It uses the
+exact shared `QA_MEMBERS` constants and sends the existing
+`X-Paygate-QA-Member` header while keeping the Admin session intact.
+
+1. Select a pair returned by the Admin match list and select acting **QA
+   Alice** or **QA Bob**.
+2. At Gate 3 or later, the panel reads
+   `GET /api/matches/:id/messages`, sends `{ "content": "..." }` to
+   `POST /api/matches/:id/messages`, and displays each sender, content, and
+   time in the thread readback.
+3. Switch the acting member to verify the other perspective. **Refresh thread**
+   performs a fresh read, and **Mark read** calls
+   `POST /api/matches/:id/messages/read` and refreshes the thread.
+
+Sending and read actions are disabled below Gate 3 and for declined matches.
+Loading, empty, and API errors are shown in the panel. No real-user match ID or
+member ID can be entered.
+
+## Evidence
+
+The Admin remains the signed-in user throughout; these are Admin-supervised
+fixture perspectives, not proof that separate Replit QA accounts can log in.
+The route-contract tests use isolated storage and do not connect to a real
+database, Stripe, or production account:
+
+```sh
+node --import tsx --test \
+  tests/qa-access.test.ts tests/qa-wallet-flow.test.ts \
+  tests/qa-controls.test.ts tests/qa-messaging.test.ts tests/qa-controls-ui.test.ts
+```

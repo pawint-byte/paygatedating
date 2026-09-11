@@ -1,9 +1,107 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "./db";
-import { profiles, transactions, userRewards, wallets } from "@shared/schema";
+import { matches, profiles, transactions, userRewards, wallets } from "@shared/schema";
 import { users } from "@shared/models/auth";
-import { QA_GRANT_DESCRIPTION, QA_INITIAL_CREDIT, QA_MEMBERS } from "@shared/qa";
+import { QA_GRANT_DESCRIPTION, QA_INITIAL_CREDIT, QA_MEMBERS, isQaMemberId } from "@shared/qa";
 import { qaTestRewardSchema, QA_TEST_REWARD_SOURCE } from "@shared/qa-test-rewards";
+import { isValidQaFixtureRecord, qaGateControlSchema } from "@shared/qa-controls";
+
+export class QaControlError extends Error {
+  constructor(message: string, readonly statusCode = 409) {
+    super(message);
+    this.name = "QaControlError";
+  }
+}
+
+/**
+ * QA control operations must never operate on a merely similarly named
+ * account. Keep this validation in lockstep with the reward service: both
+ * reserved users, their exact fixture profiles, and their provisioned
+ * wallets must still be intact before an admin can control a match.
+ */
+async function validateQaFixtures(tx: any) {
+  for (const member of QA_MEMBERS) {
+    const [user] = await tx.select().from(users).where(eq(users.id, member.userId));
+    const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, member.userId));
+    const [wallet] = await tx.select().from(wallets).where(eq(wallets.userId, member.userId));
+    if (!isValidQaFixtureRecord(member.userId, { user, profile, wallet })) {
+      throw new QaControlError("QA fixtures are missing or invalid. Run Setup QA members first.");
+    }
+  }
+}
+
+/**
+ * Read-only full fixture validation for request-scoped QA impersonation.
+ * Missing/invalid IDs are rejected rather than being treated as an optional
+ * check, so callers cannot accidentally authorize a name-only fixture.
+ */
+export async function validateQaFixtureMembers(memberIds: readonly string[]) {
+  if (memberIds.length === 0 || new Set(memberIds).size !== memberIds.length ||
+    memberIds.some(memberId => !isQaMemberId(memberId))) {
+    return false;
+  }
+  return db.transaction(async tx => {
+    for (const memberId of memberIds) {
+      const member = QA_MEMBERS.find(candidate => candidate.userId === memberId);
+      if (!member) return false;
+      const [user] = await tx.select().from(users).where(eq(users.id, memberId));
+      const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, memberId));
+      const [wallet] = await tx.select().from(wallets).where(eq(wallets.userId, memberId));
+      if (!isValidQaFixtureRecord(memberId, { user, profile, wallet })) return false;
+    }
+    return true;
+  });
+}
+
+function isFixturePair(initiatorId: string, recipientId: string) {
+  return isQaMemberId(initiatorId) && isQaMemberId(recipientId) && initiatorId !== recipientId;
+}
+
+/**
+ * Return every match belonging to the one supported QA pair. This deliberately
+ * does not select by a caller-provided participant or expose arbitrary users.
+ */
+export async function getQaMemberMatches() {
+  return db.transaction(async tx => {
+    await validateQaFixtures(tx);
+    const allMatches = await tx.select().from(matches);
+    return allMatches.filter(match => isFixturePair(match.initiatorId, match.recipientId));
+  });
+}
+
+/**
+ * Direct QA gate control is a test-state operation, not a payment operation.
+ * It is serialized with setup and the other QA mutations, and only updates
+ * state fields that describe the requested gate. In particular it never writes
+ * gate*PaidBy, skipPaid, wallets, or transactions.
+ */
+export async function setQaMemberGate(actor: string, matchId: string, input: unknown) {
+  const { gate } = qaGateControlSchema.parse(input);
+  const updated = await db.transaction(async tx => {
+    await tx.execute(sql`select pg_advisory_xact_lock(714209, 1)`);
+    await validateQaFixtures(tx);
+
+    const [match] = await tx.select().from(matches).where(eq(matches.id, matchId)).for("update");
+    if (!match) {
+      throw new QaControlError("QA match not found", 404);
+    }
+    if (!isFixturePair(match.initiatorId, match.recipientId)) {
+      throw new QaControlError("Only a distinct QA Alice/QA Bob match can be controlled");
+    }
+
+    const status = gate === "gate1" ? "pending" : gate === "completed" ? "completed" : "active";
+    const [result] = await tx.update(matches).set({
+      currentGate: gate,
+      status,
+      gatePaused: false,
+      gatePausedBy: null,
+      updatedAt: new Date(),
+    }).where(eq(matches.id, matchId)).returning();
+    return result;
+  });
+  console.info("[Track A QA gate control]", { actor, matchId, gate });
+  return updated;
+}
 
 /**
  * Called only by the authenticated Admin route or the Replit workspace seed.

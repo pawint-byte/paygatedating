@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { isQaMemberId, QA_MEMBER_HEADER } from "@shared/qa";
+import { isQaMemberId, QA_MEMBER_HEADER, QA_MEMBERS } from "@shared/qa";
 
 type Dependencies = {
   authenticate: RequestHandler;
@@ -8,6 +8,10 @@ type Dependencies = {
   getMatch: (id: string) => Promise<{
     initiatorId: string; recipientId: string; currentGate: string; status: string; gatePaused?: boolean | null;
   } | undefined>;
+  // Message requests fail closed when this full Setup QA members validation is
+  // absent or returns false. Other legacy QA paths intentionally do not call it.
+  validateQaFixtures?: (memberIds: readonly string[]) => Promise<boolean>;
+  acquireActionLock?: () => Promise<(() => Promise<void>) | undefined>;
 };
 
 export const sameOriginQaRequest: RequestHandler = (req, res, next) => {
@@ -46,6 +50,10 @@ export function createQaAccess(deps: Dependencies): RequestHandler {
             ["/api/wallet", "/api/wallet/transactions", "/api/matches"].includes(req.path);
           const interestAllowed = req.method === "POST" && req.path === "/api/matches" &&
             isQaMemberId(req.body?.recipientId) && req.body.recipientId !== memberId;
+          const messageMatchId = req.path.match(/^\/api\/matches\/([^/]+)\/messages(?:\/read)?$/)?.[1];
+          const messageAllowed = !!messageMatchId &&
+            ((req.method === "GET" && req.path.endsWith("/messages")) ||
+              (req.method === "POST" && (req.path.endsWith("/messages") || req.path.endsWith("/messages/read"))));
           const advanceId = req.method === "POST" &&
             req.path.match(/^\/api\/matches\/([^/]+)\/advance$/)?.[1];
           let advanceAllowed = false;
@@ -56,13 +64,31 @@ export function createQaAccess(deps: Dependencies): RequestHandler {
               match.recipientId === memberId &&
               match.currentGate === "gate1" && match.status !== "declined" && !match.gatePaused;
           }
-          if (!readAllowed && !interestAllowed && !advanceAllowed) {
+          let messageMatch: Awaited<ReturnType<Dependencies["getMatch"]>> | undefined;
+          if (messageAllowed) {
+            messageMatch = await deps.getMatch(messageMatchId!);
+            if (!messageMatch ||
+              !isQaMemberId(messageMatch.initiatorId) ||
+              !isQaMemberId(messageMatch.recipientId) ||
+              messageMatch.initiatorId === messageMatch.recipientId ||
+              (messageMatch.initiatorId !== memberId && messageMatch.recipientId !== memberId)) {
+              return res.status(403).json({
+                message: "QA messaging is limited to the distinct QA Alice/QA Bob fixture pair",
+              });
+            }
+            if (!deps.validateQaFixtures ||
+              !(await deps.validateQaFixtures([messageMatch.initiatorId, messageMatch.recipientId]))) {
+              return res.status(409).json({ message: "Set up the QA members before running messaging checks" });
+            }
+          }
+          if (!readAllowed && !interestAllowed && !advanceAllowed && !messageAllowed) {
             return res.status(403).json({
-              message: "QA mode only permits wallet/match reads, Interest between the two QA members, and Chapter 1 acceptance by its recipient",
+              message: "QA mode only permits wallet/match reads, Interest between the two QA members, Chapter 1 acceptance by its recipient, and fixture-pair messaging",
             });
           }
           const profile = await deps.getProfile(memberId);
-          if (!profile || !profile.displayName.startsWith("QA ") || profile.subscriptionTier !== "free") {
+          const fixture = QA_MEMBERS.find(member => member.userId === memberId);
+          if (!fixture || !profile || profile.displayName !== fixture.displayName || profile.subscriptionTier !== "free") {
             return res.status(409).json({ message: "Set up the QA members before running wallet checks" });
           }
           if (req.aborted || res.destroyed) return;
@@ -72,6 +98,15 @@ export function createQaAccess(deps: Dependencies): RequestHandler {
           res.once("finish", () => { req.user = originalUser; });
           res.setHeader("Cache-Control", "no-store");
           res.vary(QA_MEMBER_HEADER);
+          // Message handlers remain the normal handlers below, but QA sends and
+          // read receipts need the same cross-request serialization as the
+          // existing QA interest/advance mutations. The route callback invokes
+          // this only for POST message actions, preserving source-handler
+          // contract tests and ordinary non-QA requests.
+          if (messageAllowed && req.method === "POST" && deps.acquireActionLock) {
+            req.qaActionLock = (handler: RequestHandler) =>
+              withQaActionLock(handler, deps.acquireActionLock!)(req, res, next);
+          }
           console.info("[Track A QA request]", { actorId, memberId, method: req.method, path: req.path });
           next();
         } catch (error) {
