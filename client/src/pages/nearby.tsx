@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { 
-  MapPin, Radio, Heart, CheckCircle, AlertCircle, Navigation, Users 
+  MapPin, Radio, Heart, CheckCircle, Navigation, Users 
 } from "lucide-react";
 import { SiInstagram, SiTiktok, SiX, SiSnapchat } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +62,13 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
+function coordinates(lat: unknown, lng: unknown) {
+  if (lat == null || lng == null || lat === "" || lng === "") return null;
+  const point = { lat: Number(lat), lng: Number(lng) };
+  return Number.isFinite(point.lat) && Math.abs(point.lat) <= 90 &&
+    Number.isFinite(point.lng) && Math.abs(point.lng) <= 180 ? point : null;
+}
+
 export default function NearbyPage() {
   const { toast } = useToast();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -69,14 +76,21 @@ export default function NearbyPage() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [manualCity, setManualCity] = useState("");
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [chooserOpen, setChooserOpen] = useState(false);
   const locationRequestRef = useRef(0);
   const locationTimeoutRef = useRef<number | null>(null);
+  const geocodeAbortRef = useRef<AbortController | null>(null);
+  const awaitingSavedRef = useRef(false);
 
   const { data: profile } = useQuery<Profile>({
     queryKey: ["/api/profile"],
   });
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
+  const savedLocation = coordinates(profile?.latitude, profile?.longitude);
+  const savedCity = profile?.city || profile?.location;
 
-  const { data: nearbyProfiles, isLoading: loadingNearby, refetch: refetchNearby } = useQuery<Profile[]>({
+  const { data: nearbyProfiles, isLoading: loadingNearby } = useQuery<Profile[]>({
     queryKey: ["/api/nearby", userLocation?.lat, userLocation?.lng],
     queryFn: async () => {
       if (!userLocation) return [];
@@ -99,9 +113,13 @@ export default function NearbyPage() {
         longitude: lng?.toString(),
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, { isLive }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
-      refetchNearby();
+      queryClient.invalidateQueries({ queryKey: ["/api/nearby"] });
+      toast({
+        title: isLive ? "You're now live!" : "You're now hidden",
+        description: isLive ? "Others nearby can now see your selected general location." : "Your location is no longer visible to others.",
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -112,119 +130,118 @@ export default function NearbyPage() {
     },
   });
 
-  const requestLocation = () => {
-    const requestId = ++locationRequestRef.current;
-    if (locationTimeoutRef.current !== null) {
-      window.clearTimeout(locationTimeoutRef.current);
-    }
-
-    if (!navigator.geolocation) {
-      setIsGettingLocation(false);
-      setLocationError("Geolocation is not supported by your browser");
-      return;
-    }
-
-    setIsGettingLocation(true);
-    setLocationError(null);
-    locationTimeoutRef.current = window.setTimeout(() => {
-      if (locationRequestRef.current !== requestId) return;
-      setIsGettingLocation(false);
-      setLocationError("Location request timed out. Use your saved location or enter a city below.");
-    }, 8000);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (locationRequestRef.current !== requestId) return;
-        if (locationTimeoutRef.current !== null) {
-          window.clearTimeout(locationTimeoutRef.current);
-          locationTimeoutRef.current = null;
-        }
-        const { latitude, longitude } = position.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
-        setIsGettingLocation(false);
-      },
-      (error) => {
-        if (locationRequestRef.current !== requestId) return;
-        if (locationTimeoutRef.current !== null) {
-          window.clearTimeout(locationTimeoutRef.current);
-          locationTimeoutRef.current = null;
-        }
-        setIsGettingLocation(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationError("Location access denied. Use your saved location or enter a city below.");
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setLocationError("Location information is unavailable. Use your saved location or enter a city below.");
-            break;
-          case error.TIMEOUT:
-            setLocationError("Location request timed out. Use your saved location or enter a city below.");
-            break;
-          default:
-            setLocationError("An unknown error occurred.");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
-  };
-
-  const geocodeCity = async () => {
-    if (!manualCity.trim()) return;
+  const cancelLocationRequest = () => {
     locationRequestRef.current += 1;
     if (locationTimeoutRef.current !== null) {
       window.clearTimeout(locationTimeoutRef.current);
       locationTimeoutRef.current = null;
     }
+    geocodeAbortRef.current?.abort();
+    geocodeAbortRef.current = null;
+    awaitingSavedRef.current = false;
     setIsGettingLocation(false);
+    setIsGeocoding(false);
+  };
+
+  const requestLocation = () => {
+    cancelLocationRequest();
+    const requestId = locationRequestRef.current;
+    setIsGettingLocation(true);
+    setLocationError(null);
+
+    const fallback = () => {
+      if (locationRequestRef.current !== requestId) return;
+      cancelLocationRequest();
+      const currentProfile = profileRef.current;
+      const saved = coordinates(currentProfile?.latitude, currentProfile?.longitude);
+      if (saved) {
+        setUserLocation(saved);
+        setLocationError("Using your saved location. You can choose a different area anytime.");
+      } else {
+        awaitingSavedRef.current = true;
+        setLocationError("Choose a city to explore nearby. Current location isn't available, and that's okay.");
+        setChooserOpen(true);
+      }
+    };
+
+    if (!navigator.geolocation) return fallback();
+    locationTimeoutRef.current = window.setTimeout(fallback, 5000);
+    try {
+      navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (locationRequestRef.current !== requestId) return;
+        const point = coordinates(position.coords.latitude, position.coords.longitude);
+        if (!point) return fallback();
+        cancelLocationRequest();
+        setUserLocation(point);
+        setChooserOpen(false);
+      },
+      fallback,
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 },
+      );
+    } catch {
+      fallback();
+    }
+  };
+
+  const geocodeCity = async (city = manualCity) => {
+    if (!city.trim()) return;
+    cancelLocationRequest();
+    const requestId = locationRequestRef.current;
+    const controller = new AbortController();
+    geocodeAbortRef.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 5000);
     setIsGeocoding(true);
     setLocationError(null);
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(manualCity.trim())}`
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(city.trim())}`,
+        { signal: controller.signal },
       );
+      if (!response.ok) throw new Error("City search unavailable");
       const data = await response.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setUserLocation({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+      if (locationRequestRef.current !== requestId) return;
+      const point = Array.isArray(data) && data.length ? coordinates(data[0].lat, data[0].lon) : null;
+      if (point) {
+        setUserLocation(point);
+        setChooserOpen(false);
       } else {
         setLocationError("Couldn't find that place. Try a different city or town name.");
       }
     } catch {
-      setLocationError("Couldn't look up that location. Please try again.");
+      if (locationRequestRef.current === requestId) {
+        setLocationError("City search isn't available right now. Try again or use your saved location.");
+      }
     } finally {
-      setIsGeocoding(false);
+      window.clearTimeout(timeout);
+      if (locationRequestRef.current === requestId) {
+        geocodeAbortRef.current = null;
+        setIsGeocoding(false);
+      }
     }
   };
 
   const useSavedLocation = () => {
-    if (profile?.latitude && profile?.longitude) {
-      locationRequestRef.current += 1;
-      if (locationTimeoutRef.current !== null) {
-        window.clearTimeout(locationTimeoutRef.current);
-        locationTimeoutRef.current = null;
-      }
-      setIsGettingLocation(false);
+    if (savedLocation) {
+      cancelLocationRequest();
       setLocationError(null);
-      setUserLocation({ lat: parseFloat(profile.latitude), lng: parseFloat(profile.longitude) });
+      setUserLocation(savedLocation);
+      setChooserOpen(false);
+    } else if (savedCity) {
+      void geocodeCity(savedCity);
     }
   };
 
   const handleGoLive = (checked: boolean) => {
+    if (checked && !userLocation) return;
     if (checked && userLocation) {
       updateLiveMutation.mutate({
         isLive: true,
         lat: userLocation.lat,
         lng: userLocation.lng,
       });
-      toast({
-        title: "You're now live!",
-        description: "Others nearby can now see your general location.",
-      });
     } else {
       updateLiveMutation.mutate({ isLive: false });
-      toast({
-        title: "You're now hidden",
-        description: "Your location is no longer visible to others.",
-      });
     }
   };
 
@@ -235,8 +252,17 @@ export default function NearbyPage() {
       if (locationTimeoutRef.current !== null) {
         window.clearTimeout(locationTimeoutRef.current);
       }
+      geocodeAbortRef.current?.abort();
     };
   }, []);
+
+  // Profile loading can finish after the browser's location deadline.
+  useEffect(() => {
+    if (!awaitingSavedRef.current || !savedLocation) return;
+    awaitingSavedRef.current = false;
+    setUserLocation(savedLocation);
+    setLocationError("Using your saved location. You can choose a different area anytime.");
+  }, [profile?.latitude, profile?.longitude]);
 
   const getSocialLink = (platform: string, username: string) => {
     const links: Record<string, string> = {
@@ -250,27 +276,33 @@ export default function NearbyPage() {
 
   const manualEntry = (
     <div className="w-full space-y-3">
-      {profile?.latitude && profile?.longitude && (
+      <Button variant="outline" className="w-full" onClick={requestLocation}
+        disabled={isGettingLocation} data-testid="button-use-current-location">
+        <Navigation className="w-4 h-4 mr-2" />
+        {isGettingLocation ? "Finding current location…" : "Use current location"}
+      </Button>
+      {(savedLocation || savedCity) && (
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full h-auto whitespace-normal"
           onClick={useSavedLocation}
           data-testid="button-use-saved-location"
         >
           <MapPin className="w-4 h-4 mr-2" />
-          Use my saved location{profile.city ? ` (${profile.city})` : ""}
+          Use my saved location{savedCity ? ` (${savedCity})` : ""}
         </Button>
       )}
       <div className="flex gap-2">
         <Input
           placeholder="Enter your city or town..."
+          aria-label="Search for a city or town"
           value={manualCity}
           onChange={(e) => setManualCity(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") geocodeCity(); }}
           data-testid="input-manual-city-nearby"
         />
         <Button
-          onClick={geocodeCity}
+          onClick={() => void geocodeCity()}
           disabled={!manualCity.trim() || isGeocoding}
           data-testid="button-search-city"
         >
@@ -279,52 +311,6 @@ export default function NearbyPage() {
       </div>
     </div>
   );
-
-  if (!userLocation && !locationError) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-6">
-        <div className="text-center space-y-2">
-          <Navigation className="w-16 h-16 text-primary mx-auto animate-pulse" />
-          <h2 className="text-xl font-semibold">Getting your location...</h2>
-          <p className="text-muted-foreground">
-            {isGettingLocation 
-              ? "Please allow location access when prompted" 
-              : "Loading..."}
-          </p>
-        </div>
-        <div className="w-full max-w-sm space-y-3">
-          <p className="text-center text-sm text-muted-foreground">
-            Taking too long, or prefer not to share your location?
-          </p>
-          {manualEntry}
-        </div>
-      </div>
-    );
-  }
-
-  if (locationError) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 p-6">
-        <Card className="max-w-md w-full">
-          <CardContent className="py-8 text-center space-y-4">
-            <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
-            <h2 className="text-xl font-semibold">Location Needed</h2>
-            <p className="text-muted-foreground">{locationError}</p>
-            <Button onClick={requestLocation} data-testid="button-retry-location">
-              <MapPin className="w-4 h-4 mr-2" />
-              Try Again
-            </Button>
-            <div className="pt-4 border-t space-y-3 text-left">
-              <p className="text-sm text-muted-foreground text-center">
-                Or set your location manually:
-              </p>
-              {manualEntry}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="h-full flex flex-col">
@@ -338,7 +324,8 @@ export default function NearbyPage() {
             <Switch
               checked={profile?.isLive || false}
               onCheckedChange={handleGoLive}
-              disabled={updateLiveMutation.isPending}
+              disabled={updateLiveMutation.isPending || (!userLocation && !profile?.isLive)}
+              aria-label="Go Live"
               data-testid="switch-go-live"
             />
             {profile?.isLive && (
@@ -355,14 +342,43 @@ export default function NearbyPage() {
             </span>
           </div>
         </div>
+        {locationError && <p className="mt-2 text-sm text-muted-foreground" role="status">{locationError}</p>}
+        {profile?.isLive && userLocation && (!savedLocation ||
+          savedLocation.lat !== userLocation.lat || savedLocation.lng !== userLocation.lng) && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            You're still live at your saved location. Turn Go Live off and on to share this map area instead.
+          </p>
+        )}
       </div>
 
-      <div className="flex-1 relative">
+      <div className="flex-1 relative isolate min-h-[400px]">
+        <div className="absolute top-3 right-3 z-[1001]">
+          <Button variant="outline" className="bg-background shadow-md"
+            onClick={() => setChooserOpen(open => !open)}
+            aria-expanded={chooserOpen || !userLocation} aria-controls="nearby-location-chooser"
+            data-testid="button-choose-location">
+            <MapPin className="w-4 h-4 mr-2" /> Choose location
+          </Button>
+        </div>
+        {(chooserOpen || !userLocation) && (
+          <Card id="nearby-location-chooser" className={userLocation
+            ? "absolute top-16 right-3 z-[1001] w-[calc(100%_-_1.5rem)] max-w-sm max-h-[70vh] overflow-y-auto"
+            : "mx-auto mt-16 mb-6 w-[calc(100%_-_2rem)] max-w-sm"}>
+            <CardHeader>
+              <CardTitle className="text-lg">Choose where to explore</CardTitle>
+              <CardDescription>
+                {isGettingLocation ? "Allow location access, or choose a city below. We'll wait no more than five seconds."
+                  : "Use your current location, your saved area, or search for a city."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>{manualEntry}</CardContent>
+          </Card>
+        )}
         {userLocation && (
           <MapContainer
             center={[userLocation.lat, userLocation.lng]}
             zoom={14}
-            style={{ height: "100%", width: "100%" }}
+            style={{ position: "absolute", inset: 0, height: "100%", width: "100%" }}
             data-testid="map-container"
           >
             <TileLayer
