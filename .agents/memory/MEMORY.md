@@ -9,3 +9,4 @@
 - [Protect mission](protect-mission.md) — refuse off-mission work within PayGate Dating and offer a constructive, mission-aligned alternative.
 - [Amazon list response caveat](amazon-list-responses.md) — nonexistent lists can return HTTP 200 with unrelated product promotions; status and product links alone do not establish a real list.
 - [Replit configuration ownership](replit-config-ownership.md) — preserve owner/platform-managed runtime, deployment, and secret settings during routine application work.
+- [GitHub backup standing order](github-backup.md) — back up final published, tested state without secrets or partial work; report verified success or authentication blockage to CoS.
