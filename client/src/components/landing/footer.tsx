@@ -111,9 +111,25 @@ export function Footer() {
             &copy; {new Date().getFullYear()} PayGate Dating. All rights
             reserved.
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap justify-center items-center gap-4">
             <span className="text-sm text-muted-foreground">Share:</span>
             <SocialShare />
+            <a
+              href="https://www.youtube.com/@PayGateDating"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              YouTube
+            </a>
+            <a
+              href="https://www.tiktok.com/@paygatedating"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              TikTok
+            </a>
           </div>
           <p className="text-sm text-muted-foreground">
             Made with <Heart className="w-3 h-3 inline text-primary" /> for
