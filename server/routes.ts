@@ -28,7 +28,8 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { emailService } from "./lib/email";
-import { acquireQaActionLock, setupQaMembers } from "./qa-members";
+import { acquireQaActionLock, setupQaMembers, grantQaTestRewards } from "./qa-members";
+import { qaTestRewardSchema } from "@shared/qa-test-rewards";
 import { createQaAccess, sameOriginQaRequest, withQaActionLock } from "./qa-access";
 import { isQaMemberId, QA_MEMBER_HEADER, QA_MEMBERS } from "@shared/qa";
 import { heardViaInputSchema } from "@shared/referral-source";
@@ -3921,6 +3922,19 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     } catch (error) {
       console.error("QA setup failed:", error);
       res.status(409).json({ message: "QA setup failed safely; check server logs. No partial setup was committed." });
+    }
+  });
+
+  app.post("/api/admin/qa-members/test-rewards", isAuthenticated, isAdmin, sameOriginQaRequest, async (req: any, res) => {
+    const validation = qaTestRewardSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ message: "Choose $5, $10, or $20 and target alice, bob, or both. No other fields are accepted." });
+    }
+    try {
+      res.json(await grantQaTestRewards(req.user.claims.sub, validation.data));
+    } catch (error) {
+      console.error("QA test reward failed:", error);
+      res.status(409).json({ message: "QA reward not granted. Ensure Setup QA members has completed. No partial grant was committed." });
     }
   });
 

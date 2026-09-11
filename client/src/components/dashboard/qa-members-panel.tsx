@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { QaTestRewardsControl } from "./qa-test-rewards-control";
 
 type QaMember = {
   userId: string;
@@ -234,6 +235,7 @@ export function QaMembersPanel() {
           </Button>
         </div>
 
+        <QaTestRewardsControl disabled={busy} onGranted={refreshPerspectives} />
         {notice && <p className="text-sm" role="status">{notice}</p>}
         {bothLoaded && (aliceMatch || bobMatch) && (
           <p className="rounded-md border p-3 text-sm" role="status" data-testid="counterpart-verification">

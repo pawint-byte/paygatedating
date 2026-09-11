@@ -3,6 +3,7 @@ import { db, pool } from "./db";
 import { profiles, transactions, userRewards, wallets } from "@shared/schema";
 import { users } from "@shared/models/auth";
 import { QA_GRANT_DESCRIPTION, QA_INITIAL_CREDIT, QA_MEMBERS } from "@shared/qa";
+import { qaTestRewardSchema, QA_TEST_REWARD_SOURCE } from "@shared/qa-test-rewards";
 
 /**
  * Called only by the authenticated Admin route or the Replit workspace seed.
@@ -101,6 +102,40 @@ export async function setupQaMembers(actor: string) {
   });
   console.info("[Track A QA setup]", { actor, members });
   return { members, grantAmount: QA_INITIAL_CREDIT };
+}
+
+// Repeatable fixture-only rewards use the same wallet increment + trial_bonus
+// ledger primitive as setup. Neither setup nor payment confirmation is altered.
+export async function grantQaTestRewards(actor: string, input: unknown) {
+  const { amount, target } = qaTestRewardSchema.parse(input);
+  const selected = target === "both" ? QA_MEMBERS : [QA_MEMBERS[target === "alice" ? 0 : 1]];
+  const members = await db.transaction(async tx => {
+    await tx.execute(sql`select pg_advisory_xact_lock(714209, 1)`);
+    const result = [];
+    for (const member of selected) {
+      const [user] = await tx.select().from(users).where(eq(users.id, member.userId));
+      const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, member.userId));
+      const [wallet] = await tx.select().from(wallets).where(eq(wallets.userId, member.userId)).for("update");
+      if (!user || !profile || !wallet || user.isAdmin || user.email !== null ||
+        user.firstName !== "QA" || user.lastName !== member.displayName.slice(3) ||
+        profile.displayName !== member.displayName || !wallet.trialCreditsReceived) {
+        throw new Error("QA fixtures are missing or invalid. Run Setup QA members first.");
+      }
+      const [updated] = await tx.update(wallets).set({
+        balance: sql`${wallets.balance} + ${amount}`,
+      }).where(eq(wallets.id, wallet.id)).returning({ balance: wallets.balance });
+      await tx.insert(transactions).values({
+        walletId: wallet.id,
+        amount: amount.toFixed(2),
+        type: "trial_bonus",
+        description: `${QA_TEST_REWARD_SOURCE}: Admin QA/testing-only reward; not a payment; actor=${actor}`,
+      });
+      result.push({ userId: member.userId, displayName: member.displayName, balance: updated.balance });
+    }
+    return result;
+  });
+  console.info("[Track A QA test reward]", { actor, amount, target, members });
+  return { source: QA_TEST_REWARD_SOURCE, amount, members };
 }
 
 // Same lock as provisioning: overlapping QA clicks cannot double-spend or
