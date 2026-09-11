@@ -16,6 +16,7 @@ import { isUnauthorizedError } from "@/lib/auth-utils";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { SiAmazon } from "react-icons/si";
+import { AmazonWishlistImport } from "@/components/dashboard/amazon-wishlist-import";
 
 const SUPPORTED_HOSTNAMES = [
   'amazon.com', 'amzn.to', 'amzn.com', 'a.co',
@@ -318,13 +319,15 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
             <Gift className="w-5 h-5 text-primary" />
             <CardTitle>Items of Interest</CardTitle>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={handleDialogClose}>
-            <DialogTrigger asChild>
-              <Button size="sm" data-testid="button-add-wishlist-item">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Item
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <AmazonWishlistImport />
+            <Dialog open={isAddDialogOpen} onOpenChange={handleDialogClose}>
+              <DialogTrigger asChild>
+                <Button size="sm" data-testid="button-add-wishlist-item">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Item
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-md flex flex-col max-h-[90vh] overflow-hidden">
               <DialogHeader>
                 <DialogTitle>Add Wishlist Item</DialogTitle>
@@ -728,8 +731,9 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                   </form>
                 </Form>
               )}
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         <CardDescription>
           Create your wishlist. When someone purchases an item, it unlocks gates automatically. PayGate earns a small commission on purchases.

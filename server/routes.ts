@@ -43,6 +43,10 @@ import { qaGateControlSchema } from "@shared/qa-controls";
 import { createQaAccess, sameOriginQaRequest, withQaActionLock } from "./qa-access";
 import { isQaMemberId, QA_MEMBER_HEADER, QA_MEMBERS } from "@shared/qa";
 import { heardViaInputSchema } from "@shared/referral-source";
+import {
+  createAmazonWishlistPreviewHandler,
+  sameOriginAmazonWishlistRequest,
+} from "./amazon-wishlist-import";
 
 const depositSchema = z.object({
   amount: z.number().min(MINIMUM_WALLET_BALANCE, `Minimum deposit is $${MINIMUM_WALLET_BALANCE}`),
@@ -68,6 +72,13 @@ export async function registerRoutes(
     acquireActionLock: acquireQaActionLock,
   }));
   registerAuthRoutes(app);
+
+  app.post(
+    "/api/registry/import-amazon/preview",
+    isAuthenticated,
+    sameOriginAmazonWishlistRequest,
+    createAmazonWishlistPreviewHandler(),
+  );
 
   app.patch("/api/auth/heard-via", isAuthenticated, async (req: any, res) => {
     try {
