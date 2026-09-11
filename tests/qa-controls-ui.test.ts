@@ -25,6 +25,44 @@ test("QA control selectors are locked during operations and refreshes", () => {
   }
 });
 
+test("QA match empty state creates only the fixed pair and refreshes both QA views", () => {
+  assert.match(source, /type CreateMatchResult = \{ match: Match; created: boolean \}/);
+  assert.match(
+    source,
+    /qaRequest<CreateMatchResult>\("\/api\/admin\/qa-members\/matches", undefined, "POST", \{\}\)/,
+  );
+  assert.match(
+    source,
+    /queryClient\.invalidateQueries\(\{ queryKey: \["\/api\/admin\/qa-members\/matches"\] \}\)/,
+  );
+  assert.match(
+    source,
+    /queryClient\.invalidateQueries\(\{ queryKey: \["\/api\/qa-members"\] \}\)/,
+  );
+  assert.match(source, /const existingGate = match\.currentGate/);
+  assert.match(source, /setSelectedGate\(existingGate\)/);
+  assert.match(source, /created \? "created" : "reused"/);
+  assert.match(source, /without a wallet charge or Stripe activity/);
+  assert.match(source, /Set Gate 3, then send as QA Alice and read as QA Bob/);
+
+  const emptyStart = source.indexOf('data-testid="qa-gate-empty"');
+  assert.ok(emptyStart >= 0, "missing QA match empty state");
+  const emptyEnd = source.indexOf("</div>", emptyStart);
+  assert.ok(emptyEnd > emptyStart, "could not isolate QA match empty state");
+  const emptyState = source.slice(source.lastIndexOf("<div", emptyStart), emptyEnd);
+  assert.match(emptyState, /Create QA Alice ↔ QA Bob match/);
+  assert.match(emptyState, /data-testid="qa-create-match"/);
+  assert.doesNotMatch(emptyState, /<input/);
+});
+
+test("QA match creation participates in the controls busy state", () => {
+  assert.match(
+    source,
+    /const controlsBusy = disabled \|\| matchLoading \|\| messagesLoading \|\| refreshingMatches \|\| refreshingMessages \|\|\s+createMatchMutation\.isPending/,
+  );
+  assert.match(source, /const createMatchDisabled = createDisabled \|\| matchLoading/);
+});
+
 test("QA message callbacks use captured variables and guarded readback", () => {
   const sendStart = source.indexOf("const sendMutation");
   const readStart = source.indexOf("const readMutation");

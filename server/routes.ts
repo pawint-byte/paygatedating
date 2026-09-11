@@ -32,6 +32,7 @@ import {
   acquireQaActionLock,
   setupQaMembers,
   grantQaTestRewards,
+  ensureQaMemberMatch,
   getQaMemberMatches,
   setQaMemberGate,
   validateQaFixtureMembers,
@@ -3966,6 +3967,22 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     } catch (error) {
       console.error("QA test reward failed:", error);
       res.status(409).json({ message: "QA reward not granted. Ensure Setup QA members has completed. No partial grant was committed." });
+    }
+  });
+
+  app.post("/api/admin/qa-members/matches", isAuthenticated, isAdmin, sameOriginQaRequest, async (req: any, res) => {
+    const validation = z.object({}).strict().safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ message: "QA match creation is fixed to Alice and Bob; no parameters are accepted" });
+    }
+    try {
+      res.json(await ensureQaMemberMatch(req.user.claims.sub));
+    } catch (error) {
+      console.error("QA match creation failed:", error);
+      if (error instanceof QaControlError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
+      res.status(409).json({ message: "QA match was not created. Ensure Setup QA members has completed." });
     }
   });
 

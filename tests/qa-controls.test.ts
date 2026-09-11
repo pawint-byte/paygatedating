@@ -4,6 +4,7 @@ import { test } from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 import express from "express";
+import { z } from "zod";
 
 import { QA_MEMBERS } from "../shared/qa.ts";
 import { isValidQaFixtureRecord, qaGateControlSchema } from "../shared/qa-controls.ts";
@@ -29,6 +30,27 @@ function extractFunction(file: string, name: string, bindings: Record<string, un
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText, context);
   return context.value as (...args: any[]) => Promise<any>;
+}
+
+function extractRouteHandler(method: "get" | "post", path: string, bindings: Record<string, unknown>) {
+  const file = "server/routes.ts";
+  const tree = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
+  let expression: string | undefined;
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.getText(tree) === `app.${method}` &&
+      ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text === path) {
+      expression = node.arguments.at(-1)!.getText(tree);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+  assert.ok(expression, `Missing ${method.toUpperCase()} ${path}`);
+  const context = vm.createContext({ ...bindings, console, handler: undefined });
+  vm.runInContext(ts.transpileModule(`handler = (${expression});`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText, context);
+  return context.handler as (req: any, res: any) => Promise<void>;
 }
 
 function fixtureDb() {
@@ -105,6 +127,23 @@ function fixtureDb() {
         }),
       }),
     }),
+    insert: (tableRef: { table: keyof typeof state }) => ({
+      values: (values: Record<string, unknown>) => ({
+        returning: async () => {
+          assert.equal(tableRef.table, "matches");
+          const match = {
+            id: `qa-created-${state.matches.length + 1}`,
+            currentGate: "gate1",
+            status: "pending",
+            skipPaid: false,
+            gatePaused: false,
+            ...values,
+          };
+          (state.matches as any[]).push(match);
+          return [match];
+        },
+      }),
+    }),
   };
   const db = { transaction: async (work: (transaction: typeof tx) => Promise<any>) => work(tx) };
   const bindings = {
@@ -140,7 +179,15 @@ function fixtureDb() {
       (recipientId === alice || recipientId === bob) &&
       initiatorId !== recipientId,
   });
-  return { state, getMatches, setGate, lockCalls: () => lockCalls };
+  const ensure = extractFunction(sourceFile, "ensureQaMemberMatch", {
+    ...bindings,
+    validateQaFixtures: extractFunction(sourceFile, "validateQaFixtures", bindings),
+    isFixturePair: (initiatorId: string, recipientId: string) =>
+      (initiatorId === alice || initiatorId === bob) &&
+      (recipientId === alice || recipientId === bob) &&
+      initiatorId !== recipientId,
+  });
+  return { state, getMatches, setGate, ensure, lockCalls: () => lockCalls };
 }
 
 test("QA gate controls select only distinct fixture pairs and update no payment records", async () => {
@@ -189,6 +236,48 @@ test("gate control schema is strict and permits only the fixed gate targets", ()
   }
 });
 
+test("explicit QA match creation is fixed, idempotent, locked, and payment-free", async () => {
+  const service = fixtureDb();
+  const beforeWallets = structuredClone(service.state.wallets);
+  const beforeTransactions = structuredClone(service.state.transactions);
+  const existing = await service.ensure("test-admin");
+  assert.equal(existing.created, false);
+  assert.equal(existing.match.id, "qa-pair-1", "active pair is selected deterministically");
+  assert.equal(existing.match.currentGate, "gate2", "existing gate is never reset");
+  assert.deepEqual(service.state.wallets, beforeWallets);
+  assert.deepEqual(service.state.transactions, beforeTransactions);
+
+  const createdService = fixtureDb();
+  createdService.state.matches.splice(0, 2);
+  const created = await createdService.ensure("test-admin");
+  assert.equal(created.created, true);
+  assert.equal(created.match.initiatorId, alice);
+  assert.equal(created.match.recipientId, bob);
+  assert.equal(created.match.currentGate, "gate1");
+  assert.equal(created.match.status, "pending");
+  assert.equal(created.match.lastActionBy, alice);
+  assert.match(created.match.message, /QA Alice.*QA Bob/);
+  created.match.initiatorId = bob;
+  created.match.recipientId = alice;
+  created.match.currentGate = "gate3";
+  created.match.status = "active";
+  const repeated = await createdService.ensure("test-admin");
+  assert.equal(repeated.created, false);
+  assert.equal(repeated.match.id, created.match.id);
+  assert.equal(repeated.match.currentGate, "gate3");
+  assert.equal(repeated.match.initiatorId, bob);
+  assert.equal(repeated.match.recipientId, alice);
+  assert.equal(createdService.state.matches.length, 3);
+  assert.ok(createdService.lockCalls() >= 2);
+});
+
+test("explicit QA match creation fails closed for a malformed fixture", async () => {
+  const service = fixtureDb();
+  service.state.wallets.pop();
+  await assert.rejects(service.ensure("test-admin"));
+  assert.equal(service.state.matches.length, 4, "fixture failure cannot create a match");
+});
+
 test("QA gate admin routes use authentication, admin, same-origin and strict target guards", async () => {
   const source = readFileSync("server/routes.ts", "utf8");
   const tree = ts.createSourceFile("server/routes.ts", source, ts.ScriptTarget.Latest, true);
@@ -198,13 +287,15 @@ test("QA gate admin routes use authentication, admin, same-origin and strict tar
       node.expression.expression.getText(tree) === "app" &&
       ts.isStringLiteral(node.arguments[0]) &&
       ["/api/admin/qa-members/matches", "/api/admin/qa-members/matches/:id/gate"].includes(node.arguments[0].text)) {
-      routeTexts.set(node.arguments[0].text, node.arguments.slice(1, -1).map(argument => argument.getText(tree)).join(","));
+      routeTexts.set(`${node.expression.name.text}:${node.arguments[0].text}`,
+        node.arguments.slice(1, -1).map(argument => argument.getText(tree)).join(","));
     }
     ts.forEachChild(node, visit);
   };
   visit(tree);
-  assert.equal(routeTexts.get("/api/admin/qa-members/matches"), "isAuthenticated,isAdmin,sameOriginQaRequest");
-  assert.equal(routeTexts.get("/api/admin/qa-members/matches/:id/gate"), "isAuthenticated,isAdmin,sameOriginQaRequest");
+  assert.equal(routeTexts.get("get:/api/admin/qa-members/matches"), "isAuthenticated,isAdmin,sameOriginQaRequest");
+  assert.equal(routeTexts.get("post:/api/admin/qa-members/matches"), "isAuthenticated,isAdmin,sameOriginQaRequest");
+  assert.equal(routeTexts.get("post:/api/admin/qa-members/matches/:id/gate"), "isAuthenticated,isAdmin,sameOriginQaRequest");
 
   const service = fixtureDb();
   const app = express();
@@ -225,12 +316,18 @@ test("QA gate admin routes use authentication, admin, same-origin and strict tar
     if (req.user?.claims?.sub !== "test-admin") return res.status(403).json({ message: "Admin access required" });
     next();
   };
+  const createHandler = extractRouteHandler("post", "/api/admin/qa-members/matches", {
+    z,
+    ensureQaMemberMatch: service.ensure,
+    QaControlError: class QaControlError extends Error {},
+  });
   const getHandler = async (_req: any, res: any) => res.json(await service.getMatches());
   const postHandler = async (req: any, res: any) => {
     const validation = qaGateControlSchema.safeParse(req.body);
     if (!validation.success) return res.status(400).json({ message: "invalid gate" });
     res.json(await service.setGate(req.user.claims.sub, req.params.id, validation.data));
   };
+  app.post("/api/admin/qa-members/matches", authenticate, isAdmin, sameOriginQaRequest, createHandler);
   app.get("/api/admin/qa-members/matches", authenticate, isAdmin, sameOriginQaRequest, getHandler);
   app.post("/api/admin/qa-members/matches/:id/gate", authenticate, isAdmin, sameOriginQaRequest, postHandler);
   const server = app.listen(0, "127.0.0.1");
@@ -245,6 +342,37 @@ test("QA gate admin routes use authentication, admin, same-origin and strict tar
     assert.equal((await fetch(`${base}/api/admin/qa-members/matches`, {
       headers: { "x-test-actor": "test-admin", origin: "https://attacker.example" },
     })).status, 403);
+    assert.equal((await fetch(`${base}/api/admin/qa-members/matches`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    })).status, 401);
+    assert.equal((await fetch(`${base}/api/admin/qa-members/matches`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-actor": "ordinary" },
+      body: JSON.stringify({}),
+    })).status, 403);
+    assert.equal((await fetch(`${base}/api/admin/qa-members/matches`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-actor": "test-admin", origin: "https://attacker.example" },
+      body: JSON.stringify({}),
+    })).status, 403);
+    const strict = await fetch(`${base}/api/admin/qa-members/matches`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-actor": "test-admin" },
+      body: JSON.stringify({ recipientId: bob }),
+    });
+    assert.equal(strict.status, 400);
+    const created = await fetch(`${base}/api/admin/qa-members/matches`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-actor": "test-admin" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(created.status, 200);
+    const createdBody = await created.json();
+    assert.equal(createdBody.match.initiatorId, alice);
+    assert.equal(createdBody.match.recipientId, bob);
+    assert.equal(createdBody.created, false);
     const invalid = await fetch(`${base}/api/admin/qa-members/matches/qa-pair-1/gate`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-test-actor": "test-admin" },
@@ -258,6 +386,13 @@ test("QA gate admin routes use authentication, admin, same-origin and strict tar
     });
     assert.equal(valid.status, 200);
     assert.equal((await valid.json()).currentGate, "gate3");
+    service.state.wallets.pop();
+    const malformedFixture = await fetch(`${base}/api/admin/qa-members/matches`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-test-actor": "test-admin" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(malformedFixture.status, 409);
   } finally {
     server.close();
     await new Promise<void>(resolve => server.once("close", resolve));

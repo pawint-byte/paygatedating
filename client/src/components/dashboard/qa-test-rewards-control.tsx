@@ -4,9 +4,10 @@ import { QA_TEST_REWARD_AMOUNTS, type QaTestRewardInput } from "@shared/qa-test-
 import { Button } from "@/components/ui/button";
 import { queryClient } from "@/lib/queryClient";
 
-export function QaTestRewardsControl({ disabled, onGranted }: {
+export function QaTestRewardsControl({ disabled, onGranted, onBusyChange }: {
   disabled: boolean;
   onGranted: () => Promise<void>;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [amount, setAmount] = useState<QaTestRewardInput["amount"]>(5);
   const [target, setTarget] = useState<QaTestRewardInput["target"]>("both");
@@ -23,7 +24,10 @@ export function QaTestRewardsControl({ disabled, onGranted }: {
       if (!response.ok) throw new Error(data.message || "QA reward request failed.");
       return data as { amount: number; members: Array<{ displayName: string; balance: string }> };
     },
-    onMutate: () => setMessage("Granting QA test rewards…"),
+    onMutate: () => {
+      onBusyChange?.(true);
+      setMessage("Granting QA test rewards…");
+    },
     onSuccess: async data => {
       setMessage(`Granted $${data.amount} to each selected QA member. ${data.members.map(member =>
         `${member.displayName}: $${Number(member.balance).toFixed(2)}`).join("; ")}. You can grant again for another test.`);
@@ -31,6 +35,7 @@ export function QaTestRewardsControl({ disabled, onGranted }: {
       await onGranted();
     },
     onError: (error: Error) => setMessage(`Grant failed: ${error.message}`),
+    onSettled: () => onBusyChange?.(false),
     retry: false,
   });
   const busy = disabled || grant.isPending;

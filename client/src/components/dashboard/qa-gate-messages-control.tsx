@@ -12,6 +12,7 @@ import { queryClient } from "@/lib/queryClient";
 type GateValue = "gate1" | "gate2" | "gate3" | "gate4" | "gate5" | "completed";
 type QaMemberId = typeof QA_MEMBERS[number]["userId"];
 type Feedback = { kind: "pending" | "success" | "error"; text: string };
+type CreateMatchResult = { match: Match; created: boolean };
 
 const GATES: Array<{ value: GateValue; label: string }> = [
   { value: "gate1", label: "Gate 1" },
@@ -109,7 +110,13 @@ function FeedbackMessage({ feedback }: { feedback: Feedback | null }) {
   );
 }
 
-export function QaGateMessagesControl({ disabled = false }: { disabled?: boolean }) {
+export function QaGateMessagesControl({
+  disabled = false,
+  createDisabled = false,
+}: {
+  disabled?: boolean;
+  createDisabled?: boolean;
+}) {
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [selectedGate, setSelectedGate] = useState<GateValue>("gate1");
   const [actingMemberId, setActingMemberId] = useState<QaMemberId>(aliceId);
@@ -211,6 +218,46 @@ export function QaGateMessagesControl({ disabled = false }: { disabled?: boolean
 
   const isCurrentMessageSelection = (variables: { matchId: string; memberId: QaMemberId }) =>
     selectedMatchIdRef.current === variables.matchId && actingMemberIdRef.current === variables.memberId;
+
+  const createMatchMutation = useMutation<CreateMatchResult, Error, void>({
+    mutationFn: () => qaRequest<CreateMatchResult>("/api/admin/qa-members/matches", undefined, "POST", {}),
+    onMutate: () => {
+      setGateFeedback({ kind: "pending", text: "Creating or reusing the QA Alice / QA Bob match…" });
+    },
+    onSuccess: async ({ match, created }) => {
+      if (!isFixturePair(match)) {
+        setGateFeedback({ kind: "error", text: "The Admin QA match response was not the fixed QA Alice / QA Bob pair." });
+        return;
+      }
+
+      const existingGate = match.currentGate;
+      setSelectedMatchId(match.id);
+      if (isGate(existingGate)) setSelectedGate(existingGate);
+      try {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["/api/qa-members"] }),
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/qa-members/matches"] }),
+          matchesQuery.refetch({ throwOnError: true }),
+        ]);
+        // Refetching can run the selection effect while the old list is still
+        // rendered; apply the server-returned match after the refresh as well.
+        setSelectedMatchId(match.id);
+        if (isGate(existingGate)) setSelectedGate(existingGate);
+        setGateFeedback({
+          kind: "success",
+          text: `${qaMemberName(match.initiatorId)} / ${qaMemberName(match.recipientId)} match ${created ? "created" : "reused"} without a wallet charge or Stripe activity. Set Gate 3, then send as QA Alice and read as QA Bob.`,
+        });
+      } catch (error) {
+        setGateFeedback({
+          kind: "error",
+          text: `Match ${created ? "created" : "reused"}, but refresh failed: ${errorText(error, "Could not refresh the QA match.")}`,
+        });
+      }
+    },
+    onError: (error) => {
+      setGateFeedback({ kind: "error", text: `Could not create the QA Alice / QA Bob match: ${errorText(error, "Request failed.")}` });
+    },
+  });
 
   const gateMutation = useMutation<Match, Error, { matchId: string; gate: GateValue }>({
     mutationFn: ({ matchId, gate }) => qaRequest<Match>(
@@ -325,7 +372,9 @@ export function QaGateMessagesControl({ disabled = false }: { disabled?: boolean
   const matchLoading = matchesQuery.isLoading || matchesQuery.isFetching;
   const messagesLoading = messagesQuery.isLoading || messagesQuery.isFetching;
   const controlsBusy = disabled || matchLoading || messagesLoading || refreshingMatches || refreshingMessages ||
-    gateMutation.isPending || sendMutation.isPending || readMutation.isPending;
+    createMatchMutation.isPending || gateMutation.isPending || sendMutation.isPending || readMutation.isPending;
+  const createMatchDisabled = createDisabled || matchLoading || matchesQuery.isError ||
+    createMatchMutation.isPending || matches.length > 0;
   const sendDisabled = controlsBusy || !chatAvailable || messagesQuery.isLoading || messagesQuery.isError || !draft.trim();
   const readDisabled = controlsBusy || !chatAvailable || messagesQuery.isError;
 
@@ -403,7 +452,24 @@ export function QaGateMessagesControl({ disabled = false }: { disabled?: boolean
             </div>
           )}
           {!matchesQuery.isError && !matches.length && !matchLoading && (
-            <p className="text-sm text-muted-foreground" data-testid="qa-gate-empty">No valid QA Alice / QA Bob fixture pair matches were returned.</p>
+            <div className="space-y-3 rounded-md border border-dashed p-3" data-testid="qa-gate-empty">
+              <p className="text-sm text-muted-foreground">
+                No valid QA Alice / QA Bob fixture pair match was returned. Create or reuse the fixed pair here;
+                this Admin-only action does not send paid Interest or charge a wallet.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Next: create the pair, set it to Gate 3, then send a message as QA Alice and read it as QA Bob.
+              </p>
+              <Button
+                type="button"
+                onClick={() => createMatchMutation.mutate()}
+                disabled={createMatchDisabled}
+                aria-busy={createMatchMutation.isPending}
+                data-testid="qa-create-match"
+              >
+                {createMatchMutation.isPending ? "Creating…" : "Create QA Alice ↔ QA Bob match"}
+              </Button>
+            </div>
           )}
           <FeedbackMessage feedback={gateFeedback} />
         </section>

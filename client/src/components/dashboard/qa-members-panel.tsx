@@ -106,6 +106,7 @@ export function QaMembersPanel() {
   const [perspectivesEnabled, setPerspectivesEnabled] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [senderId, setSenderId] = useState(aliceId);
+  const [rewardMutationBusy, setRewardMutationBusy] = useState(false);
 
   const alicePerspective = useQuery({
     queryKey: ["/api/qa-members", aliceId, "perspective"],
@@ -238,8 +239,8 @@ export function QaMembersPanel() {
           </Button>
         </div>
 
-        <QaTestRewardsControl disabled={busy} onGranted={refreshPerspectives} />
-        <QaGateMessagesControl disabled={busy} />
+        <QaTestRewardsControl disabled={busy} onGranted={refreshPerspectives} onBusyChange={setRewardMutationBusy} />
+        <QaGateMessagesControl disabled={busy} createDisabled={setupMutation.isPending || rewardMutationBusy} />
         {notice && <p className="text-sm" role="status">{notice}</p>}
         {bothLoaded && (aliceMatch || bobMatch) && (
           <p className="rounded-md border p-3 text-sm" role="status" data-testid="counterpart-verification">

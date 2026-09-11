@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, pool } from "./db";
-import { matches, profiles, transactions, userRewards, wallets } from "@shared/schema";
+import { matches, profiles, transactions, userRewards, wallets, type Match } from "@shared/schema";
 import { users } from "@shared/models/auth";
 import { QA_GRANT_DESCRIPTION, QA_INITIAL_CREDIT, QA_MEMBERS, isQaMemberId } from "@shared/qa";
 import { qaTestRewardSchema, QA_TEST_REWARD_SOURCE } from "@shared/qa-test-rewards";
@@ -55,6 +55,45 @@ export async function validateQaFixtureMembers(memberIds: readonly string[]) {
 
 function isFixturePair(initiatorId: string, recipientId: string) {
   return isQaMemberId(initiatorId) && isQaMemberId(recipientId) && initiatorId !== recipientId;
+}
+
+/**
+ * Ensure the one explicit QA pair exists without going through the ordinary
+ * interest/payment path. This is deliberately separate from Setup: setup
+ * provisions the fixtures and this operation only creates the fixed match.
+ */
+export async function ensureQaMemberMatch(actor: string): Promise<{ match: Match; created: boolean }> {
+  const result = await db.transaction(async tx => {
+    await tx.execute(sql`select pg_advisory_xact_lock(714209, 1)`);
+    await validateQaFixtures(tx);
+
+    // Inspect every row so either Alice -> Bob or Bob -> Alice is treated as
+    // the same pair. Prefer an active existing row, then use its id for a
+    // stable choice if data contains more than one historical QA match.
+    const existingMatches = await tx.select().from(matches);
+    const pairMatches = existingMatches
+      .filter(match => isFixturePair(match.initiatorId, match.recipientId))
+      .sort((left, right) => {
+        const activeDifference = Number(right.status === "active") - Number(left.status === "active");
+        if (activeDifference !== 0) return activeDifference;
+        return left.id.localeCompare(right.id);
+      });
+    if (pairMatches[0]) {
+      return { match: pairMatches[0], created: false };
+    }
+
+    const [match] = await tx.insert(matches).values({
+      initiatorId: QA_MEMBERS[0].userId,
+      recipientId: QA_MEMBERS[1].userId,
+      currentGate: "gate1",
+      status: "pending",
+      lastActionBy: QA_MEMBERS[0].userId,
+      message: "QA Alice and QA Bob test match (Admin-supervised QA fixture)",
+    }).returning();
+    return { match, created: true };
+  });
+  console.info("[Track A QA match]", { actor, matchId: result.match.id, created: result.created });
+  return result;
 }
 
 /**

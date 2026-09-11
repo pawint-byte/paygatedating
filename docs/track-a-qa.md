@@ -45,6 +45,10 @@ agree on the same match and gate. Setup marks `first_match_free_used` so this
 flow tests wallet credits rather than a free-match or Premium path. No Stripe
 payment or checkout is involved.
 
+This paid Interest path remains available for the wallet-charge diagnostic. It
+is separate from the no-charge match setup used by the gate and Messages API
+checks below.
+
 ## Direct gate override (QA/testing only)
 
 The **Direct QA gate override** control is an Admin-only testing control, not a
@@ -53,6 +57,27 @@ normal member action. It reads only valid, distinct QA Alice/QA Bob pairs from:
 ```text
 GET /api/admin/qa-members/matches
 ```
+
+If the list is empty, use **Create QA Alice ↔ QA Bob match** in the empty
+state. The action accepts no member input and calls:
+
+```text
+POST /api/admin/qa-members/matches
+{}
+```
+
+The response is `{ "match": Match, "created": boolean }`. It is
+fixture-only and idempotent: `created: true` means the pair was created and
+`created: false` means the existing pair was reused. Either result is a
+testing-state operation with no wallet charge and no Stripe activity.
+
+For the no-charge Messages check, follow these steps:
+
+1. Create or reuse the fixed QA Alice / QA Bob pair.
+2. Select the returned pair, choose `gate3`, and click **Set gate**.
+3. In **Messages API QA test**, select acting **QA Alice**, send a message,
+   then switch to **QA Bob** and click **Mark read** (or use **Refresh
+   thread**) to verify the other perspective.
 
 Select a returned pair, choose `gate1`, `gate2`, `gate3`, `gate4`, `gate5`, or
 `completed` (shown as Connected), then use **Set gate**:
@@ -74,14 +99,15 @@ not a fixture login and not a normal `/messages` full-UI E2E test. It uses the
 exact shared `QA_MEMBERS` constants and sends the existing
 `X-Paygate-QA-Member` header while keeping the Admin session intact.
 
-1. Select a pair returned by the Admin match list and select acting **QA
-   Alice** or **QA Bob**.
-2. At Gate 3 or later, the panel reads
+1. Create or reuse the fixed pair when the match list is empty, then select it
+   and choose acting **QA Alice** or **QA Bob**.
+2. Set the pair to Gate 3 (or later). The panel reads
    `GET /api/matches/:id/messages`, sends `{ "content": "..." }` to
    `POST /api/matches/:id/messages`, and displays each sender, content, and
    time in the thread readback.
-3. Switch the acting member to verify the other perspective. **Refresh thread**
-   performs a fresh read, and **Mark read** calls
+3. Send as **QA Alice**, switch the acting member to **QA Bob**, and verify the
+   message with **Refresh thread** or **Mark read**. **Refresh thread** performs
+   a fresh read, and **Mark read** calls
    `POST /api/matches/:id/messages/read` and refreshes the thread.
 
 Sending and read actions are disabled below Gate 3 and for declined matches.
