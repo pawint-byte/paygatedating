@@ -11,3 +11,4 @@
 - [Replit configuration ownership](replit-config-ownership.md) — preserve owner/platform-managed runtime, deployment, and secret settings during routine application work.
 - [GitHub backup standing order](github-backup.md) — back up final published, tested state without secrets or partial work; report verified success or authentication blockage to CoS.
 - [PHONE-DOWN AUTONOMY](phone-down-autonomy.md) — proceed through approved delivery without repeated approval requests; escalate only defined blockers and preserve mandatory platform controls.
+- [Gift shipping privacy](gift-shipping-privacy.md) — retailer-supported private delivery is a recipient attestation, not something a product link or ordinary gift checkbox can guarantee.

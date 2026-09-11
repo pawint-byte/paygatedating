@@ -4739,6 +4739,9 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
   const INACTIVITY_DAYS = 7;
 
   async function runInactivityCheck() {
+    // Pause only automatic reminders during release verification. Ordinary
+    // product messages and explicit admin notification actions are unchanged.
+    if (process.env.INACTIVITY_EMAILS_PAUSED === "true") return;
     const now = Date.now();
     if (now - lastInactivityCheck < INACTIVITY_CHECK_INTERVAL) return;
     lastInactivityCheck = now;
@@ -4776,6 +4779,9 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
     }
   }
 
+  if (process.env.INACTIVITY_EMAILS_PAUSED === "true") {
+    console.log("Automatic inactivity emails paused for release verification");
+  }
   setInterval(runInactivityCheck, 60 * 60 * 1000);
   setTimeout(runInactivityCheck, 30 * 1000);
 
