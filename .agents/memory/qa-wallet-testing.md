@@ -11,9 +11,7 @@ general impersonation capability; do not fund or alter real members for test set
 identities. Admin-supervised fixture perspectives allow counterpart checks without
 fabricated credentials, Stripe payments, or changes to ordinary promotional rewards.
 
-**How to apply:** Keep setup credits explicitly labeled and one-time. Separately
-authorized repeatable test rewards may fund only the seeded QA fixtures, not real
-members; repeated testing must not weaken setup's one-time guarantee. Reuse the normal
+**How to apply:** Keep QA credits explicitly labeled and one-time, reuse the normal
 Interest/chapter handlers, and distinguish development results from verified live
 results. Discover visibility for both fixtures must not require changing the Admin's
 personal dating filters. Fixtures should not solicit paid interest from normal users.
