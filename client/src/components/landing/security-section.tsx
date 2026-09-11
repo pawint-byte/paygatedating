@@ -1,5 +1,6 @@
-import { Shield, Lock, CreditCard, RefreshCcw, EyeOff } from "lucide-react";
+import { Shield, Lock, CreditCard, Zap, EyeOff } from "lucide-react";
 import { SiStripe } from "react-icons/si";
+import { SKIP_LABEL, SKIP_EXPLANATION } from "@shared/skip-copy";
 
 const securityFeatures = [
   {
@@ -13,9 +14,9 @@ const securityFeatures = [
     description: "Send gifts without revealing your address. We handle delivery anonymously.",
   },
   {
-    icon: RefreshCcw,
-    title: "Escrow Protected",
-    description: "Skip-ahead payments held in escrow. Full refund if no response in 7 days.",
+    icon: Zap,
+    title: SKIP_LABEL,
+    description: SKIP_EXPLANATION,
   },
   {
     icon: Shield,

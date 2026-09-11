@@ -1,11 +1,13 @@
 // Curated from the existing landing FAQ/pricing and the wallet payment-confirmation
 // route. Shared by server HTML, client navigation, and FAQPage structured data.
+import { SKIP_FAQ } from "./skip-copy";
 export const FAQ_TITLE = "FAQ | PayGate Dating";
 export const FAQ_H1 = "PayGate Dating FAQ";
 export const FAQ_CANONICAL = "https://paygatedating.com/faq";
 export const FAQ_DESCRIPTION = "Answers about joining PayGate Dating for free, five pay-as-you-go chapters, wallet funds, Stripe payments, and how chapter fees support the community.";
 
 export const FAQ_ITEMS = [
+  SKIP_FAQ,
   {
     question: "Is PayGate Dating free to join?",
     answer: "Signing up, building your profile, browsing, and being discovered are all free. You only invest when you actively want to start a new chapter with someone specific.",

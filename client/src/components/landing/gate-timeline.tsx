@@ -1,5 +1,6 @@
 import { Flame, Eye, Heart, Video, Phone, ArrowRight } from "lucide-react";
 import { GATE_COSTS } from "@shared/schema";
+import { SKIP_LABEL, SKIP_SUBCOPY, SKIP_EXPLANATION } from "@shared/skip-copy";
 
 const chapters = [
   {
@@ -131,7 +132,7 @@ export function GateTimeline() {
             Your whole love story: ~$55 shared between two people -- less than one dinner out
           </p>
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
-            <span>Can't wait? Skip to Chapter 5 for $50 and exchange contact info now</span>
+            <span title={SKIP_EXPLANATION}>{SKIP_LABEL}. {SKIP_SUBCOPY} {SKIP_EXPLANATION}</span>
           </div>
         </div>
       </div>

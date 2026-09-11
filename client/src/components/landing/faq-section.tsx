@@ -4,8 +4,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { SKIP_FAQ } from "@shared/skip-copy";
 
 const faqs = [
+  SKIP_FAQ,
   {
     question: "What makes PayGate Dating different from other dating apps?",
     answer: "PayGate is 100% free to join -- no subscriptions, no monthly fees, ever. You only invest when you find someone you genuinely want to write a story with. Our 5-chapter journey means every step forward is one you both chose to take together, not a faceless monthly charge. This naturally filters out people who aren't willing to show up, so the people you meet are actually invested in getting to know you."

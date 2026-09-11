@@ -7,7 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GATE_COSTS, SKIP_AHEAD_COST } from "@shared/schema";
+import { GATE_COSTS } from "@shared/schema";
+import { SKIP_LABEL, SKIP_SUBCOPY, SKIP_EXPLANATION } from "@shared/skip-copy";
 import type { Match, Profile, DatePlan } from "@shared/schema";
 import { GiftWishlist } from "./gift-wishlist";
 import { DatePlanDialog } from "./date-plan-dialog";
@@ -230,12 +231,21 @@ export function GateProgress({
             disabled={isPending}
             className="gap-1 flex-shrink-0"
             data-testid={`button-skip-ahead-${match.id}`}
+            title={SKIP_EXPLANATION}
+            aria-describedby={`skip-explanation-${match.id}`}
           >
             <Zap className="w-3 h-3" />
-            Skip ${SKIP_AHEAD_COST}
+            {SKIP_LABEL}
           </Button>
         )}
       </div>
+
+      {!isCompleted && (
+        <div id={`skip-explanation-${match.id}`} className="mb-3 space-y-1 text-xs text-muted-foreground">
+          <p>{SKIP_SUBCOPY}</p>
+          <p>{SKIP_EXPLANATION}</p>
+        </div>
+      )}
 
       {/* Intent badges */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">

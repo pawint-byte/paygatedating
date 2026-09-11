@@ -1031,7 +1031,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         walletId: wallet.id,
         amount: (-SKIP_AHEAD_COST).toFixed(2),
         type: "gate_payment",
-        description: "Skip ahead: All gates unlocked",
+        description: "Skip ahead: Covers both members; all remaining chapters unlocked; both at Connected for date planning and voice calls",
         relatedMatchId: matchId,
       });
 

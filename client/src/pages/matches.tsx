@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Match, Profile } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { useLocation } from "wouter";
+import { SKIP_SUCCESS } from "@shared/skip-copy";
 
 interface MatchWithProfile extends Match {
   otherProfile: Profile;
@@ -64,7 +65,7 @@ export default function Matches() {
     onSuccess: () => {
       toast({
         title: "Skip Ahead Complete!",
-        description: "You've unlocked all gates. Time to exchange contact details!",
+        description: SKIP_SUCCESS,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
