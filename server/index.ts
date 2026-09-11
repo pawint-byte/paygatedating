@@ -7,6 +7,7 @@ import path from "path";
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
+import { shouldLogApiResponseBody } from "./api-log-privacy";
 
 const app = express();
 const httpServer = createServer(app);
@@ -144,11 +145,12 @@ export function log(message: string, source = "express") {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
+  const logResponseBody = shouldLogApiResponseBody(path);
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
+    if (logResponseBody) capturedJsonResponse = bodyJson;
     return originalResJson.apply(res, [bodyJson, ...args]);
   };
 
@@ -179,13 +181,21 @@ app.use((req, res, next) => {
   registerFaqRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    const isGiftRequest = !shouldLogApiResponseBody(_req.path);
+    const errorStatus = err.status || err.statusCode || 500;
+    const status = isGiftRequest && (!Number.isInteger(errorStatus) || errorStatus < 400 || errorStatus > 599)
+      ? 500 : errorStatus;
+    const message = isGiftRequest
+      ? (status < 500 ? "Invalid gift request" : "Unable to process gift request")
+      : err.message || "Internal Server Error";
 
-    console.error("Internal Server Error:", err);
+    // JSON parsing errors can contain the raw body, before route handlers or
+    // the response logger run. Never log or echo those details for gifts.
+    if (isGiftRequest) console.error("Gift request failed", { status });
+    else console.error("Internal Server Error:", err);
 
     if (res.headersSent) {
-      return next(err);
+      return next(isGiftRequest ? Object.assign(new Error(message), { status }) : err);
     }
 
     return res.status(status).json({ message });

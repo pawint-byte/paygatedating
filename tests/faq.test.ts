@@ -10,6 +10,30 @@ import { GATE_COSTS } from "../shared/schema";
 
 const template = fs.readFileSync("client/index.html", "utf8");
 
+test("gift shipping FAQ is crawlable, role-private, retailer-fulfilled, and service-fee-only", () => {
+  const html = renderFaqDocument(template);
+  const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+  const questions = [
+    "Can the person buying my gift see my street address?",
+    "How do Amazon gifts ship without sharing my address?",
+    "Can other approved retailers deliver gifts privately?",
+    "Does the PayGate gift service fee pay for the product or shipping?",
+  ];
+  const answers = questions.map(question => {
+    const item = FAQ_ITEMS.find(item => item.question === question);
+    assert.ok(item, question);
+    assert.ok(html.includes(escapeHtml(item.answer)));
+    assert.equal(schema.mainEntity.find((entry: { name: string }) => entry.name === question).acceptedAnswer.text, item.answer);
+    return item.answer;
+  });
+  assert.match(answers[0], /Ships to recipient via retailer — address stays private/);
+  assert.match(answers[1], /'This is a gift'.*does not by itself provide private delivery/);
+  assert.match(answers[2], /do not proceed/);
+  assert.match(answers[3], /only the gift service fee/);
+  assert.match(answers[3], /not the product-funds custodian or shipper/);
+  assert.match(answers[3], /recipient ID verification before fee checkout/);
+});
+
 test("messaging FAQ explains Chapter 3 access without per-message or subscription billing", () => {
   const item = FAQ_ITEMS.find(item => item.question === "When does messaging unlock, and do I pay per message?");
   assert.ok(item);

@@ -8,3 +8,5 @@ Treat the existing Replit runtime, workflow, and deployment configuration as pro
 **Why:** Application changes must not silently alter how development or production runs, publishes, or obtains credentials. The project owner requires this ownership boundary to be documented without changing deployment or secrets behavior.
 
 **How to apply:** Preserve those settings unless the user explicitly authorizes a relevant configuration change. For an authorized change, use the appropriate Replit configuration or secrets tooling and keep unrelated settings intact. Never copy secret values into code, logs, documentation, or memory. Creating or updating this ownership note alone must not trigger configuration changes, workflow restarts, or publishing.
+
+**Verification caution:** A temporary fixed-port test server can make Replit automatically add a `[[ports]]` mapping without an explicit configuration edit. Prefer short-lived, ephemeral-port tests and inspect `.replit` afterward; clean up only mappings introduced by your own verification so the original configuration remains unchanged.

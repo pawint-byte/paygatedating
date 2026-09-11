@@ -4,7 +4,7 @@ import { SKIP_FAQ } from "./skip-copy";
 export const FAQ_TITLE = "FAQ | PayGate Dating";
 export const FAQ_H1 = "PayGate Dating FAQ";
 export const FAQ_CANONICAL = "https://paygatedating.com/faq";
-export const FAQ_DESCRIPTION = "Answers about joining PayGate Dating for free, five pay-as-you-go chapters, wallet funds, Stripe payments, and how chapter fees support the community.";
+export const FAQ_DESCRIPTION = "Answers about joining PayGate Dating for free, five pay-as-you-go chapters, wallet funds, Stripe payments, gift shipping privacy, and retailer fulfillment.";
 
 export const FAQ_ITEMS = [
   SKIP_FAQ,
@@ -39,6 +39,22 @@ export const FAQ_ITEMS = [
   {
     question: "Are payments verified through Stripe?",
     answer: "Payments are processed securely through Stripe. PayGate checks Stripe payment confirmation for wallet funding. This verifies the payment, not a member's identity or their intentions.",
+  },
+  {
+    question: "Can the person buying my gift see my street address?",
+    answer: "PayGate does not send your stored delivery address to the gift buyer in gift API responses, gift history, or chat. Ships to recipient via retailer — address stays private. Enter shipping details directly with the retailer using a supported private gift-delivery option; do not paste your street address into PayGate messages. Existing address records remain available only to you and authorized support where applicable.",
+  },
+  {
+    question: "How do Amazon gifts ship without sharing my address?",
+    answer: "Use an Amazon wishlist or a retailer-supported gift-delivery link that lets the recipient manage shipping directly with Amazon. Review Amazon's current privacy settings and delivery disclosures before purchasing. Selecting 'This is a gift' on an ordinary product page does not by itself provide private delivery. If Amazon asks the buyer for the recipient's street address, stop and use a supported private wishlist or gift-delivery option instead; never exchange the address in PayGate chat. Amazon, not PayGate, handles the order and fulfillment.",
+  },
+  {
+    question: "Can other approved retailers deliver gifts privately?",
+    answer: "For non-Amazon partners on PayGate's supported-retailer list, the retailer must offer gift shipping where the recipient enters or manages delivery details directly. Availability depends on the retailer and item. If the retailer requires the buyer to obtain the recipient's street address, do not proceed with that gift; choose a supported privacy-preserving option instead. PayGate does not collect an address for the buyer or arrange shipping.",
+  },
+  {
+    question: "Does the PayGate gift service fee pay for the product or shipping?",
+    answer: "No. Stripe checkout on PayGate pays only the gift service fee. The buyer pays the retailer separately for the product and any shipping. Paying the service fee does not mean the product has been bought or shipped. PayGate is not the product-funds custodian or shipper. Existing call/video confirmation, recipient ID verification before fee checkout, delivery confirmation, and ghost-report protections still apply.",
   },
   {
     question: "What am I paying for as a member?",

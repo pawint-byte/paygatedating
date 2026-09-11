@@ -100,9 +100,9 @@ export default function GiftSuccess() {
           <div className="mx-auto mb-4 w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
             <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
           </div>
-          <CardTitle className="text-2xl" data-testid="text-payment-success">Payment Successful!</CardTitle>
+          <CardTitle className="text-2xl" data-testid="text-payment-success">Gift service fee paid</CardTitle>
           <CardDescription data-testid="text-payment-confirmed">
-            Your gift purchase has been confirmed
+            Your service-fee payment is confirmed
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -112,11 +112,11 @@ export default function GiftSuccess() {
               <span className="font-medium" data-testid="text-gift-item">{data.itemTitle}</span>
             </div>
             <div className="flex items-center justify-between flex-wrap gap-1">
-              <span className="text-muted-foreground">Gift Value</span>
+              <span className="text-muted-foreground">Retailer item value (not paid here)</span>
               <span className="font-medium" data-testid="text-gift-value">${data.purchase.giftValue}</span>
             </div>
             <div className="flex items-center justify-between flex-wrap gap-1">
-              <span className="text-muted-foreground">Service Fee</span>
+              <span className="text-muted-foreground">Service Fee Paid</span>
               <span className="text-sm" data-testid="text-service-fee">${data.purchase.platformFee}</span>
             </div>
             {data.gatesUnlocked > 0 && (
@@ -136,10 +136,9 @@ export default function GiftSuccess() {
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
               <Gift className="w-6 h-6 text-primary" />
             </div>
-            <p className="font-medium" data-testid="text-gift-sent-confirmation">Your gift is on its way!</p>
+            <p className="font-medium" data-testid="text-gift-sent-confirmation">Your gift service-fee payment is confirmed.</p>
             <p className="text-sm text-muted-foreground" data-testid="text-recipient-notified">
-              The recipient will be notified and can claim the gift to complete the purchase 
-              with their own shipping details. Your address information stays private for both of you.
+              The recipient can now set up private retailer-managed shipping. No recipient address or name is shared with you.
             </p>
           </div>
 
@@ -147,9 +146,8 @@ export default function GiftSuccess() {
             <Heart className="h-4 w-4" />
             <AlertTitle>What happens next?</AlertTitle>
             <AlertDescription>
-              The recipient will see your gift in their inbox and can claim it at any time. 
-              Once claimed, they'll purchase the item directly from the retailer and have it 
-              shipped to their own address. No personal addresses are ever shared between users.
+              The recipient will see your gift and confirm retailer-managed shipping. Once shipping is ready, you can open the retailer link and purchase the item directly from the retailer.
+              This service fee is the only payment collected here: PayGate does not hold or pay for the product. For Amazon, use a recipient-managed public wishlist or Amazon's retailer-supported private gift delivery; selecting “This is a gift” alone does not automatically hide an address. For other approved retailers, use gift-ship or recipient-managed shipping directly, and do not proceed if the retailer cannot protect the address. Do not request or send addresses in chat.
             </AlertDescription>
           </Alert>
 

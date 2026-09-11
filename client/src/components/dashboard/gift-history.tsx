@@ -5,14 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Gift, Send, ArrowDownLeft, ExternalLink, Clock, Sparkles, MapPin, ShoppingBag, CheckCircle2, XCircle, Loader2, Package, Truck } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Gift, Send, ArrowDownLeft, ExternalLink, Clock, Sparkles, ShoppingBag, CheckCircle2, XCircle, Loader2, Package, Truck, ShieldCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GiftDeliveryModal, getPriceTier } from "@/components/3d/GiftDeliveryModal";
+import { getRetailerShippingGuidance, PRIVATE_RETAILER_SHIPPING_COPY } from "@/lib/gift-shipping-privacy";
 import type { GiftPurchase, RegistryItem } from "@shared/schema";
 
 interface GiftWithItem extends GiftPurchase {
@@ -22,7 +23,7 @@ interface GiftWithItem extends GiftPurchase {
 
 const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
   fee_paid: { label: "Fee Paid", variant: "outline" },
-  address_provided: { label: "Address Shared", variant: "secondary" },
+  address_provided: { label: "Shipping Setup Reported", variant: "secondary" },
   link_clicked: { label: "Link Clicked", variant: "secondary" },
   purchase_confirmed: { label: "Purchased", variant: "default" },
   delivered: { label: "Delivered", variant: "default" },
@@ -39,7 +40,7 @@ function getStepIndex(status: string): number {
 
 function StepIndicator({ currentStatus }: { currentStatus: string }) {
   const currentStep = getStepIndex(currentStatus);
-  const labels = ["Fee Paid", "Address", "Link Clicked", "Purchased", "Delivered"];
+  const labels = ["Fee Paid", "Retailer Setup", "Link Clicked", "Purchased", "Delivered"];
 
   return (
     <div className="flex items-center gap-1 w-full" data-testid="step-indicator">
@@ -81,9 +82,8 @@ export function GiftHistory() {
   } | null>(null);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const [addressGiftId, setAddressGiftId] = useState<string | null>(null);
-  const [deliveryName, setDeliveryName] = useState("");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [deliveryAddressType, setDeliveryAddressType] = useState("home");
+  const [addressGiftAffiliateUrl, setAddressGiftAffiliateUrl] = useState<string | null>(null);
+  const [privateShippingConfirmed, setPrivateShippingConfirmed] = useState(false);
   const [trackingInfo, setTrackingInfo] = useState("");
   const [confirmPurchaseGiftId, setConfirmPurchaseGiftId] = useState<string | null>(null);
 
@@ -143,21 +143,19 @@ export function GiftHistory() {
   });
 
   const provideAddressMutation = useMutation({
-    mutationFn: async ({ giftId, name, address, addressType }: { giftId: string; name: string; address: string; addressType: string }) => {
+    mutationFn: async ({ giftId }: { giftId: string }) => {
       await apiRequest("POST", `/api/gifts/${giftId}/provide-address`, {
-        deliveryName: name,
-        deliveryAddress: address,
-        deliveryAddressType: addressType,
+        shippingMethod: "retailer_managed",
+        privateShippingConfirmed: true,
       });
     },
     onSuccess: () => {
       invalidateGifts();
       setAddressDialogOpen(false);
       setAddressGiftId(null);
-      setDeliveryName("");
-      setDeliveryAddress("");
-      setDeliveryAddressType("home");
-      toast({ title: "Address provided", description: "Your match can now purchase your gift." });
+      setAddressGiftAffiliateUrl(null);
+      setPrivateShippingConfirmed(false);
+      toast({ title: "Private shipping confirmed", description: "Your match can purchase through the retailer without seeing your address." });
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -194,24 +192,21 @@ export function GiftHistory() {
     }
   };
 
-  const handleOpenAddressForm = (giftId: string) => {
-    setAddressGiftId(giftId);
-    setDeliveryName("");
-    setDeliveryAddress("");
-    setDeliveryAddressType("home");
+  const handleOpenAddressForm = (gift: GiftWithItem) => {
+    setAddressGiftId(gift.id);
+    setAddressGiftAffiliateUrl(gift.item?.affiliateUrl || null);
+    setPrivateShippingConfirmed(false);
     setAddressDialogOpen(true);
   };
 
   const handleSubmitAddress = () => {
-    if (!addressGiftId || !deliveryName.trim() || !deliveryAddress.trim()) {
-      toast({ title: "Please fill in all fields", variant: "destructive" });
+    const guidance = getRetailerShippingGuidance(addressGiftAffiliateUrl);
+    if (!addressGiftId || !guidance.retailerSupported || !privateShippingConfirmed) {
+      toast({ title: "Confirm private retailer shipping", description: "Open the retailer link, configure private shipping, and check the confirmation box before continuing.", variant: "destructive" });
       return;
     }
     provideAddressMutation.mutate({
       giftId: addressGiftId,
-      name: deliveryName,
-      address: deliveryAddress,
-      addressType: deliveryAddressType,
     });
   };
 
@@ -253,7 +248,7 @@ export function GiftHistory() {
         {gift.status === "fee_paid" && (
           <div className="bg-muted rounded-md p-3 text-sm flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>Waiting for recipient to provide delivery address</span>
+            <span>Waiting for recipient to confirm private retailer shipping</span>
           </div>
         )}
 
@@ -261,18 +256,15 @@ export function GiftHistory() {
           <div className="space-y-2">
             <div className="bg-muted rounded-md p-3 text-sm space-y-1">
               <div className="flex items-center gap-2 font-medium">
-                <MapPin className="w-4 h-4 shrink-0" />
-                Delivery Address
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                Retailer shipping setup reported
               </div>
-              {gift.deliveryName && (
-                <p className="text-sm" data-testid={`text-delivery-name-${gift.id}`}>{gift.deliveryName}</p>
-              )}
-              <p className="text-sm text-muted-foreground" data-testid={`text-delivery-address-${gift.id}`}>
-                {gift.deliveryAddress}
+              <p className="text-sm text-muted-foreground" data-testid={`text-shipping-privacy-${gift.id}`}>
+                {PRIVATE_RETAILER_SHIPPING_COPY}
               </p>
-              {gift.deliveryAddressType && (
-                <Badge variant="outline" className="text-xs">{gift.deliveryAddressType}</Badge>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Use the retailer's private gift-ship or recipient-managed delivery flow. This status is not independent verification of the retailer's privacy controls.
+              </p>
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button
@@ -419,19 +411,19 @@ export function GiftHistory() {
         {gift.status === "fee_paid" && (
           <Button
             size="sm"
-            onClick={() => handleOpenAddressForm(gift.id)}
+            onClick={() => handleOpenAddressForm(gift)}
             className="w-full"
             data-testid={`button-provide-address-${gift.id}`}
           >
-            <MapPin className="w-4 h-4 mr-2" />
-            Provide Delivery Address
+            <ShieldCheck className="w-4 h-4 mr-2" />
+            Set Up Private Retailer Delivery
           </Button>
         )}
 
         {(gift.status === "address_provided" || gift.status === "link_clicked") && (
           <div className="bg-muted rounded-md p-3 text-sm flex items-center gap-2">
             <Package className="w-4 h-4 text-blue-500 shrink-0" />
-            <span>Your match is preparing your gift</span>
+            <span>Retailer-managed shipping is ready. Your address stays private.</span>
           </div>
         )}
 
@@ -470,6 +462,7 @@ export function GiftHistory() {
 
   const isLoading = loadingSent || loadingReceived;
   const hasGifts = sentGifts.length > 0 || receivedGifts.length > 0;
+  const addressGuidance = getRetailerShippingGuidance(addressGiftAffiliateUrl);
 
   return (
     <>
@@ -528,58 +521,64 @@ export function GiftHistory() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Provide Delivery Address
+              <ShieldCheck className="w-5 h-5" />
+              Set Up Private Retailer Delivery
             </DialogTitle>
             <DialogDescription>
-              Share where your gift should be delivered. This can be your home, workplace, or a pickup location.
+              You manage delivery with the retailer. Your street address and delivery name are never sent to the buyer.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Name for delivery</label>
-              <Input
-                placeholder="Full name"
-                value={deliveryName}
-                onChange={(e) => setDeliveryName(e.target.value)}
-                data-testid="input-delivery-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Delivery address (home, work, Amazon locker, etc.)</label>
-              <Textarea
-                placeholder="Enter your delivery address"
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-                data-testid="input-delivery-address"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Address type</label>
-              <Select value={deliveryAddressType} onValueChange={setDeliveryAddressType}>
-                <SelectTrigger data-testid="select-address-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="home">Home</SelectItem>
-                  <SelectItem value="work">Work</SelectItem>
-                  <SelectItem value="pickup_location">Pickup Location</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Alert variant={addressGuidance.retailerSupported ? "default" : "destructive"}>
+              <ShieldCheck className="h-4 w-4" />
+              <AlertTitle>{addressGuidance.title}</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>{PRIVATE_RETAILER_SHIPPING_COPY}</p>
+                <p>{addressGuidance.description}</p>
+                {addressGuidance.validatedUrl && (
+                  <a
+                    href={addressGuidance.validatedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
+                    data-testid="link-retailer-shipping-setup"
+                  >
+                    Open {addressGuidance.retailer} item to configure private shipping
+                    <ExternalLink className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                )}
+              </AlertDescription>
+            </Alert>
+            {addressGuidance.retailerSupported && (
+              <div className="flex items-start gap-3 rounded-md border p-3">
+                <Checkbox
+                  id="confirm-private-retailer-shipping"
+                  checked={privateShippingConfirmed}
+                  onCheckedChange={(checked) => setPrivateShippingConfirmed(checked === true)}
+                  aria-describedby="private-shipping-attestation"
+                  data-testid="checkbox-private-shipping-confirmed"
+                />
+                <label
+                  htmlFor="confirm-private-retailer-shipping"
+                  id="private-shipping-attestation"
+                  className="cursor-pointer text-sm leading-5"
+                >
+                  I have configured a retailer-supported private shipping option for this gift; the buyer will not need my street address.
+                </label>
+              </div>
+            )}
             <Button
               onClick={handleSubmitAddress}
-              disabled={provideAddressMutation.isPending || !deliveryName.trim() || !deliveryAddress.trim()}
+              disabled={provideAddressMutation.isPending || !addressGuidance.retailerSupported || !privateShippingConfirmed}
               className="w-full"
-              data-testid="button-submit-address"
+              data-testid="button-confirm-retailer-shipping"
             >
               {provideAddressMutation.isPending ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
-                <MapPin className="w-4 h-4 mr-2" />
+                <ShieldCheck className="w-4 h-4 mr-2" />
               )}
-              Submit Address
+              Confirm retailer-managed shipping
             </Button>
           </div>
         </DialogContent>

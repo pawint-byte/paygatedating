@@ -47,6 +47,10 @@ import {
   createAmazonWishlistPreviewHandler,
   sameOriginAmazonWishlistRequest,
 } from "./amazon-wishlist-import";
+import {
+  serializeGiftPurchase,
+  serializeGiftRegistryItem,
+} from "./gift-privacy";
 
 const depositSchema = z.object({
   amount: z.number().min(MINIMUM_WALLET_BALANCE, `Minimum deposit is $${MINIMUM_WALLET_BALANCE}`),
@@ -2748,7 +2752,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       res.json({ url: session.url, platformFee, giftValue });
     } catch (error) {
-      console.error("Error creating gift checkout:", error);
+      // Do not log the provider/database error: gift errors can contain
+      // persisted recipient shipping fields or request values.
+      console.error("Gift checkout creation failed");
       res.status(500).json({ message: "Failed to create checkout session" });
     }
   });
@@ -2781,8 +2787,14 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       if (existingPurchase) {
         const item = await storage.getRegistryItem(existingPurchase.registryItemId);
         return res.json({ 
-          purchase: existingPurchase,
+          purchase: serializeGiftPurchase(existingPurchase, "buyer"),
           itemTitle: item?.title,
+          nextStep: existingPurchase.status === "fee_paid"
+            ? "waiting_for_private_shipping"
+            : undefined,
+          message: existingPurchase.status === "fee_paid"
+            ? "Service fee paid. The recipient must confirm private retailer-managed shipping before you purchase the item."
+            : undefined,
         });
       }
 
@@ -2799,17 +2811,20 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       });
 
       await storage.updateRegistryItem(registryItemId, { isReserved: true });
-      await storage.updateGiftPurchase(purchase.id, { status: 'fee_paid' });
+      const feePaidPurchase = await storage.updateGiftPurchase(purchase.id, { status: 'fee_paid' });
+      if (!feePaidPurchase) {
+        return res.status(500).json({ message: "Failed to finalize gift purchase" });
+      }
 
       const item = await storage.getRegistryItem(registryItemId);
       res.json({ 
-        purchase,
+        purchase: serializeGiftPurchase(feePaidPurchase, "buyer"),
         itemTitle: item?.title,
-        nextStep: 'waiting_for_address',
-        message: 'Service fee paid. Waiting for recipient to provide delivery address.',
+        nextStep: 'waiting_for_private_shipping',
+        message: 'Service fee paid. The recipient must confirm private retailer-managed shipping before you purchase the item.',
       });
     } catch (error) {
-      console.error("Error processing gift checkout success:", error);
+      console.error("Gift checkout success processing failed");
       res.status(500).json({ message: "Failed to process gift purchase" });
     }
   });
@@ -2829,7 +2844,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       res.json({ success: true });
     } catch (error) {
-      console.error("Error canceling gift checkout:", error);
+      console.error("Gift checkout cancellation failed");
       res.status(500).json({ message: "Failed to cancel checkout" });
     }
   });
@@ -2843,15 +2858,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         purchases.map(async (purchase) => {
           const recipientProfile = await storage.getProfile(purchase.recipientUserId);
           const registryItem = await storage.getRegistryItem(purchase.registryItemId);
-          const safeItem = registryItem ? {
-            id: registryItem.id,
-            title: registryItem.title,
-            price: registryItem.price,
-            imageUrl: registryItem.imageUrl,
-            affiliateUrl: registryItem.affiliateUrl,
-          } : null;
+          const safeItem = serializeGiftRegistryItem(registryItem, true);
           return {
-            ...purchase,
+            ...serializeGiftPurchase(purchase, "buyer"),
             recipientName: recipientProfile?.displayName?.split(' ')[0] || "Your Match",
             item: safeItem,
           };
@@ -2860,7 +2869,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       
       res.json(enrichedPurchases);
     } catch (error) {
-      console.error("Error fetching sent gifts:", error);
+      console.error("Fetching sent gifts failed");
       res.status(500).json({ message: "Failed to fetch sent gifts" });
     }
   });
@@ -2874,15 +2883,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         purchases.map(async (purchase) => {
           const senderProfile = await storage.getProfile(purchase.buyerUserId);
           const registryItem = await storage.getRegistryItem(purchase.registryItemId);
-          const safeItem = registryItem ? {
-            id: registryItem.id,
-            title: registryItem.title,
-            price: registryItem.price,
-            imageUrl: registryItem.imageUrl,
-            affiliateUrl: registryItem.affiliateUrl,
-          } : null;
+          // The recipient may need the original retailer URL to choose a
+          // private retailer-managed shipping path.  This is not recipient
+          // address data and preserves the existing /received contract.
+          const safeItem = serializeGiftRegistryItem(registryItem, true);
           return {
-            ...purchase,
+            ...serializeGiftPurchase(purchase, "recipient"),
             senderName: senderProfile?.displayName?.split(' ')[0] || "Your Match",
             item: safeItem,
           };
@@ -2891,7 +2897,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       
       res.json(enrichedPurchases);
     } catch (error) {
-      console.error("Error fetching received gifts:", error);
+      console.error("Fetching received gifts failed");
       res.status(500).json({ message: "Failed to fetch received gifts" });
     }
   });
@@ -2900,9 +2906,36 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     try {
       const userId = req.user.claims.sub;
       const giftId = req.params.id;
-      const { deliveryAddress, deliveryAddressType, deliveryName } = req.body;
+      const {
+        deliveryAddress,
+        deliveryAddressType,
+        deliveryName,
+        shippingMethod,
+        privateShippingConfirmed,
+      } = req.body;
 
-      if (!deliveryAddress) {
+      if (shippingMethod !== undefined && shippingMethod !== "retailer_managed") {
+        return res.status(400).json({ message: "Invalid shipping method" });
+      }
+
+      const hasLegacyAddressFields = deliveryAddress !== undefined
+        || deliveryAddressType !== undefined
+        || deliveryName !== undefined;
+      if (shippingMethod === "retailer_managed" && hasLegacyAddressFields) {
+        return res.status(400).json({
+          message: "Retailer-managed shipping cannot include recipient address fields",
+          code: "PRIVATE_SHIPPING_FIELDS_NOT_ALLOWED",
+        });
+      }
+
+      if (shippingMethod === "retailer_managed" && privateShippingConfirmed !== true) {
+        return res.status(400).json({
+          message: "Recipient confirmation is required for private retailer-managed shipping",
+          code: "PRIVATE_SHIPPING_CONFIRMATION_REQUIRED",
+        });
+      }
+
+      if (shippingMethod !== "retailer_managed" && !deliveryAddress) {
         return res.status(400).json({ message: "Delivery address is required" });
       }
 
@@ -2919,16 +2952,45 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(400).json({ message: "Address can only be provided after the service fee is paid" });
       }
 
-      const updatedPurchase = await storage.updateGiftPurchase(giftId, {
-        deliveryAddress,
-        deliveryAddressType: deliveryAddressType || "home",
-        deliveryName: deliveryName || null,
-        status: "address_provided",
-      });
+      if (shippingMethod === "retailer_managed") {
+        const item = await storage.getRegistryItem(purchase.registryItemId);
+        const retailerValidation = isValidAffiliateUrl(item?.affiliateUrl);
+        if (!retailerValidation.valid) {
+          return res.status(400).json({
+            message: "Private retailer-managed shipping is not available for this retailer",
+            code: "UNSUPPORTED_PRIVATE_RETAILER",
+          });
+        }
+      }
 
-      res.json({ purchase: updatedPurchase, message: "Address provided. The buyer can now purchase the gift." });
+      const updateData: Record<string, unknown> = {
+        status: "address_provided",
+      };
+      // Retailer-managed shipping only needs a readiness transition.  Do not
+      // overwrite any address the recipient may already have stored; continue
+      // accepting the legacy fields when an existing client sends them.
+      if (deliveryAddress !== undefined) updateData.deliveryAddress = deliveryAddress;
+      if (deliveryAddressType !== undefined) {
+        updateData.deliveryAddressType = deliveryAddressType || "home";
+      }
+      if (deliveryName !== undefined) updateData.deliveryName = deliveryName || null;
+
+      const updatedPurchase = await storage.updateGiftPurchase(giftId, updateData);
+
+      res.json({
+        purchase: updatedPurchase
+          ? serializeGiftPurchase(updatedPurchase, "recipient")
+          : null,
+        shippingMethod: shippingMethod || "recipient_address",
+        shippingReady: true,
+        message: shippingMethod === "retailer_managed"
+          ? "Private retailer-managed shipping confirmed by the recipient. The buyer can now purchase the item."
+          : "Address provided. The buyer can now purchase the gift.",
+      });
     } catch (error) {
-      console.error("Error providing delivery address:", error);
+      // In particular, do not pass the update error here: SQL errors can
+      // include the submitted street address in their query parameters.
+      console.error("Saving gift shipping readiness failed");
       res.status(500).json({ message: "Failed to save delivery address" });
     }
   });
@@ -2953,28 +3015,19 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const otherProfile = await storage.getProfile(otherUserId);
 
       const response: any = {
-        purchase,
-        item: item ? {
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          imageUrl: item.imageUrl,
-          affiliateUrl: isBuyer ? item.affiliateUrl : undefined,
-        } : null,
+        purchase: serializeGiftPurchase(purchase, isBuyer ? "buyer" : "recipient"),
+        item: serializeGiftRegistryItem(item, isBuyer),
         otherUserName: otherProfile?.displayName?.split(' ')[0] || "Your Match",
         role: isBuyer ? 'buyer' : 'recipient',
       };
 
-      if (isBuyer && purchase.deliveryAddress && 
-          ['address_provided', 'link_clicked', 'purchase_confirmed', 'delivered'].includes(purchase.status)) {
-        response.deliveryAddress = purchase.deliveryAddress;
-        response.deliveryAddressType = purchase.deliveryAddressType;
-        response.deliveryName = purchase.deliveryName;
+      if (purchase.status !== "fee_paid" && purchase.status !== "pending") {
+        response.shippingReady = true;
       }
 
       res.json(response);
     } catch (error) {
-      console.error("Error fetching gift details:", error);
+      console.error("Fetching gift details failed");
       res.status(500).json({ message: "Failed to fetch gift details" });
     }
   });
@@ -3003,9 +3056,14 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         status: "link_clicked",
       });
 
-      res.json({ purchase: updatedPurchase, message: "Affiliate link click recorded" });
+      res.json({
+        purchase: updatedPurchase
+          ? serializeGiftPurchase(updatedPurchase, "buyer")
+          : null,
+        message: "Affiliate link click recorded",
+      });
     } catch (error) {
-      console.error("Error tracking affiliate click:", error);
+      console.error("Tracking gift affiliate click failed");
       res.status(500).json({ message: "Failed to track affiliate click" });
     }
   });
@@ -3037,9 +3095,14 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       await storage.updateRegistryItem(purchase.registryItemId, { isPurchased: true, isReserved: false });
 
-      res.json({ purchase: updatedPurchase, message: "Purchase confirmed. Waiting for recipient to confirm delivery." });
+      res.json({
+        purchase: updatedPurchase
+          ? serializeGiftPurchase(updatedPurchase, "buyer")
+          : null,
+        message: "Purchase confirmed. Waiting for recipient to confirm delivery.",
+      });
     } catch (error) {
-      console.error("Error confirming purchase:", error);
+      console.error("Confirming gift purchase failed");
       res.status(500).json({ message: "Failed to confirm purchase" });
     }
   });
@@ -3093,12 +3156,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       }
 
       res.json({ 
-        purchase: updatedPurchase, 
+        purchase: serializeGiftPurchase(updatedPurchase!, "recipient"),
         gatesUnlocked,
         message: `Delivery confirmed! ${gatesUnlocked > 0 ? `${gatesUnlocked} gate(s) unlocked.` : ''}` 
       });
     } catch (error) {
-      console.error("Error confirming delivery:", error);
+      console.error("Confirming gift delivery failed");
       res.status(500).json({ message: "Failed to confirm delivery" });
     }
   });
@@ -3248,7 +3311,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       
       res.json({ report, totalReports: reportCount });
     } catch (error) {
-      console.error("Error creating ghost report:", error);
+      console.error("Creating gift ghost report failed");
       res.status(500).json({ message: "Failed to create report" });
     }
   });
@@ -3274,7 +3337,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         ghostReportCount,
       });
     } catch (error) {
-      console.error("Error checking gift eligibility:", error);
+      console.error("Checking gift eligibility failed");
       res.status(500).json({ message: "Failed to check eligibility" });
     }
   });
@@ -3313,7 +3376,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
             });
           }
         } catch (stripeError) {
-          console.error("Stripe refund failed:", stripeError);
+          console.error("Gift Stripe refund failed");
           return res.status(500).json({ message: "Failed to process refund. Please contact support." });
         }
       }
@@ -3336,9 +3399,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       const updated = await storage.updateGiftPurchase(giftId, { status: "refunded" });
       
-      res.json({ purchase: updated, message: "Gift revoked and service fee refunded" });
+      res.json({
+        purchase: updated ? serializeGiftPurchase(updated, "buyer") : null,
+        message: "Gift revoked and service fee refunded",
+      });
     } catch (error) {
-      console.error("Error revoking gift:", error);
+      console.error("Revoking gift failed");
       res.status(500).json({ message: "Failed to revoke gift" });
     }
   });
