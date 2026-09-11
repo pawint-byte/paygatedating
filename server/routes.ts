@@ -1088,6 +1088,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(403).json({ message: "Not authorized" });
       }
 
+      if (match.status === "declined") {
+        return res.status(403).json({ message: "Match already ended" });
+      }
+
       const validGates = ["gate3", "gate4", "gate5", "completed"];
       if (!validGates.includes(match.currentGate)) {
         return res.status(403).json({ message: "Chat unlocked at Gate 3 or higher" });
@@ -1121,6 +1125,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       if (match.initiatorId !== userId && match.recipientId !== userId) {
         return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (match.status === "declined") {
+        return res.status(403).json({ message: "Match already ended" });
       }
 
       const validGates = ["gate3", "gate4", "gate5", "completed"];
@@ -1182,6 +1190,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       if (match.initiatorId !== userId && match.recipientId !== userId) {
         return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (match.status === "declined") {
+        return res.status(403).json({ message: "Match already ended" });
       }
 
       const validGates = ["gate3", "gate4", "gate5", "completed"];

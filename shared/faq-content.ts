@@ -9,6 +9,10 @@ export const FAQ_DESCRIPTION = "Answers about joining PayGate Dating for free, f
 export const FAQ_ITEMS = [
   SKIP_FAQ,
   {
+    question: "When does messaging unlock, and do I pay per message?",
+    answer: "Messaging unlocks for both people when your match reaches Chapter 3 (Getting Real), also called Gate 3, and stays available in later chapters and at Connected. Messaging is not pay-per-message and does not require a subscription. Chapter fees apply to progressing your match, not to each message. If you are still in Chapter 1 or 2, visit My Matches to continue your chapter journey together, then return to Messages to chat.",
+  },
+  {
     question: "Is PayGate Dating free to join?",
     answer: "Signing up, building your profile, browsing, and being discovered are all free. You only invest when you actively want to start a new chapter with someone specific.",
   },

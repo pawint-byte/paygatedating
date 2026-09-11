@@ -10,6 +10,18 @@ import { GATE_COSTS } from "../shared/schema";
 
 const template = fs.readFileSync("client/index.html", "utf8");
 
+test("messaging FAQ explains Chapter 3 access without per-message or subscription billing", () => {
+  const item = FAQ_ITEMS.find(item => item.question === "When does messaging unlock, and do I pay per message?");
+  assert.ok(item);
+  assert.match(item.answer, /Chapter 3 \(Getting Real\).*Gate 3/);
+  assert.match(item.answer, /not pay-per-message and does not require a subscription/);
+  assert.match(item.answer, /My Matches/);
+  const html = renderFaqDocument(template);
+  assert.ok(html.includes(escapeHtml(item.answer)));
+  const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+  assert.equal(schema.mainEntity.find((entry: { name: string }) => entry.name === item.question).acceptedAnswer.text, item.answer);
+});
+
 test("FAQ HTML has unique SEO, visible answers and matching honest structured data without the SPA entry", () => {
   const html = renderFaqDocument(template);
   assert.ok(html.includes(`<title>${FAQ_TITLE}</title>`));
