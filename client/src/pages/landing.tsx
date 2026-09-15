@@ -81,7 +81,6 @@ const sections = [
     content: () => (
       <div className="overflow-y-auto" style={{ height: "calc(100vh - 120px)" }}>
         <FAQSection />
-        <Footer />
       </div>
     ),
   },
@@ -196,6 +195,7 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
           <main className="flex-1">
             {ActiveContent && <ActiveContent />}
           </main>
+          <Footer />
         </div>
       </div>
 
