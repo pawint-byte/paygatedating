@@ -116,8 +116,8 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
       <SeasonalBanner />
       <NavHeader />
 
-      <div className="flex flex-1 pt-[57px]">
-        <nav className="hidden md:flex flex-col gap-1 w-56 shrink-0 border-r border-border p-4 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto bg-background" data-testid="section-sidebar-desktop">
+      <div className="flex flex-1">
+        <nav className="hidden md:flex flex-col gap-1 w-56 shrink-0 border-r border-border p-4 sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto bg-background" data-testid="section-sidebar-desktop">
           {sections.map((section) => {
             const isActive = activeTab === section.id;
             if (section.id !== "home") {
@@ -154,8 +154,8 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
         </nav>
 
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="md:hidden sticky top-[57px] z-40 bg-background/95 backdrop-blur-md border-b border-border px-4 py-2">
-            <div className="flex overflow-x-auto gap-1 scrollbar-hide">
+          <div className="md:hidden sticky top-[53px] z-40 bg-background/95 backdrop-blur-md border-b border-border px-2 py-2">
+            <div className="flex flex-wrap justify-center gap-1">
               {sections.map((section) => {
                 const isActive = activeTab === section.id;
                 if (section.id !== "home") {

@@ -12,3 +12,4 @@
 - [GitHub backup standing order](github-backup.md) — back up final published, tested state without secrets or partial work; report verified success or authentication blockage to CoS.
 - [PHONE-DOWN AUTONOMY](phone-down-autonomy.md) — proceed through approved delivery without repeated approval requests; escalate only defined blockers and preserve mandatory platform controls.
 - [Gift shipping privacy](gift-shipping-privacy.md) — retailer-supported private delivery is a recipient attestation, not something a product link or ordinary gift checkbox can guarantee.
+- [Media browser verification](media-browser-verification.md) — check codec support before treating a blank MP4 preview as a delivery failure; file tracks alone do not prove playback.

@@ -4,10 +4,10 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export function NavHeader() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border" data-testid="nav-header">
-      <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center">
-          <img src="/paygate-logo.png" alt="PayGate Dating" className="h-10 w-auto" data-testid="img-logo" />
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border" data-testid="nav-header">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-2.5 md:py-4 flex items-center justify-between gap-2 md:gap-4">
+        <Link href="/" className="flex min-w-0 items-center">
+          <img src="/paygate-logo.png" alt="PayGate Dating" className="h-8 w-auto max-w-[112px] object-contain sm:h-10 sm:max-w-none" data-testid="img-logo" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
@@ -34,15 +34,18 @@ export function NavHeader() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-3">
           <ThemeToggle />
-          <a href="/api/login">
-            <Button variant="ghost" data-testid="button-login">
+          <a href="/api/login" className="hidden sm:block">
+            <Button variant="ghost" size="sm" data-testid="button-login">
               Log In
             </Button>
           </a>
           <a href="/api/login">
-            <Button data-testid="button-get-started">Get Started</Button>
+            <Button size="sm" data-testid="button-get-started">
+              <span className="sm:hidden">Start</span>
+              <span className="hidden sm:inline">Get Started</span>
+            </Button>
           </a>
         </div>
       </div>

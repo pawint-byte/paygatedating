@@ -6,8 +6,8 @@ import { useSeasonalTheme } from "@/contexts/seasonal-theme-context";
 import { Link } from "wouter";
 
 const promoVideos = [
-  { src: "/videos/promo-female.mp4", label: "Her Perspective" },
-  { src: "/videos/promo-male.mp4", label: "His Perspective" },
+  { src: "/videos/promo-female.mp4?v=20260919", label: "Her Perspective" },
+  { src: "/videos/promo-male.mp4?v=20260919", label: "His Perspective" },
 ];
 
 export function SeasonalHero() {
@@ -86,15 +86,18 @@ export function SeasonalHero() {
               <div className="relative aspect-[9/16] max-h-[520px] bg-black">
                 <video
                   key={promoVideos[currentVideo].src}
-                  src={promoVideos[currentVideo].src}
                   className="w-full h-full object-cover"
                   autoPlay
                   muted
                   loop
                   playsInline
                   controls
+                  preload="metadata"
                   data-testid="hero-promo-video"
-                />
+                >
+                  <source src={promoVideos[currentVideo].src} type="video/mp4" />
+                  Your browser cannot play this video. The rest of PayGate remains available below.
+                </video>
               </div>
             </div>
 
