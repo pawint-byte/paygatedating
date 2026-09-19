@@ -1,6 +1,5 @@
 import { 
   Shield, 
-  MapPin, 
   Users, 
   Gift, 
   Calendar, 
@@ -22,12 +21,6 @@ const features = [
     category: "trust"
   },
   {
-    icon: MapPin,
-    title: "Nearby Discovery",
-    description: "Find singles near you with the live map. Go live to appear nearby, disappear when you want. Privacy-protected so your exact location is never revealed.",
-    category: "discovery"
-  },
-  {
     icon: Users,
     title: "Friends Network",
     description: "See mutual connections and degrees of separation. Build trust through your social network.",
@@ -36,7 +29,7 @@ const features = [
   {
     icon: Gift,
     title: "Thoughtful Gift Giving",
-    description: "Show you've been paying attention. Send gifts from their wishlist -- from everyday favorites to luxury items and travel experiences. Effort speaks louder than words.",
+    description: "Use wishlist and retailer links without treating PayGate as the seller or shipper. Product cost and retailer shipping are separate from PayGate's service fee.",
     category: "connection"
   },
   {
@@ -54,7 +47,7 @@ const features = [
   {
     icon: Bell,
     title: "Smart Notifications",
-    description: "Get notified when someone expresses interest, when matches are nearby, and gentle reminders to stay active on the platform.",
+    description: "Get notified when someone expresses interest and receive reminders about activity on your account.",
     category: "engagement"
   },
   {

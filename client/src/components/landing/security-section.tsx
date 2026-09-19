@@ -10,8 +10,8 @@ const securityFeatures = [
   },
   {
     icon: Lock,
-    title: "Anonymous Shipping",
-    description: "Send gifts without revealing your address. We handle delivery anonymously.",
+    title: "Retailer Fulfillment",
+    description: "PayGate does not sell or ship gift products. Use the designated gift flow and retailer checkout rather than sharing a street address in chat.",
   },
   {
     icon: Zap,
@@ -21,7 +21,7 @@ const securityFeatures = [
   {
     icon: Shield,
     title: "Data Privacy",
-    description: "GDPR/CCPA compliant. Your data is encrypted and never sold to third parties.",
+    description: "Review the Privacy Policy for what PayGate collects, why it is used, and the choices available to you.",
   },
   {
     icon: EyeOff,
@@ -43,7 +43,8 @@ export function SecuritySection() {
           </h2>
           <p className="text-muted-foreground text-lg">
             You can't invest your heart in someone if you don't feel safe.
-            That's why we built PayGate with security at its core.
+            Use the available privacy and reporting tools, and remember that no
+            platform can guarantee another person's identity or intentions.
           </p>
         </div>
 
@@ -76,7 +77,7 @@ export function SecuritySection() {
           <div className="h-6 w-px bg-border" />
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            <span className="text-sm">256-bit SSL Encryption</span>
+            <span className="text-sm">Stripe verifies payments, not people</span>
           </div>
         </div>
       </div>

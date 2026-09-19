@@ -5,7 +5,7 @@ export const FAQ_TITLE = "FAQ | PayGate Dating";
 export const FAQ_H1 = "PayGate Dating FAQ";
 export const FAQ_CANONICAL = "https://paygatedating.com/faq";
 export const FAQ_DESCRIPTION =
-      "Answers about joining PayGate Dating for free, five pay-as-you-go chapters, Nearby Map, profile visibility, share-based Boost, wallet funds, Stripe payments, gift shipping privacy, and retailer fulfillment.";
+      "Answers about joining PayGate Dating for free, five pay-as-you-go chapters, connection intent, profile visibility, wallet funds, Stripe payments, gift shipping privacy, and retailer fulfillment.";
 
 export const FAQ_ITEMS = [
       SKIP_FAQ,
@@ -14,12 +14,16 @@ export const FAQ_ITEMS = [
             answer: "Messaging unlocks for both people when your match reaches Chapter 3 (Getting Real), also called Gate 3, and stays available in later chapters and at Connected. Messaging is not pay-per-message and does not require a subscription. Chapter fees apply to progressing your match, not to each message. If you are still in Chapter 1 or 2, visit My Matches to continue your chapter journey together, then return to Messages to chat.",
       },
       {
-            question: "How does the Nearby Map work?",
-            answer: "On Nearby, choose where to explore — your current location, a saved area, or search for a city. Toggle Go Live to appear on the map and discover singles in that area in real time. Your location is fuzzy to about 500 meters for privacy; your exact location is never revealed. Turn Go Live off when you want to disappear from the map.",
+            question: "What intents can I state when I knock?",
+            answer: "PayGate currently supports four per-connection intents: Serious Romance, Casual Dating, Activity Partner, and Just Chatting. The person reaching out chooses one when they knock, and it is shown on that connection so both people can set expectations. Only open the door when the stated intent is welcome.",
       },
       {
-            question: "Can I hide my profile from search?",
-            answer: "Yes. In Settings under Visibility, turn off Show My Profile. When disabled, your profile will not appear in search results. You can still share your personal profile link or QR so people you choose can open it and start at Chapter 1.",
+            question: "Can I be on the site and stay invisible?",
+            answer: "You can stay off discovery. In Settings under Visibility, turn off Show My Profile to stay off browse and search results; this does not erase existing connections. The current visibility control also makes your public profile link unavailable, so PayGate does not yet offer a link-only hidden mode. Turn visibility back on before sharing your profile link or QR.",
+      },
+      {
+            question: "What happens if I stop mid-story?",
+            answer: "Your chapter progress stays where it is unless either person later chooses to continue. Wallet credits you have not spent stay in your wallet and remain non-withdrawable. Completed chapter fees are not refunded.",
       },
       {
             question: "What is Boost Your Visibility?",

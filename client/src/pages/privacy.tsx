@@ -61,7 +61,7 @@ export default function Privacy() {
             <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
               <li>Provide and improve our dating services</li>
               <li>Create and manage your account</li>
-              <li>Match you with compatible users based on preferences</li>
+              <li>Show profiles and discovery results based on the preferences and location settings you provide</li>
               <li>Process payments and manage your wallet</li>
               <li>Send service-related communications and updates</li>
               <li>Ensure platform safety and prevent fraud</li>
@@ -84,6 +84,8 @@ export default function Privacy() {
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-4">
               We do not sell your personal information to third parties for marketing purposes.
+              Do not send a street address in member chat; use the designated gift flow and
+              retailer checkout when delivery information is required.
             </p>
           </section>
 

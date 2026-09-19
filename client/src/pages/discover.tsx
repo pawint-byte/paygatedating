@@ -23,9 +23,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlidersHorizontal } from "lucide-react";
-import { GATE_COSTS, type Profile, type SearchPreferences } from "@shared/schema";
+import { GATE_COSTS, MATCH_INTENT_OPTIONS, type MatchIntent, type Profile, type SearchPreferences } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
+import { sendKnockWithIntent } from "@/lib/knock-intent";
 
 interface EnrichedProfile extends Profile {
   wishlistPreview?: Array<{
@@ -44,6 +46,7 @@ export default function Discover() {
   const [, setLocation] = useLocation();
   const [filterOpen, setFilterOpen] = useState(false);
   const [interestProfile, setInterestProfile] = useState<Profile | null>(null);
+  const [interestIntent, setInterestIntent] = useState<MatchIntent | "">("");
   const [localFilters, setLocalFilters] = useState({
     minAge: 18,
     maxAge: 60,
@@ -118,24 +121,26 @@ export default function Discover() {
   });
 
   const sendInterestMutation = useMutation({
-    mutationFn: async (recipientId: string) => {
-      const response = await apiRequest("POST", "/api/matches", { recipientId });
-      return await response.json() as {
+    mutationFn: async ({ recipientId, intent }: { recipientId: string; intent: MatchIntent }) => {
+      return await sendKnockWithIntent<{
+        id: string;
         chargedAmount: number;
         paymentType: "wallet" | "premium" | "first_match_free";
-      };
+      }>(apiRequest, recipientId, intent);
     },
     onSuccess: (result) => {
-      const description = result.paymentType === "premium"
+      const paymentDescription = result.paymentType === "premium"
         ? "Interest sent using your Premium benefit. No wallet funds were charged."
         : result.paymentType === "first_match_free"
           ? "Interest sent using your first-match-free reward. No wallet funds were charged."
           : `Interest sent. $${result.chargedAmount.toFixed(2)} was deducted from your wallet.`;
+      const description = `${paymentDescription} Your stated intent is attached to the knock.`;
       toast({
         title: "Interest Sent!",
         description,
       });
       setInterestProfile(null);
+      setInterestIntent("");
       queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
@@ -206,6 +211,7 @@ export default function Discover() {
       });
       return;
     }
+    setInterestIntent("");
     setInterestProfile(profile);
   };
 
@@ -401,28 +407,43 @@ export default function Discover() {
       <AlertDialog
         open={!!interestProfile}
         onOpenChange={(open) => {
-          if (!open && !sendInterestMutation.isPending) setInterestProfile(null);
+          if (!open && !sendInterestMutation.isPending) {
+            setInterestProfile(null);
+            setInterestIntent("");
+          }
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Send Interest?</AlertDialogTitle>
+            <AlertDialogTitle>Knock with an intent</AlertDialogTitle>
             <AlertDialogDescription>
-              Send Interest to {interestProfile?.displayName}? This costs up to ${GATE_COSTS.gate1}.
-              Premium and first-match-free benefits are applied automatically.
+              Choose what you are open to with {interestProfile?.displayName}. They will see your intent on this connection.
+              Only knock with an intent you mean. This costs up to ${GATE_COSTS.gate1}; Premium and first-match-free benefits are applied automatically.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <Select value={interestIntent} onValueChange={(value) => setInterestIntent(value as MatchIntent)}>
+            <SelectTrigger aria-label="Choose your intent" data-testid="select-knock-intent">
+              <SelectValue placeholder="Choose your intent" />
+            </SelectTrigger>
+            <SelectContent>
+              {MATCH_INTENT_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={sendInterestMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={!interestProfile || sendInterestMutation.isPending}
+              disabled={!interestProfile || !interestIntent || sendInterestMutation.isPending}
               onClick={(event) => {
                 event.preventDefault();
-                if (interestProfile) sendInterestMutation.mutate(interestProfile.userId);
+                if (interestProfile && interestIntent) {
+                  sendInterestMutation.mutate({ recipientId: interestProfile.userId, intent: interestIntent });
+                }
               }}
               data-testid="button-confirm-interest"
             >
-              {sendInterestMutation.isPending ? "Sending..." : "Confirm Interest"}
+              {sendInterestMutation.isPending ? "Sending..." : "Knock"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

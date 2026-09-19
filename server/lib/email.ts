@@ -45,6 +45,16 @@ async function getResendClient() {
   };
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]!);
+}
+
 // Email templates
 const templates = {
   welcome: (firstName: string) => ({
@@ -263,29 +273,29 @@ const templates = {
     `
   }),
 
-  contactForm: (name: string, email: string, subject: string, message: string) => ({
-    subject: `[Contact Form] ${subject}`,
+  contactForm: (name: string, email: string, page: string, message: string) => ({
+    subject: `[PayGate site feedback] ${page.replace(/[\r\n]+/g, " ")}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #8b5cf6;">New Contact Form Submission</h1>
         <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
           <tr>
             <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee; width: 100px;">Name:</td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee;">${name}</td>
+             <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(name)}</td>
           </tr>
           <tr>
             <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Email:</td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee;"><a href="mailto:${email}">${email}</a></td>
+             <td style="padding: 8px; border-bottom: 1px solid #eee;"><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></td>
           </tr>
           <tr>
-            <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Subject:</td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td>
+             <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Page:</td>
+             <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(page)}</td>
           </tr>
         </table>
         <h3 style="color: #333;">Message:</h3>
-        <div style="background: #f9f9f9; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${message}</div>
+         <div style="background: #f9f9f9; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${escapeHtml(message)}</div>
         <p style="margin-top: 20px; color: #666; font-size: 14px;">
-          Reply directly to this email to respond to ${name} at ${email}.
+           Respond to ${escapeHtml(name)} at ${escapeHtml(email)}.
         </p>
       </div>
     `
@@ -341,7 +351,7 @@ export async function sendEmail(
         emailContent = templates.loginStreakReward(data.firstName, data.streakDays);
         break;
       case 'contactForm':
-        emailContent = templates.contactForm(data.name, data.email, data.subject, data.message);
+        emailContent = templates.contactForm(data.name, data.email, data.page, data.message);
         break;
       default:
         throw new Error(`Unknown template: ${template}`);
@@ -353,6 +363,9 @@ export async function sendEmail(
       subject: emailContent.subject,
       html: emailContent.html
     });
+    if (result.error) {
+      throw new Error(result.error.message || "Email provider rejected the message");
+    }
 
     console.log(`Email sent successfully: ${template} to ${to}`);
     return { success: true };
@@ -400,6 +413,6 @@ export const emailService = {
   sendLoginStreakReward: (to: string, firstName: string, streakDays: number) => 
     sendEmail(to, 'loginStreakReward', { firstName, streakDays }),
 
-  sendContactForm: (to: string, name: string, email: string, subject: string, message: string) =>
-    sendEmail(to, 'contactForm', { name, email, subject, message })
+  sendContactForm: (to: string, name: string, email: string, page: string, message: string) =>
+    sendEmail(to, 'contactForm', { name, email, page, message })
 };

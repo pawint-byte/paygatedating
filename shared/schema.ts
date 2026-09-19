@@ -11,7 +11,14 @@ export const transactionTypeEnum = pgEnum("transaction_type", ["deposit", "gate_
 
 export const cryptoPaymentStatusEnum = pgEnum("crypto_payment_status", ["waiting", "confirming", "confirmed", "sending", "partially_paid", "finished", "failed", "refunded", "expired"]);
 export const matchStatusEnum = pgEnum("match_status", ["pending", "active", "declined", "completed"]);
-export const matchIntentEnum = pgEnum("match_intent", ["serious_romance", "casual_dating", "activity_partner", "just_chatting"]);
+export const MATCH_INTENT_OPTIONS = [
+  { value: "serious_romance", label: "Serious Romance" },
+  { value: "casual_dating", label: "Casual Dating" },
+  { value: "activity_partner", label: "Activity Partner" },
+  { value: "just_chatting", label: "Just Chatting" },
+] as const;
+export type MatchIntent = typeof MATCH_INTENT_OPTIONS[number]["value"];
+export const matchIntentEnum = pgEnum("match_intent", MATCH_INTENT_OPTIONS.map(({ value }) => value) as [MatchIntent, ...MatchIntent[]]);
 export const pullRequestStatusEnum = pgEnum("pull_request_status", ["pending", "accepted", "declined"]);
 export const verificationStatusEnum = pgEnum("verification_status", ["none", "pending", "verified", "rejected"]);
 

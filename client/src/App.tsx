@@ -19,6 +19,8 @@ import GiftDemo from "@/pages/gift-demo";
 import Contact from "@/pages/contact";
 import NotFound from "@/pages/not-found";
 import FaqPage from "@/pages/faq";
+import Safety from "@/pages/safety";
+import Guidelines from "@/pages/guidelines";
 import { AssistantChat } from "@/components/assistant-chat";
 
 function Router() {
@@ -37,10 +39,21 @@ function Router() {
       <Switch>
         <Route path="/terms" component={Terms} />
         <Route path="/privacy" component={Privacy} />
+        <Route path="/safety" component={Safety} />
+        <Route path="/guidelines" component={Guidelines} />
         <Route path="/gift-demo" component={GiftDemo} />
         <Route path="/contact" component={Contact} />
         <Route path="/pricing">
           <Landing initialTab="pricing" />
+        </Route>
+        <Route path="/how-it-works">
+          <Landing initialTab="how-it-works" />
+        </Route>
+        <Route path="/features">
+          <Landing initialTab="features" />
+        </Route>
+        <Route path="/stories">
+          <Landing initialTab="stories" />
         </Route>
         <Route path="/faq">
           <FaqPage />

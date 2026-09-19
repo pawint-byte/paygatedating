@@ -1,0 +1,92 @@
+PROJECT: PayGate Dating → publish to paygatedating.com
+Do ONE preview then ONE Publish. Do not invent prices, testimonials, user counts, or features that are not already in the FAQ or in production code.
+
+PRINCIPLE
+PayGate is a concierge, not a swipe mill.
+Knock, state intent, wait for the door.
+If they are not open to that intent, the door stays closed.
+Joining and browsing stay free. Money only when both people choose the next chapter.
+Do not promise romance, marriage, or “matches.”
+Do not market last-mile gifts as PayGate shipping the product.
+
+==================================================
+1) BROKEN NAV — FIX FIRST
+==================================================
+LIVE:
+- Top/sidebar “How It Works” → https://paygatedating.com/how-it-works = 404
+- Sidebar “Features” → /features = 404
+- Top “Success Stories” / sidebar “Stories” → /stories = 404
+- Footer “Safety Tips” and “Community Guidelines” = href="#"
+- Footer Cookie Policy points at /privacy (ok only if /privacy actually renders)
+
+Do this:
+- Create working pages OR alias existing in-app sections so those URLs return 200.
+- Prefer: /how-it-works  /features  /stories  /safety  /guidelines
+- If the content already lives as homepage anchors, add routes that render the same content. Do not leave 404s in the nav.
+- Wire footer Safety Tips → /safety and Community Guidelines → /guidelines (or /faq#safety if that is all that exists — then say so).
+
+==================================================
+2) FAQ — ALREADY LIVE, MUST MATCH PRODUCT
+==================================================
+Keep these prices. Do not change them unless Andrew says:
+- Ch1 Spark $5
+- Ch2 Curiosity $5
+- Ch3 Getting Real $10  (messaging unlocks here for both; not pay-per-message)
+- Ch4 Face to Face $15
+- Ch5 Beyond the Screen $20
+- Skip-ahead $50 = unlock remaining chapters for THIS match for BOTH people. Not the same as one person paying Ch5.
+- No monthly subscription required for pay-as-you-go chapters
+- Wallet credits: add funds / referrals. Cannot withdraw, transfer, refund, or convert to cash. Cannot buy gifts. Gift service fee is separate Stripe checkout.
+- Stripe verifies payment, not identity or intent
+- Gifts: PayGate fee ≠ product or shipping. Address stays private. Amazon/retailer fulfillment. Never exchange street address in chat.
+
+ADD to FAQ if missing in the Repl (user asked these; homepage does not explain them):
+
+Q: What intents can I state when I knock?
+A: Intent is chosen by the person who reaches out and seen by the person who opens. Only open if that intent is welcome. List the intents that EXIST IN CODE (romance, activity partner, travel meet, friendship, getting-back-out-after-divorce, etc.). Do not invent intents. If the code has an intent enum, print that list on /faq and on the knock UI.
+
+Q: Can I be on the site and stay invisible?
+A: If the product already supports hidden/discoverable toggle, document it: profile can exist, be shareable by link, and stay off browse. If the toggle is not in code, do not advertise it — add a “not live” note on a private checklist, not on the public FAQ.
+
+Q: Can I travel and scan who is open to meet nearby?
+A: Same rule: only document if the geo/travel scan is in production. If it is a stub, do not put it on the homepage.
+
+Q: What happens if I stop mid-story?
+A: Unspent chapter progress stays where it is. Wallet credits stay in the wallet (non-withdrawable). No refund of completed chapter fees. Say that plainly.
+
+==================================================
+3) FEEDBACK LOOP (Andrew asked this for every site)
+==================================================
+COB has Contact & Feedback. PayGate homepage has /contact in the footer — confirm the page actually submits to the same inbox as COB (or pawint@pawint-app.com).
+Need:
+- /contact form that stores or emails a ticket (name, email, page, message)
+- Success state the visitor can see
+- Do not require login to send a site bug
+If Stripe webhook secret is missing in this Repl, copy the SAME Stripe webhook secret already used on the working sister app. Do not print the secret in the UI or in commit messages.
+
+==================================================
+4) HOMEPAGE HONESTY
+==================================================
+Keep: “Five chapters. Two people. One story.”
+Keep: Start Free Profile
+Remove or soften anything that sounds like guaranteed dates, “serious seekers only” as a screened claim unless screening is actually enforced in code.
+“3D Gift Experience” — only keep if that flow is live. If it is a promo label for retailer gifts, rename to “Gifts without sharing your address.”
+Video on homepage: confirm it has picture AND audio after publish (FamilyRoots TikTok already burned us on silent video).
+
+==================================================
+5) LEGAL / SAFETY PAGES
+==================================================
+/privacy and /terms must render real text, not a blank SPA shell.
+Add /safety: no street addresses in chat, report/ghost flow if it exists, 18+ only, PayGate is not a background-check service.
+Do not claim ID verification unless that check is live.
+
+==================================================
+6) DONE CHECK
+==================================================
+https://paygatedating.com/how-it-works  → 200, real content
+https://paygatedating.com/features      → 200
+https://paygatedating.com/stories       → 200 or remove from nav
+https://paygatedating.com/faq           → prices unchanged
+https://paygatedating.com/contact       → form submits
+Footer Safety + Guidelines ≠ "#"
+Then ONE Publish.

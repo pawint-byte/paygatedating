@@ -12,13 +12,13 @@ const steps = [
     number: "02",
     icon: Share2,
     title: "Share Your Link",
-    description: "Put it in your bio. Text it to someone you just met. Hand out your QR code at a party. Wherever you meet people — online, at work, through friends, on a trip — your PayGate link is how they start a conversation on your terms.",
+    description: "Put it in your bio. Text it to someone you just met. Hand out your QR code at a party. Your PayGate link gives people a way to knock and state their intent before you choose whether to open.",
   },
   {
     number: "03",
     icon: BookOpen,
-    title: "Let the Chapters Do the Screening",
-    description: "Every person who opens your link starts at Chapter 1. If they're serious — about romance, friendship, an activity partner, whatever the connection is — they'll turn the page. If they're not willing to put in the effort, they won't. Either way, you'll know.",
+    title: "Knock With a Clear Intent",
+    description: "The person reaching out states an intent. The other person sees it before choosing whether to open the door. If that intent is not welcome, the door stays closed.",
   },
 ];
 
@@ -35,8 +35,8 @@ export function ScreeningSection() {
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed">
             PayGate isn't a popularity contest. It's a filter — your personal front door for
-            anyone who wants to get to know you. You decide who gets your link. The chapters
-            decide who's willing to show up.
+            anyone who wants to get to know you. You decide who gets your link and whether
+            to open a knock. Chapters record choices and progress; they do not guarantee intent or compatibility.
           </p>
         </div>
 

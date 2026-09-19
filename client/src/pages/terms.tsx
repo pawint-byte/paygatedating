@@ -36,7 +36,7 @@ export default function Terms() {
             <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
               PayGate Dating is a free-to-join online dating platform that uses a 5-chapter progression system to facilitate 
-              meaningful connections between users. The Service includes profile creation, matching, messaging through 
+              connections between users. The Service includes profile creation, profile discovery, messaging through
               chapters, wallet management, and pay-as-you-go chapter fees.
             </p>
           </section>
@@ -68,18 +68,21 @@ export default function Terms() {
               <li><strong>Chapter 5 (Beyond the Screen):</strong> $20 - Exchange contact information</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-4">
-              Payment responsibility alternates between the match initiator and recipient at each chapter. 
-              All payments are processed securely through our payment partners.
+              Messaging unlocks for both people at Chapter 3; it is not priced per message.
+              The optional $50 skip-ahead unlocks all remaining chapters for that story for
+              both people and is not the same as one person paying only Chapter 5. Payment
+              responsibility may be chosen through the available chapter payment controls.
+              All payments are processed through our payment partners.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">5. Trial Credits and Referrals</h2>
+            <h2 className="text-2xl font-semibold mb-4">5. Wallet Credits and Referrals</h2>
             <p className="text-muted-foreground leading-relaxed">
-              New users receive $15 in trial credits upon registration. You may earn $5 in credits for each 
-              successful referral when the referred user completes their profile. Trial credits and referral 
-              bonuses are non-transferable and may expire. We reserve the right to modify or discontinue 
-              promotional offers at any time.
+              Members may add wallet funds or earn promotional credits through eligible
+              referrals. Wallet credits cannot be withdrawn, transferred, refunded, or
+              converted to cash, and they cannot be used to buy gift products. Promotional
+              offers may have additional terms and may be modified or discontinued.
             </p>
           </section>
 
@@ -87,9 +90,13 @@ export default function Terms() {
             <h2 className="text-2xl font-semibold mb-4">6. Pay-As-You-Go Model</h2>
             <p className="text-muted-foreground leading-relaxed">
               PayGate Dating operates on a pay-as-you-go model with no subscriptions or recurring charges. 
-              Users pay chapter fees only when they choose to advance a connection. Chapter fees are non-refundable 
-              once a chapter has been unlocked. Gift purchases include a service fee (10% of gift value or $5 minimum, 
-              whichever is greater). All payments are processed securely through our payment partners.
+              Users pay chapter fees only when they choose to advance a connection. Chapter fees are non-refundable
+              once a chapter has been unlocked. No monthly subscription is required for
+              pay-as-you-go chapters. A PayGate gift service fee (10% of gift value or $5
+              minimum, whichever is greater) is separate from the product price and retailer
+              shipping. PayGate does not sell or ship the gift product. Do not exchange street
+              addresses in chat; use the designated gift flow and retailer checkout. All
+              payments are processed through our payment partners.
             </p>
           </section>
 

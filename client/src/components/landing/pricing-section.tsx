@@ -7,7 +7,7 @@ const freeFeatures = [
   "Build your personal wishlist",
   "Share your QR code and profile link",
   "Get noticed by interested singles",
-  "Explore the Nearby Map",
+  "Browse discoverable profiles",
   "Earn your verification badge",
 ];
 

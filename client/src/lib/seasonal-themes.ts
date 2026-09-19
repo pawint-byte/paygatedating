@@ -97,14 +97,14 @@ export const seasonalThemes: SeasonalTheme[] = [
       icon: "sun",
       title: "Summer Story Season",
       tagline: "Find your adventure co-author",
-      offer: "Beach-ready profiles get 30% more matches",
+      offer: "Build your profile and browse free",
       cta: "Write Your Summer Chapter"
     },
     hero: {
       subtitle: "The Adventure Chapter",
       headline: "Co-Author Your",
       highlightText: "Summer Story",
-      description: "Beach walks, concerts, road trips -- the best summer stories are written with two people. Find your co-author and start Chapter 1."
+      description: "Concerts, picnics, and sunny afternoons can be better shared. Build your profile, browse, and choose whether to start Chapter 1."
     },
     colors: {
       primary: "orange",
@@ -237,7 +237,7 @@ export const seasonalThemes: SeasonalTheme[] = [
       icon: "users",
       title: "Find Your Co-Author",
       tagline: "More than dating -- find someone worth the story",
-      offer: "Join 10K+ people writing real stories",
+      offer: "Join and browse free",
       cta: "Start Your Story"
     },
     hero: {

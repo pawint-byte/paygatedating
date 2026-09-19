@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GATE_COSTS } from "@shared/schema";
+import { GATE_COSTS, MATCH_INTENT_OPTIONS } from "@shared/schema";
 import { SKIP_LABEL, SKIP_SUBCOPY, SKIP_EXPLANATION } from "@shared/skip-copy";
 import type { Match, Profile, DatePlan } from "@shared/schema";
 import { GiftWishlist } from "./gift-wishlist";
@@ -45,7 +45,7 @@ const gateNumbers = {
 };
 
 const intentLabels: Record<string, { label: string; icon: typeof Heart }> = {
-  serious_romance: { label: "Serious Romance", icon: Heart },
+  ...Object.fromEntries(MATCH_INTENT_OPTIONS.map(option => [option.value, { label: option.label, icon: Heart }])),
   casual_dating: { label: "Casual Dating", icon: Coffee },
   activity_partner: { label: "Activity Partner", icon: Users2 },
   just_chatting: { label: "Just Chatting", icon: MessageSquare },
@@ -469,10 +469,9 @@ export function GateProgress({
                   <SelectValue placeholder="Set intent..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="serious_romance">Serious Romance</SelectItem>
-                  <SelectItem value="casual_dating">Casual Dating</SelectItem>
-                  <SelectItem value="activity_partner">Activity Partner</SelectItem>
-                  <SelectItem value="just_chatting">Just Chatting</SelectItem>
+                  {MATCH_INTENT_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

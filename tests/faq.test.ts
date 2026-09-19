@@ -6,7 +6,8 @@ import express from "express";
 import { registerFaqRoutes, renderFaqDocument } from "../server/faq";
 import { FAQ_CANONICAL, FAQ_DESCRIPTION, FAQ_H1, FAQ_ITEMS, FAQ_TITLE } from "../shared/faq-content";
 import { escapeHtml } from "../shared/faq-html";
-import { GATE_COSTS } from "../shared/schema";
+import { GATE_COSTS, MATCH_INTENT_OPTIONS } from "../shared/schema";
+import { INTERNAL_NONLIVE_CAPABILITY_CHECKLIST } from "../shared/product-capability-checklist";
 
 const template = fs.readFileSync("client/index.html", "utf8");
 
@@ -44,6 +45,44 @@ test("messaging FAQ explains Chapter 3 access without per-message or subscriptio
   assert.ok(html.includes(escapeHtml(item.answer)));
   const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
   assert.equal(schema.mainEntity.find((entry: { name: string }) => entry.name === item.question).acceptedAnswer.text, item.answer);
+});
+
+test("FAQ publishes only supported intents and accurately describes hidden and mid-story behavior", () => {
+  const intent = FAQ_ITEMS.find(item => item.question === "What intents can I state when I knock?");
+  assert.ok(intent);
+  for (const option of MATCH_INTENT_OPTIONS) assert.match(intent.answer, new RegExp(`\\b${option.label}\\b`));
+  assert.doesNotMatch(intent.answer, /friendship|travel meet|divorce/i);
+
+  const hidden = FAQ_ITEMS.find(item => item.question === "Can I be on the site and stay invisible?");
+  assert.ok(hidden);
+  assert.match(hidden.answer, /off browse and search results/);
+  assert.match(hidden.answer, /public profile link unavailable/);
+  assert.doesNotMatch(hidden.answer, /still share|stay shareable/i);
+
+  const stopped = FAQ_ITEMS.find(item => item.question === "What happens if I stop mid-story?");
+  assert.ok(stopped);
+  assert.match(stopped.answer, /progress stays where it is/);
+  assert.match(stopped.answer, /non-withdrawable/);
+  assert.match(stopped.answer, /not refunded/);
+
+  assert.ok(!FAQ_ITEMS.some(item => /travel|nearby map/i.test(`${item.question} ${item.answer}`)));
+  assert.deepEqual(INTERNAL_NONLIVE_CAPABILITY_CHECKLIST.map(item => item.capability), [
+    "Link-only hidden profile",
+    "Travel-area scan",
+  ]);
+});
+
+test("knock UI and match UI share the schema intent options", () => {
+  const discover = fs.readFileSync("client/src/pages/discover.tsx", "utf8");
+  const referrer = fs.readFileSync("client/src/components/dashboard/referrer-highlight.tsx", "utf8");
+  const gate = fs.readFileSync("client/src/components/dashboard/gate-progress.tsx", "utf8");
+  for (const source of [discover, referrer, gate]) {
+    assert.match(source, /MATCH_INTENT_OPTIONS\.map/);
+  }
+  assert.match(discover, /select-knock-intent/);
+  assert.match(discover, /sendKnockWithIntent/);
+  assert.match(referrer, /select-referrer-knock-intent/);
+  assert.match(referrer, /sendKnockWithIntent/);
 });
 
 test("FAQ HTML has unique SEO, visible answers and matching honest structured data without the SPA entry", () => {

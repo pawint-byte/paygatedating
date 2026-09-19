@@ -18,6 +18,7 @@ import {
   GIFT_PLATFORM_FEE_PERCENT,
   GIFT_PLATFORM_FEE_MINIMUM,
   GIFT_PROTECTION,
+  MATCH_INTENT_OPTIONS,
   calculateGiftPlatformFee,
   PREMIUM_GATE_DISCOUNT,
   CONSOLATION_CREDIT_PERCENT,
@@ -59,6 +60,10 @@ const depositSchema = z.object({
 const createMatchSchema = z.object({
   recipientId: z.string().min(1, "Recipient ID is required"),
   message: z.string().optional(),
+  initiatorIntent: z.enum(MATCH_INTENT_OPTIONS.map(({ value }) => value) as [
+    typeof MATCH_INTENT_OPTIONS[number]["value"],
+    ...typeof MATCH_INTENT_OPTIONS[number]["value"][],
+  ]).optional(),
 });
 
 export async function registerRoutes(
@@ -804,7 +809,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         });
       }
 
-      const { recipientId, message } = validationResult.data;
+      const { recipientId, message, initiatorIntent } = validationResult.data;
 
       if (recipientId === userId) {
         return res.status(400).json({ message: "You cannot send interest to yourself" });
@@ -864,6 +869,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         initiatorId: userId,
         recipientId,
         message,
+        initiatorIntent,
         lastActionBy: userId,
       });
 
@@ -1329,7 +1335,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       const matchId = req.params.id;
       const { intent } = req.body;
 
-      const validIntents = ["serious_romance", "casual_dating", "activity_partner", "just_chatting"];
+      const validIntents: readonly string[] = MATCH_INTENT_OPTIONS.map(({ value }) => value);
       if (!intent || !validIntents.includes(intent)) {
         return res.status(400).json({ message: "Invalid intent. Choose: serious_romance, casual_dating, activity_partner, just_chatting" });
       }
@@ -3750,21 +3756,24 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
   app.post("/api/contact", async (req: any, res) => {
     try {
       const contactSchema = z.object({
-        name: z.string().min(1).max(200),
-        email: z.string().email().max(200),
-        subject: z.string().min(1).max(300),
-        message: z.string().min(1).max(5000),
+        name: z.string().trim().min(1).max(200),
+        email: z.string().trim().email().max(200),
+        page: z.string().trim().min(1).max(500),
+        message: z.string().trim().min(1).max(5000),
       });
       const parsed = contactSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: "Please fill in all fields correctly." });
       }
 
-      const { name, email, subject, message } = parsed.data;
+      const { name, email, page, message } = parsed.data;
       const adminEmail = "pawint@pawint-app.com";
-      await emailService.sendContactForm(adminEmail, name, email, subject, message);
+      const delivery = await emailService.sendContactForm(adminEmail, name, email, page, message);
+      if (!delivery.success) {
+        return res.status(502).json({ error: "We could not deliver your message. Please email us directly." });
+      }
 
-      res.json({ success: true });
+      res.status(201).json({ success: true });
     } catch (error: any) {
       console.error("Contact form error:", error);
       res.status(500).json({ error: "Failed to send message" });

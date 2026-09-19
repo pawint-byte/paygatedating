@@ -49,7 +49,7 @@ const newWaySteps = [
   },
   {
     icon: CheckCircle2,
-    text: "Only serious people reach you",
+    text: "You choose whether to open",
   },
 ];
 
@@ -67,9 +67,9 @@ export function FrontDoorSection() {
           <p className="text-muted-foreground text-lg leading-relaxed">
             You meet someone at the gym, at a bar, on Instagram, at a party.
             Instead of giving out your number and hoping for the best, give
-            them your PayGate link. If they're serious, they'll start at
-            Chapter 1. If they're not, they never had your number in the first
-            place.
+            them your PayGate link. They can state an intent and knock at
+            Chapter 1. You choose whether to open, and they never needed your
+            number in the first place.
           </p>
         </div>
 
@@ -203,8 +203,8 @@ export function FrontDoorSection() {
             </div>
             <h4 className="font-semibold mb-2">No Strangers in Your DMs</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              The chapters handle the vetting so you don't have to.
-              Only people who've proven effort get through.
+              A knock shows the stated intent before you choose whether to
+              open. PayGate does not guarantee what another member intends.
             </p>
           </div>
         </div>

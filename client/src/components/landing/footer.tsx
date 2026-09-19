@@ -15,8 +15,8 @@ export function Footer() {
               <span className="font-semibold text-lg">PayGate</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Where real effort meets real connection. Join 10,000+ intentional
-              daters building something meaningful.
+              A free-to-join place to state your intent, knock, and move through
+              five chapters only when both people choose to continue.
             </p>
           </div>
 
@@ -24,16 +24,17 @@ export function Footer() {
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <button
-                  onClick={() =>
-                    document
-                      .getElementById("how-it-works")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
+                <Link
+                  href="/how-it-works"
                   className="hover:text-foreground transition-colors"
                 >
                   How It Works
-                </button>
+                </Link>
+              </li>
+              <li>
+                <Link href="/features" className="hover:text-foreground transition-colors">
+                  Features
+                </Link>
               </li>
               <li>
                 <Link
@@ -44,16 +45,12 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <button
-                  onClick={() =>
-                    document
-                      .getElementById("testimonials")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
+                <Link
+                  href="/stories"
                   className="hover:text-foreground transition-colors"
                 >
-                  Success Stories
-                </button>
+                  Stories
+                </Link>
               </li>
             </ul>
           </div>
@@ -72,14 +69,14 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition-colors">
+                <Link href="/safety" className="hover:text-foreground transition-colors" data-testid="link-safety">
                   Safety Tips
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition-colors">
+                <Link href="/guidelines" className="hover:text-foreground transition-colors" data-testid="link-guidelines">
                   Community Guidelines
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Heart, 
   X,
@@ -14,6 +15,8 @@ import {
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { MATCH_INTENT_OPTIONS, type MatchIntent } from "@shared/schema";
+import { sendKnockWithIntent } from "@/lib/knock-intent";
 
 interface ReferrerProfile {
   userId: string;
@@ -34,6 +37,7 @@ interface ReferrerHighlightProps {
 export function ReferrerHighlight({ currentUserId }: ReferrerHighlightProps) {
   const [dismissed, setDismissed] = useState(false);
   const [referrerUserId, setReferrerUserId] = useState<string | null>(null);
+  const [intent, setIntent] = useState<MatchIntent | "">("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -62,16 +66,15 @@ export function ReferrerHighlight({ currentUserId }: ReferrerHighlightProps) {
   };
 
   const handleExpressInterest = async () => {
+    if (!referrerUserId || !intent) return;
     try {
-      await apiRequest("POST", "/api/matches", { 
-        recipientId: referrerUserId 
-      });
+      await sendKnockWithIntent(apiRequest, referrerUserId, intent);
       
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       
       toast({
         title: "Interest sent!",
-        description: `${referrer?.displayName} will be notified that you're interested.`,
+        description: `${referrer?.displayName} will see your stated intent on this connection.`,
       });
       
       handleDismiss();
@@ -164,9 +167,25 @@ export function ReferrerHighlight({ currentUserId }: ReferrerHighlightProps) {
         </div>
 
         <div className="flex gap-2 mt-4">
+          <Select value={intent} onValueChange={(value) => setIntent(value as MatchIntent)}>
+            <SelectTrigger className="flex-1" aria-label="Choose your intent" data-testid="select-referrer-knock-intent">
+              <SelectValue placeholder="Choose intent" />
+            </SelectTrigger>
+            <SelectContent>
+              {MATCH_INTENT_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          State why you are knocking. Only choose an intent you mean.
+        </p>
+        <div className="flex gap-2 mt-3">
           <Button 
             className="flex-1"
             onClick={handleExpressInterest}
+            disabled={!intent}
             data-testid="button-express-interest-referrer"
           >
             <Heart className="w-4 h-4 mr-2" />

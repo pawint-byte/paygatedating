@@ -12,7 +12,6 @@ import { PricingSection } from "@/components/landing/pricing-section";
 import { Testimonials } from "@/components/landing/testimonials";
 import { SecuritySection } from "@/components/landing/security-section";
 import { ConciergeSection } from "@/components/landing/concierge-section";
-import { GlobalStorySection } from "@/components/landing/global-story-section";
 import { FAQSection } from "@/components/landing/faq-section";
 import { Footer } from "@/components/landing/footer";
 import { Chatbot } from "@/components/chatbot";
@@ -48,7 +47,6 @@ const sections = [
       <div className="overflow-y-auto" style={{ height: "calc(100vh - 120px)" }}>
         <ValueProps />
         <ConciergeSection />
-        <GlobalStorySection />
         <FeaturesSection />
       </div>
     ),
@@ -98,6 +96,10 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
   }, [initialTab]);
 
   const ActiveContent = sections.find((s) => s.id === activeTab)?.content;
+  const pageTitle = activeTab === "home"
+    ? "PayGate Dating - Five Chapters. Two People. One Story."
+    : `${sections.find((section) => section.id === activeTab)?.label ?? "PayGate Dating"} - PayGate Dating`;
+  const canonicalPath = activeTab === "home" ? "/" : `/${activeTab}`;
 
   const handleTabChange = (id: string) => {
     setActiveTab(id);
@@ -107,15 +109,9 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Seo
-        title={
-          activeTab === "pricing"
-            ? "Pricing - PayGate Dating"
-            : activeTab === "faq"
-              ? "FAQ - PayGate Dating"
-              : "PayGate Dating - Meaningful Connections Worth Investing In"
-        }
-        description="PayGate Dating is the free-to-join dating platform with a 5-chapter progression system. Pay only when you pursue a real connection — filtering out low-effort matches for serious relationship seekers."
-        canonicalPath={activeTab === "pricing" ? "/pricing" : activeTab === "faq" ? "/faq" : "/"}
+        title={pageTitle}
+        description="Join and browse PayGate Dating for free. State your intent, knock, and move through five pay-as-you-go chapters only when both people choose to continue."
+        canonicalPath={canonicalPath}
       />
       <SeasonalBanner />
       <NavHeader />
@@ -124,13 +120,15 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
         <nav className="hidden md:flex flex-col gap-1 w-56 shrink-0 border-r border-border p-4 sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto bg-background" data-testid="section-sidebar-desktop">
           {sections.map((section) => {
             const isActive = activeTab === section.id;
-            if (section.id === "faq") {
+            if (section.id !== "home") {
               return (
                 <Link
                   key={section.id}
-                  href="/faq"
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors text-muted-foreground hover:text-foreground hover:bg-muted"
-                  data-testid="sidebar-faq"
+                  href={`/${section.id}`}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors ${
+                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                  data-testid={`sidebar-${section.id}`}
                 >
                   <section.icon className="w-4 h-4 shrink-0" />
                   {section.label}
@@ -160,13 +158,15 @@ export default function Landing({ initialTab = "home" }: LandingProps) {
             <div className="flex overflow-x-auto gap-1 scrollbar-hide">
               {sections.map((section) => {
                 const isActive = activeTab === section.id;
-                if (section.id === "faq") {
+                if (section.id !== "home") {
                   return (
                     <Link
                       key={section.id}
-                      href="/faq"
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors bg-muted text-muted-foreground"
-                      data-testid="tab-faq"
+                      href={`/${section.id}`}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                        isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      }`}
+                      data-testid={`tab-${section.id}`}
                     >
                       <section.icon className="w-3.5 h-3.5" />
                       {section.label}

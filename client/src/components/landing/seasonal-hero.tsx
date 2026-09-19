@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Gift, Heart, MapPin, ShoppingBag, Sparkles, ArrowRight } from "lucide-react";
 import { useSeasonalTheme } from "@/contexts/seasonal-theme-context";
+import { Link } from "wouter";
 
 const promoVideos = [
   { src: "/videos/promo-female.mp4", label: "Her Perspective" },
   { src: "/videos/promo-male.mp4", label: "His Perspective" },
-  { src: "/videos/promo-travel.mp4", label: "Dating That Travels" },
 ];
 
 export function SeasonalHero() {
@@ -47,19 +47,16 @@ export function SeasonalHero() {
                   Start Free Profile
                 </Button>
               </a>
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-base px-8"
-                onClick={() =>
-                  document
-                    .getElementById("how-it-works")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-                data-testid="button-hero-learn"
-              >
-                See How It Works
-              </Button>
+              <Link href="/how-it-works">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-base px-8"
+                  data-testid="button-hero-learn"
+                >
+                  See How It Works
+                </Button>
+              </Link>
             </div>
 
             <div className="flex flex-wrap items-center gap-6 pt-4">
@@ -73,13 +70,13 @@ export function SeasonalHero() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Heart className="w-4 h-4 text-primary" />
                 </div>
-                <span>Serious Seekers Only</span>
+                <span>Choose Your Intent</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-primary" />
                 </div>
-                <span>3D Gift Experience</span>
+                <span>Retailer Gift Options</span>
               </div>
             </div>
           </div>

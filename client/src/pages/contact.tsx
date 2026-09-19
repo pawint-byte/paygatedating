@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ArrowLeft, Mail, Send, Loader2, MessageSquare } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Mail, Send, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,10 +16,10 @@ import { Seo } from "@/components/seo";
 const CONTACT_EMAIL = "pawint@pawint-app.com";
 
 const contactSchema = z.object({
-  name: z.string().min(1, "Name is required").max(200),
-  email: z.string().email("Please enter a valid email").max(200),
-  subject: z.string().min(1, "Subject is required").max(300),
-  message: z.string().min(1, "Message is required").max(5000),
+  name: z.string().trim().min(1, "Name is required").max(200),
+  email: z.string().trim().email("Please enter a valid email").max(200),
+  page: z.string().trim().min(1, "Page or feature is required").max(500),
+  message: z.string().trim().min(1, "Message is required").max(5000),
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
@@ -32,7 +32,7 @@ export default function Contact() {
     defaultValues: {
       name: "",
       email: "",
-      subject: "",
+      page: typeof window === "undefined" ? "/contact" : window.location.pathname,
       message: "",
     },
   });
@@ -43,10 +43,6 @@ export default function Contact() {
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Message sent",
-        description: "We've received your message and will get back to you shortly.",
-      });
       form.reset();
     },
     onError: () => {
@@ -95,100 +91,123 @@ export default function Contact() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Your Name</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Full name"
-                                {...field}
-                                data-testid="input-contact-name"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Your Email</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="email"
-                                placeholder="you@example.com"
-                                {...field}
-                                data-testid="input-contact-email"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="subject"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Subject</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="What is this about?"
-                              {...field}
-                              data-testid="input-contact-subject"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="message"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Message</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Describe your question, issue, or suggestion..."
-                              rows={6}
-                              className="resize-none"
-                              {...field}
-                              data-testid="input-contact-message"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                {sendMutation.isSuccess ? (
+                  <div
+                    className="flex min-h-64 flex-col items-center justify-center text-center"
+                    role="status"
+                    data-testid="contact-success"
+                  >
+                    <CheckCircle2 className="mb-4 h-12 w-12 text-green-600" aria-hidden="true" />
+                    <h2 className="text-xl font-semibold">Your message was sent</h2>
+                    <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                      Thank you for helping us improve PayGate. Our team has received your report.
+                    </p>
                     <Button
-                      type="submit"
-                      disabled={sendMutation.isPending}
-                      data-testid="button-send-contact"
+                      type="button"
+                      variant="outline"
+                      className="mt-6"
+                      onClick={() => sendMutation.reset()}
+                      data-testid="button-send-another-contact"
                     >
-                      {sendMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4 mr-2" />
-                          Send Message
-                        </>
-                      )}
+                      Send another message
                     </Button>
-                  </form>
-                </Form>
+                  </div>
+                ) : (
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Your Name</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Full name"
+                                  {...field}
+                                  data-testid="input-contact-name"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Your Email</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="email"
+                                  placeholder="you@example.com"
+                                  {...field}
+                                  data-testid="input-contact-email"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="page"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Page or Feature</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="/discover or the feature you were using"
+                                {...field}
+                                data-testid="input-contact-page"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="message"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Message</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Describe your question, issue, or suggestion..."
+                                rows={6}
+                                className="resize-none"
+                                {...field}
+                                data-testid="input-contact-message"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={sendMutation.isPending}
+                        data-testid="button-send-contact"
+                      >
+                        {sendMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4 mr-2" />
+                            Send Message
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -221,7 +240,7 @@ export default function Contact() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  We typically respond within 24-48 hours during business days. For urgent safety concerns, please include "URGENT" in your subject line.
+                   We typically respond within 24-48 hours during business days. For urgent safety concerns, please include "URGENT" at the start of your message.
                 </p>
               </CardContent>
             </Card>
