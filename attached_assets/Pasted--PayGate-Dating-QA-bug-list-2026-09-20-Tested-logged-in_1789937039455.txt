@@ -1,0 +1,70 @@
+# PayGate Dating QA bug list — 2026-09-20
+
+Tested logged in as Peter (Andrew A Wint account). Read-only boundaries held EXCEPT
+for the P0 incident below — one accidental $5 charge, disclosed here first.
+
+## P0 — Fix first
+
+### 1. Chapter payments are one-click with NO confirmation — caused a real $5 charge during QA
+- While inspecting the QA Alice pending match card on /matches, the "Pay $5 to
+  Advance" button SUBMITTED IMMEDIATELY on click — no confirmation dialog.
+- Result: $5 deducted from the wallet ($15.00 → $10.00; wallet history shows
+  "Gate 1: Payment −$5.00"), match moved from Pending to Active at Chapter 2
+  (toast: "Chapter Advanced! You've turned the page. Keep the story going!").
+- This is a product defect, not just a QA accident: the FAQ stresses fees are
+  non-refundable ("Only deposit what you plan to use"), yet money moves on a
+  single click with no "are you sure" step.
+- Fix: add a confirmation dialog to every chapter payment showing amount, gate,
+  and resulting balance, requiring explicit confirm. Consider also an undo
+  window or support-assisted reversal path.
+- Peter's decision needed: the $5 moved QA Alice to Active Chapter 2. Leave it,
+  or reverse it via the admin QA panel (/admin/users has gate override controls).
+
+## P1
+
+### 2. /rewards never loads
+- Main area stuck on skeleton placeholders + one unlabeled button across
+  multiple visits and a reload. Page is effectively dead.
+
+### 3. Discover cards flaky
+- Loaded fine on first visit (demo profiles, clean cards), stuck on skeletons
+  after later reloads. Possible API reliability issue.
+
+## P2 — Polish / trust
+
+### 4. Terms acceptance not captured
+- /profile shows "I agree to the Terms of Service and Privacy Policy — You must
+  accept our terms to create your profile" UNCHECKED while the profile is active
+  and in use. Acceptance doesn't appear to be enforced at signup. (Not checked
+  during QA — needs Peter's explicit action.)
+
+### 5. Verification page inconsistency
+- Shows "You're Verified!" next to "Verified on: N/A". Pick one truth.
+
+### 6. Wallet flashes "$0.00" while balance loads (cosmetic)
+
+## FAQ / docs gaps
+- $15 welcome bonus credits appear in wallet history but aren't documented in
+  the FAQ.
+- Add Funds mentions crypto top-ups (Bitcoin, Ethereum, USDC) and a $20 minimum
+  — FAQ mentions only Stripe.
+- Skip-ahead copy promises voice calls at the Connected stage ("start voice
+  calls sooner") — no voice-call UI was found anywhere in the member area.
+- Gift purchases "unlock gates automatically" (Wishlist + Settings text) isn't
+  in the FAQ.
+
+## Notes
+- FAQ accuracy: PASS — full FAQ read, internally consistent, matches the UI.
+- Verified: five-chapter journey with transparent per-gate forecast; browsing/
+  discovery free; payments alternate between matches ("Gate 3 · $10 · QA's turn");
+  "Ask Them to Pay" option present; four intents in dropdown; no subscription
+  (Settings: "Pay-as-you-go — no subscriptions, no monthly fees"); chapter
+  prices $5/$5/$10/$15/$20 and $50 skip-ahead match FAQ; credits
+  non-withdrawable/non-transferable; messaging locked before Chapter 3 exactly
+  per FAQ ("Chat unlocks at Gate 3").
+- Homepage optics: PASS (minimal tagline page, clean).
+- Not verified: mobile widths, signup flow, unlocked (Chapter 3+) messaging,
+  sending messages, profile editing, photo upload, rewards content.
+- Admin: sidebar shows "Members" and "Feedback Manager" links; /admin/users
+  exposes QA fixtures (Setup QA members, gate override, test-reward grants) and
+  a full member table — viewed read-only, nothing clicked.
