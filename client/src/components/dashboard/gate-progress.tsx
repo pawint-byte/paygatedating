@@ -16,6 +16,15 @@ import { DatePlanCard } from "./date-plan-card";
 import { StoryKeepsake } from "./story-keepsake";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { WalletSpendConfirmation } from "./wallet-spend-confirmation";
+import {
+  chapterSpendQuote,
+  confirmedSpend,
+  isStaleSpendConfirmation,
+  skipSpendQuote,
+  type ConfirmedSpend,
+} from "@/lib/wallet-spend";
+import type { Wallet } from "@shared/schema";
 
 const gateIcons = {
   gate1: Send,
@@ -74,9 +83,11 @@ interface GateProgressProps {
   otherProfile: Profile;
   currentUserId?: string;
   isMyTurn: boolean;
-  onAdvanceGate: () => void;
-  onSkipAhead: () => void;
+  onAdvanceGate: (confirmation: ConfirmedSpend) => void;
+  onSkipAhead: (confirmation: ConfirmedSpend) => void;
   isPending?: boolean;
+  wallet?: Wallet | null;
+  subscriptionTier?: Profile["subscriptionTier"];
 }
 
 export function GateProgress({
@@ -87,10 +98,13 @@ export function GateProgress({
   onAdvanceGate,
   onSkipAhead,
   isPending,
+  wallet,
+  subscriptionTier,
 }: GateProgressProps) {
   const { toast } = useToast();
   const [showForecast, setShowForecast] = useState(false);
   const [showStory, setShowStory] = useState(false);
+  const [spendConfirmation, setSpendConfirmation] = useState<"advance" | "skip" | "pull" | null>(null);
   const currentGateNum = gateNumbers[match.currentGate];
   const progressPercent = ((currentGateNum - 1) / 5) * 100;
   const isCompleted = match.currentGate === "completed";
@@ -167,8 +181,19 @@ export function GateProgress({
   });
 
   const respondPullMutation = useMutation({
-    mutationFn: async ({ pullId, action }: { pullId: string; action: string }) => {
-      return await apiRequest("POST", `/api/matches/${match.id}/pull-request/${pullId}/respond`, { action });
+    mutationFn: async ({
+      pullId,
+      action,
+      confirmation,
+    }: {
+      pullId: string;
+      action: "accept" | "decline";
+      confirmation?: ConfirmedSpend;
+    }) => {
+      return await apiRequest("POST", `/api/matches/${match.id}/pull-request/${pullId}/respond`, {
+        action,
+        ...(action === "accept" ? confirmation : {}),
+      });
     },
     onSuccess: (_, variables) => {
       if (variables.action === "accept") {
@@ -181,6 +206,14 @@ export function GateProgress({
       queryClient.invalidateQueries({ queryKey: ["/api/matches", match.id, "forecast"] });
     },
     onError: (error: Error) => {
+      if (isStaleSpendConfirmation(error)) {
+        queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/matches", match.id, "forecast"] });
+        toast({ title: "Confirmation expired", description: "The price or chapter changed. Reopen the confirmation and review the updated details.", variant: "destructive" });
+        return;
+      }
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
@@ -195,9 +228,25 @@ export function GateProgress({
   const currentCost = match.currentGate !== "completed" 
     ? GATE_COSTS[match.currentGate as keyof typeof GATE_COSTS] 
     : 0;
+  const currentGateKey = match.currentGate as keyof typeof GATE_COSTS;
+  const pendingPull = forecast?.pendingPullRequest;
+  const chapterQuote = !isCompleted
+    ? chapterSpendQuote(currentGateKey, wallet, subscriptionTier)
+    : chapterSpendQuote("gate5", wallet, subscriptionTier);
+  const skipQuote = skipSpendQuote(wallet);
+  const pullGateKey = pendingPull
+    ? `gate${pendingPull.gateNumber}` as keyof typeof GATE_COSTS
+    : currentGateKey;
+  const pullQuote = !isCompleted
+    ? chapterSpendQuote(
+        pullGateKey,
+        wallet,
+        subscriptionTier,
+        pendingPull?.gateNumber === 1 && match.initiatorId === currentUserId,
+      )
+    : chapterQuote;
 
   const gatePaused = matchAny.gatePaused;
-  const pendingPull = forecast?.pendingPullRequest;
   const isPullForMe = pendingPull && pendingPull.requestedFrom === currentUserId;
   const isPullByMe = pendingPull && pendingPull.requestedBy === currentUserId;
 
@@ -227,7 +276,7 @@ export function GateProgress({
           <Button
             variant="outline"
             size="sm"
-            onClick={onSkipAhead}
+            onClick={() => setSpendConfirmation("skip")}
             disabled={isPending}
             className="gap-1 flex-shrink-0"
             data-testid={`button-skip-ahead-${match.id}`}
@@ -360,7 +409,7 @@ export function GateProgress({
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  onClick={() => respondPullMutation.mutate({ pullId: pendingPull.id, action: "accept" })}
+                  onClick={() => setSpendConfirmation("pull")}
                   disabled={respondPullMutation.isPending}
                   className="flex-1"
                   data-testid={`button-accept-pull-${match.id}`}
@@ -409,7 +458,7 @@ export function GateProgress({
             ) : (
               <>
                 <Button
-                  onClick={onAdvanceGate}
+                  onClick={() => setSpendConfirmation("advance")}
                   disabled={isPending}
                   className="w-full"
                   data-testid={`button-advance-gate-${match.id}`}
@@ -591,6 +640,45 @@ export function GateProgress({
           </div>
         )}
       </div>
+      <WalletSpendConfirmation
+        open={spendConfirmation === "advance"}
+        onOpenChange={(open) => setSpendConfirmation(open ? "advance" : null)}
+        memberName={otherProfile.displayName}
+        chapterLabel={`Chapter ${currentGateNum}: ${gateLabels[match.currentGate]}`}
+        quote={chapterQuote}
+        accessDescription={`Advances this match to ${currentGateNum >= 5 ? "Connected" : `Chapter ${currentGateNum + 1}`} for both members.`}
+        onConfirm={() => onAdvanceGate(confirmedSpend(currentGateKey, chapterQuote))}
+        isPending={!!isPending}
+        testId={`confirm-advance-${match.id}`}
+      />
+      <WalletSpendConfirmation
+        open={spendConfirmation === "skip"}
+        onOpenChange={(open) => setSpendConfirmation(open ? "skip" : null)}
+        memberName={otherProfile.displayName}
+        chapterLabel={`Skip ahead from Chapter ${currentGateNum}`}
+        quote={skipQuote}
+        accessDescription="Unlocks all remaining chapters for both members and moves both to Connected."
+        onConfirm={() => onSkipAhead(confirmedSpend(currentGateKey, skipQuote))}
+        isPending={!!isPending}
+        testId={`confirm-skip-${match.id}`}
+      />
+      {pendingPull && (
+        <WalletSpendConfirmation
+          open={spendConfirmation === "pull"}
+          onOpenChange={(open) => setSpendConfirmation(open ? "pull" : null)}
+          memberName={otherProfile.displayName}
+          chapterLabel={`Chapter ${pendingPull.gateNumber}: ${gateLabels[`gate${pendingPull.gateNumber}` as keyof typeof gateLabels]}`}
+          quote={pullQuote}
+          accessDescription={`Accepts ${otherProfile.displayName}'s request and advances this match to ${pendingPull.gateNumber >= 5 ? "Connected" : `Chapter ${pendingPull.gateNumber + 1}`} for both members.`}
+          onConfirm={() => respondPullMutation.mutate({
+            pullId: pendingPull.id,
+            action: "accept",
+            confirmation: confirmedSpend(pullGateKey, pullQuote),
+          })}
+          isPending={respondPullMutation.isPending}
+          testId={`confirm-pull-${match.id}`}
+        />
+      )}
     </div>
   );
 }

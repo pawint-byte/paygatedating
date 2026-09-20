@@ -5,10 +5,11 @@ import { GateProgress } from "@/components/dashboard/gate-progress";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Match, Profile } from "@shared/schema";
+import type { Match, Profile, Wallet } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { useLocation } from "wouter";
 import { SKIP_SUCCESS } from "@shared/skip-copy";
+import { isStaleSpendConfirmation, type ConfirmedSpend } from "@/lib/wallet-spend";
 
 interface MatchWithProfile extends Match {
   otherProfile: Profile;
@@ -26,9 +27,13 @@ export default function Matches() {
     queryKey: ["/api/profile"],
   });
 
+  const { data: wallet } = useQuery<Wallet>({
+    queryKey: ["/api/wallet"],
+  });
+
   const advanceGateMutation = useMutation({
-    mutationFn: async (matchId: string) => {
-      return await apiRequest("POST", `/api/matches/${matchId}/advance`);
+    mutationFn: async ({ matchId, confirmation }: { matchId: string; confirmation: ConfirmedSpend }) => {
+      return await apiRequest("POST", `/api/matches/${matchId}/advance`, confirmation);
     },
     onSuccess: () => {
       toast({
@@ -39,6 +44,17 @@ export default function Matches() {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
     },
     onError: (error: Error) => {
+      if (isStaleSpendConfirmation(error)) {
+        queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+        toast({
+          title: "Confirmation expired",
+          description: "The price or chapter changed. Reopen the confirmation and review the updated details.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -59,8 +75,8 @@ export default function Matches() {
   });
 
   const skipAheadMutation = useMutation({
-    mutationFn: async (matchId: string) => {
-      return await apiRequest("POST", `/api/matches/${matchId}/skip`);
+    mutationFn: async ({ matchId, confirmation }: { matchId: string; confirmation: ConfirmedSpend }) => {
+      return await apiRequest("POST", `/api/matches/${matchId}/skip`, confirmation);
     },
     onSuccess: () => {
       toast({
@@ -71,6 +87,17 @@ export default function Matches() {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
     },
     onError: (error: Error) => {
+      if (isStaleSpendConfirmation(error)) {
+        queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+        toast({
+          title: "Confirmation expired",
+          description: "The price or chapter changed. Reopen the confirmation and review the updated details.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -146,9 +173,11 @@ export default function Matches() {
                     otherProfile={match.otherProfile}
                     currentUserId={currentProfile?.userId}
                     isMyTurn={isMyTurn(match)}
-                    onAdvanceGate={() => advanceGateMutation.mutate(match.id)}
-                    onSkipAhead={() => skipAheadMutation.mutate(match.id)}
+                    onAdvanceGate={(confirmation) => advanceGateMutation.mutate({ matchId: match.id, confirmation })}
+                    onSkipAhead={(confirmation) => skipAheadMutation.mutate({ matchId: match.id, confirmation })}
                     isPending={advanceGateMutation.isPending || skipAheadMutation.isPending}
+                    wallet={wallet}
+                    subscriptionTier={currentProfile?.subscriptionTier}
                   />
                 ))}
               </div>
@@ -169,9 +198,11 @@ export default function Matches() {
                     otherProfile={match.otherProfile}
                     currentUserId={currentProfile?.userId}
                     isMyTurn={isMyTurn(match)}
-                    onAdvanceGate={() => advanceGateMutation.mutate(match.id)}
-                    onSkipAhead={() => skipAheadMutation.mutate(match.id)}
+                    onAdvanceGate={(confirmation) => advanceGateMutation.mutate({ matchId: match.id, confirmation })}
+                    onSkipAhead={(confirmation) => skipAheadMutation.mutate({ matchId: match.id, confirmation })}
                     isPending={advanceGateMutation.isPending || skipAheadMutation.isPending}
+                    wallet={wallet}
+                    subscriptionTier={currentProfile?.subscriptionTier}
                   />
                 ))}
               </div>
@@ -194,6 +225,8 @@ export default function Matches() {
                     isMyTurn={false}
                     onAdvanceGate={() => {}}
                     onSkipAhead={() => {}}
+                    wallet={wallet}
+                    subscriptionTier={currentProfile?.subscriptionTier}
                   />
                 ))}
               </div>

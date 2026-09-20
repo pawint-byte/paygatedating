@@ -59,6 +59,9 @@ import {
   type GhostReport,
   type InsertGhostReport,
   GIFT_PROTECTION,
+  GATE_COSTS,
+  SKIP_AHEAD_COST,
+  PREMIUM_GATE_DISCOUNT,
   gatePullRequests,
   type GatePullRequest,
   type InsertGatePullRequest,
@@ -91,6 +94,32 @@ export interface IStorage {
   getTransactionsByMatch(matchId: string): Promise<Transaction[]>;
   getTransactionByStripeSessionId(sessionId: string): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  createMatchWithPayment(
+    match: InsertMatch,
+    payerUserId: string,
+    confirmedGate: Match["currentGate"],
+    confirmedAmountCents: number,
+  ): Promise<{ match: Match; chargedAmount: number; paymentType: "wallet" | "premium" | "first_match_free" }>;
+  advanceMatchWithPayment(
+    matchId: string,
+    payerUserId: string,
+    confirmedGate: Match["currentGate"],
+    confirmedAmountCents: number,
+  ): Promise<Match>;
+  skipMatchWithPayment(
+    matchId: string,
+    payerUserId: string,
+    confirmedGate: Match["currentGate"],
+    confirmedAmountCents: number,
+  ): Promise<Match>;
+  respondToGatePullRequest(
+    matchId: string,
+    pullId: string,
+    responderUserId: string,
+    action: "accept" | "decline",
+    confirmedGate?: Match["currentGate"],
+    confirmedAmountCents?: number,
+  ): Promise<{ match: Match; gateNumber: number; requestedBy: string; declined: boolean }>;
 
   getMatch(id: string): Promise<Match | undefined>;
   getMatchesByUser(userId: string): Promise<Match[]>;
@@ -315,6 +344,331 @@ export class DatabaseStorage implements IStorage {
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
     const [newTransaction] = await db.insert(transactions).values(transaction).returning();
     return newTransaction;
+  }
+
+  async createMatchWithPayment(
+    matchData: InsertMatch,
+    payerUserId: string,
+    confirmedGate: Match["currentGate"],
+    confirmedAmountCents: number,
+  ): Promise<{ match: Match; chargedAmount: number; paymentType: "wallet" | "premium" | "first_match_free" }> {
+    return db.transaction(async (tx) => {
+      const pairKey = [matchData.initiatorId, matchData.recipientId].sort().join(":");
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${pairKey}, 0))`);
+      await tx.execute(sql`select id from ${profiles} where ${profiles.userId} = ${payerUserId} for update`);
+      const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, payerUserId));
+      await tx.execute(sql`select id from ${userRewards} where ${userRewards.userId} = ${payerUserId} for update`);
+      const [rewards] = await tx.select().from(userRewards).where(eq(userRewards.userId, payerUserId));
+      const paymentType: "wallet" | "premium" | "first_match_free" =
+        profile?.subscriptionTier === "premium"
+          ? "premium"
+          : rewards && !rewards.firstMatchFreeUsed
+            ? "first_match_free"
+            : "wallet";
+      const cost = paymentType === "wallet" ? GATE_COSTS.gate1 : 0;
+      const actualAmountCents = Math.round(cost * 100);
+      if (confirmedGate !== "gate1" || confirmedAmountCents !== actualAmountCents) {
+        throw Object.assign(new Error("The confirmed chapter or price is stale; review and confirm again"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      const [existingMatch] = await tx
+        .select({ id: matches.id })
+        .from(matches)
+        .where(or(
+          and(eq(matches.initiatorId, matchData.initiatorId), eq(matches.recipientId, matchData.recipientId)),
+          and(eq(matches.initiatorId, matchData.recipientId), eq(matches.recipientId, matchData.initiatorId)),
+        ))
+        .limit(1);
+      if (existingMatch) {
+        throw Object.assign(new Error("You already have an interest or match with this person"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      await tx.execute(sql`select id from ${wallets} where ${wallets.userId} = ${payerUserId} for update`);
+      const [wallet] = await tx.select().from(wallets).where(eq(wallets.userId, payerUserId));
+
+      if (paymentType === "wallet" && (!wallet || parseFloat(wallet.balance) < cost)) {
+        throw Object.assign(new Error("Insufficient wallet balance"), { code: "INSUFFICIENT_WALLET" });
+      }
+
+      if (paymentType === "first_match_free") {
+        const [claimed] = await tx
+          .update(userRewards)
+          .set({ firstMatchFreeUsed: true, updatedAt: new Date() })
+          .where(and(eq(userRewards.userId, payerUserId), eq(userRewards.firstMatchFreeUsed, false)))
+          .returning({ userId: userRewards.userId });
+        if (!claimed) {
+          throw Object.assign(new Error("First-match-free reward was already used"), {
+            code: "MATCH_OPERATION_CONFLICT",
+          });
+        }
+      }
+
+      const [match] = await tx.insert(matches).values(matchData).returning();
+      if (paymentType === "wallet" && wallet) {
+        const newBalance = (parseFloat(wallet.balance) - cost).toFixed(2);
+        await tx.update(wallets).set({ balance: newBalance }).where(eq(wallets.userId, payerUserId));
+      }
+      if (wallet) {
+        const description = paymentType === "premium"
+          ? "Gate 1: Interest request sent (Premium Perk - Free!)"
+          : paymentType === "first_match_free"
+            ? "Gate 1: Interest request sent (First Match Free!)"
+            : "Gate 1: Interest request sent";
+        await tx.insert(transactions).values({
+          walletId: wallet.id,
+          amount: paymentType === "wallet" ? (-cost).toFixed(2) : "0.00",
+          type: "gate_payment",
+          description,
+        });
+      }
+      return { match, chargedAmount: cost, paymentType };
+    });
+  }
+
+  async advanceMatchWithPayment(
+    matchId: string,
+    payerUserId: string,
+    confirmedGate: Match["currentGate"],
+    confirmedAmountCents: number,
+  ): Promise<Match> {
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`select id from ${matches} where ${matches.id} = ${matchId} for update`);
+      const [match] = await tx.select().from(matches).where(eq(matches.id, matchId));
+      await tx.execute(sql`select id from ${profiles} where ${profiles.userId} = ${payerUserId} for update`);
+      const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, payerUserId));
+      const baseCost = confirmedGate === "completed" ? undefined : GATE_COSTS[confirmedGate];
+      const isPremium = profile?.subscriptionTier === "premium";
+      const cost = baseCost === undefined ? Number.NaN : isPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
+      if (
+        !match ||
+        match.status === "declined" ||
+        match.currentGate !== confirmedGate ||
+        match.currentGate === "completed" ||
+        confirmedAmountCents !== Math.round(cost * 100)
+      ) {
+        throw Object.assign(new Error("This chapter has already changed; refresh the match state"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      await tx.execute(sql`select id from ${wallets} where ${wallets.userId} = ${payerUserId} for update`);
+      const [wallet] = await tx.select().from(wallets).where(eq(wallets.userId, payerUserId));
+      if (!wallet || parseFloat(wallet.balance) < cost) {
+        throw Object.assign(new Error("Insufficient wallet balance"), { code: "INSUFFICIENT_WALLET" });
+      }
+
+      const gateNum = parseInt(confirmedGate.replace("gate", ""));
+      const nextGate = gateNum >= 5 ? "completed" : `gate${gateNum + 1}`;
+      const gatePaidByField = `gate${gateNum}PaidBy`;
+      const [updatedMatch] = await tx
+        .update(matches)
+        .set({
+          currentGate: nextGate as Match["currentGate"],
+          status: gateNum === 1 ? "active" : match.status,
+          lastActionBy: payerUserId,
+          [gatePaidByField]: payerUserId,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(matches.id, matchId), eq(matches.currentGate, confirmedGate), ne(matches.status, "declined")))
+        .returning();
+      if (!updatedMatch) {
+        throw Object.assign(new Error("This chapter has already changed; refresh the match state"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      await tx.update(wallets)
+        .set({ balance: (parseFloat(wallet.balance) - cost).toFixed(2) })
+        .where(eq(wallets.userId, payerUserId));
+      await tx.insert(transactions).values({
+        walletId: wallet.id,
+        amount: (-cost).toFixed(2),
+        type: "gate_payment",
+        description: `Gate ${gateNum}: Payment${isPremium ? ' (50% Premium Discount)' : ''}`,
+        relatedMatchId: matchId,
+      });
+      return updatedMatch;
+    });
+  }
+
+  async skipMatchWithPayment(
+    matchId: string,
+    payerUserId: string,
+    confirmedGate: Match["currentGate"],
+    confirmedAmountCents: number,
+  ): Promise<Match> {
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`select id from ${matches} where ${matches.id} = ${matchId} for update`);
+      const [match] = await tx.select().from(matches).where(eq(matches.id, matchId));
+      const cost = SKIP_AHEAD_COST;
+      if (
+        !match ||
+        match.status === "declined" ||
+        match.currentGate !== confirmedGate ||
+        match.currentGate === "completed" ||
+        confirmedAmountCents !== Math.round(cost * 100)
+      ) {
+        throw Object.assign(new Error("This match has already changed; refresh the match state"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      await tx.execute(sql`select id from ${wallets} where ${wallets.userId} = ${payerUserId} for update`);
+      const [wallet] = await tx.select().from(wallets).where(eq(wallets.userId, payerUserId));
+      if (!wallet || parseFloat(wallet.balance) < cost) {
+        throw Object.assign(new Error("Insufficient wallet balance for skip"), { code: "INSUFFICIENT_WALLET" });
+      }
+
+      const [updatedMatch] = await tx
+        .update(matches)
+        .set({
+          currentGate: "completed",
+          status: "completed",
+          skipPaid: true,
+          lastActionBy: payerUserId,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(matches.id, matchId), eq(matches.currentGate, confirmedGate), ne(matches.status, "declined")))
+        .returning();
+      if (!updatedMatch) {
+        throw Object.assign(new Error("This match has already changed; refresh the match state"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      await tx.update(wallets)
+        .set({ balance: (parseFloat(wallet.balance) - cost).toFixed(2) })
+        .where(eq(wallets.userId, payerUserId));
+      await tx.insert(transactions).values({
+        walletId: wallet.id,
+        amount: (-cost).toFixed(2),
+        type: "gate_payment",
+        description: "Skip ahead: Covers both members; all remaining chapters unlocked; both at Connected for date planning and voice calls",
+        relatedMatchId: matchId,
+      });
+      return updatedMatch;
+    });
+  }
+
+  async respondToGatePullRequest(
+    matchId: string,
+    pullId: string,
+    responderUserId: string,
+    action: "accept" | "decline",
+    confirmedGate?: Match["currentGate"],
+    confirmedAmountCents?: number,
+  ): Promise<{ match: Match; gateNumber: number; requestedBy: string; declined: boolean }> {
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`select id from ${matches} where ${matches.id} = ${matchId} for update`);
+      const [match] = await tx.select().from(matches).where(eq(matches.id, matchId));
+      if (!match) {
+        throw Object.assign(new Error("Match not found"), { code: "MATCH_NOT_FOUND" });
+      }
+      if (match.initiatorId !== responderUserId && match.recipientId !== responderUserId) {
+        throw Object.assign(new Error("Not authorized"), { code: "MATCH_NOT_AUTHORIZED" });
+      }
+
+      await tx.execute(sql`select id from ${gatePullRequests} where ${gatePullRequests.id} = ${pullId} for update`);
+      const [pullRequest] = await tx
+        .select()
+        .from(gatePullRequests)
+        .where(and(eq(gatePullRequests.id, pullId), eq(gatePullRequests.matchId, matchId)));
+      if (!pullRequest || pullRequest.status !== "pending") {
+        throw Object.assign(new Error("Pull request not found or already responded"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+      if (pullRequest.requestedFrom !== responderUserId) {
+        throw Object.assign(new Error("Only the requested person can respond"), {
+          code: "MATCH_NOT_AUTHORIZED",
+        });
+      }
+
+      if (action === "decline") {
+        await tx.update(gatePullRequests)
+          .set({ status: "declined", respondedAt: new Date() })
+          .where(and(eq(gatePullRequests.id, pullId), eq(gatePullRequests.status, "pending")));
+        return { match, gateNumber: pullRequest.gateNumber, requestedBy: pullRequest.requestedBy, declined: true };
+      }
+
+      const actualGate = `gate${pullRequest.gateNumber}` as Match["currentGate"];
+      if (
+        match.status === "declined" ||
+        match.currentGate === "completed" ||
+        match.gatePaused ||
+        match.currentGate !== actualGate ||
+        confirmedGate !== actualGate
+      ) {
+        throw Object.assign(new Error("This pull request no longer matches the payable chapter"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      await tx.execute(sql`select id from ${profiles} where ${profiles.userId} = ${responderUserId} for update`);
+      const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, responderUserId));
+      const baseCost = GATE_COSTS[actualGate as keyof typeof GATE_COSTS];
+      const isPremium = profile?.subscriptionTier === "premium";
+      let cost = isPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
+      if (pullRequest.gateNumber === 1 && isPremium && match.initiatorId === responderUserId) {
+        cost = 0;
+      }
+      if (confirmedAmountCents !== Math.round(cost * 100)) {
+        throw Object.assign(new Error("The confirmed chapter price is stale; review and confirm again"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      await tx.execute(sql`select id from ${wallets} where ${wallets.userId} = ${responderUserId} for update`);
+      const [wallet] = await tx.select().from(wallets).where(eq(wallets.userId, responderUserId));
+      if (!wallet || (cost > 0 && parseFloat(wallet.balance) < cost)) {
+        throw Object.assign(new Error("Insufficient wallet balance"), { code: "INSUFFICIENT_WALLET" });
+      }
+
+      const gateNum = pullRequest.gateNumber;
+      const nextGate = gateNum >= 5 ? "completed" : `gate${gateNum + 1}`;
+      const [updatedMatch] = await tx.update(matches)
+        .set({
+          currentGate: nextGate as Match["currentGate"],
+          status: gateNum === 1 ? "active" : match.status,
+          lastActionBy: responderUserId,
+          [`gate${gateNum}PaidBy`]: responderUserId,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(matches.id, matchId),
+          eq(matches.currentGate, actualGate),
+          eq(matches.gatePaused, false),
+          ne(matches.status, "declined"),
+        ))
+        .returning();
+      if (!updatedMatch) {
+        throw Object.assign(new Error("This pull request no longer matches the payable chapter"), {
+          code: "MATCH_OPERATION_CONFLICT",
+        });
+      }
+
+      if (cost > 0) {
+        await tx.update(wallets)
+          .set({ balance: (parseFloat(wallet.balance) - cost).toFixed(2) })
+          .where(eq(wallets.userId, responderUserId));
+        await tx.insert(transactions).values({
+          walletId: wallet.id,
+          amount: (-cost).toFixed(2),
+          type: "gate_payment",
+          description: `Gate ${gateNum}: Payment (Pull Request accepted)${isPremium ? ' (50% Premium Discount)' : ''}`,
+          relatedMatchId: matchId,
+        });
+      }
+      await tx.update(gatePullRequests)
+        .set({ status: "accepted", respondedAt: new Date() })
+        .where(and(eq(gatePullRequests.id, pullId), eq(gatePullRequests.status, "pending")));
+
+      return { match: updatedMatch, gateNumber: gateNum, requestedBy: pullRequest.requestedBy, declined: false };
+    });
   }
 
   async getMatch(id: string): Promise<Match | undefined> {

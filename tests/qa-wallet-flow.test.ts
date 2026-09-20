@@ -80,15 +80,59 @@ function memory() {
     getMatch: async (id: string) => matches.get(id),
     getUserRewards: async (id: string) => rewards.get(id),
     useFirstMatchFree: async (id: string) => { rewards.get(id)!.firstMatchFreeUsed = true; },
-    createMatch: async (input: any) => {
+    createMatchWithPayment: async (input: any, payerId: string, confirmedGate: string, confirmedAmountCents: number) => {
+      const paymentType = profiles.get(payerId)?.subscriptionTier === "premium"
+        ? "premium"
+        : rewards.get(payerId) && !rewards.get(payerId)!.firstMatchFreeUsed
+          ? "first_match_free"
+          : "wallet";
+      const cost = paymentType === "wallet" ? GATE_COSTS.gate1 : 0;
+      const actualCents = cost * 100;
+      if (confirmedGate !== "gate1" || confirmedAmountCents !== actualCents) {
+        throw Object.assign(new Error("stale confirmation"), { code: "MATCH_OPERATION_CONFLICT" });
+      }
       const match: Match = { id: `match-${next++}`, ...input, currentGate: "gate1", status: "pending" };
-      matches.set(match.id, match); return match;
+      matches.set(match.id, match);
+      if (paymentType === "wallet") {
+        const wallet = wallets.get(payerId)!;
+        wallet.balance = (Number(wallet.balance) - cost).toFixed(2);
+        transactions.push({
+          id: `tx-${transactions.length + 1}`,
+          walletId: wallet.id,
+          amount: (-cost).toFixed(2),
+          type: "gate_payment",
+          description: "Gate 1: Interest request sent",
+        });
+      }
+      return { match, chargedAmount: cost, paymentType };
     },
     updateWalletBalance: async (id: string, balance: string) => { wallets.get(id)!.balance = balance; },
     createTransaction: async (transaction: any) => { transactions.push({ id: `tx-${transactions.length + 1}`, ...transaction }); },
     getPendingPullRequest: async () => undefined,
-    updateMatch: async (id: string, patch: any) => {
-      const match = matches.get(id)!; Object.assign(match, patch); return match;
+    advanceMatchWithPayment: async (id: string, payerId: string, confirmedGate: string, confirmedAmountCents: number) => {
+      const match = matches.get(id)!;
+      const baseCost = GATE_COSTS[confirmedGate as keyof typeof GATE_COSTS];
+      const premium = profiles.get(payerId)?.subscriptionTier === "premium";
+      const cost = premium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
+      if (match.currentGate !== confirmedGate || confirmedAmountCents !== cost * 100) {
+        throw Object.assign(new Error("This chapter has already changed"), { code: "MATCH_OPERATION_CONFLICT" });
+      }
+      const gateNum = Number(confirmedGate.replace("gate", ""));
+      const wallet = wallets.get(payerId)!;
+      wallet.balance = (Number(wallet.balance) - cost).toFixed(2);
+      transactions.push({
+        id: `tx-${transactions.length + 1}`, walletId: wallet.id, amount: (-cost).toFixed(2),
+        type: "gate_payment",
+        description: `Gate ${confirmedGate.replace("gate", "")}: Payment${premium ? " (50% Premium Discount)" : ""}`,
+        relatedMatchId: id,
+      });
+      Object.assign(match, {
+        currentGate: gateNum >= 5 ? "completed" : `gate${gateNum + 1}`,
+        status: gateNum === 1 ? "active" : match.status,
+        lastActionBy: payerId,
+        [`gate${gateNum}PaidBy`]: payerId,
+      });
+      return match;
     },
     createConnectionIfNotExists: async (...connection: any[]) => { connections.push(connection); },
   };
@@ -97,12 +141,22 @@ function memory() {
 
 async function exerciseWalletFlow(initiatorId: string, recipientId: string) {
   const state = memory();
-  const createMatchSchema = z.object({ recipientId: z.string().min(1), message: z.string().optional() });
+  const createMatchSchema = z.object({
+    recipientId: z.string().min(1),
+    message: z.string().optional(),
+    confirmedGate: z.enum(["gate1", "gate2", "gate3", "gate4", "gate5"]),
+    confirmedAmountCents: z.number().int().nonnegative(),
+  });
+  const walletSpendConfirmationSchema = createMatchSchema.pick({
+    confirmedGate: true,
+    confirmedAmountCents: true,
+  });
   const bindings = {
     storage: state.storage,
     authStorage: { getUser: async () => undefined }, // no email address: email is never sent
     emailService: { sendInterestReceived: () => { throw new Error("email must not be reached"); }, sendGateUnlocked: () => { throw new Error("email must not be reached"); } },
     GATE_COSTS, PREMIUM_GATE_DISCOUNT, QA_MEMBER_HEADER, isQaMemberId, z, createMatchSchema,
+    walletSpendConfirmationSchema,
     withQaActionLock, acquireQaActionLock: async () => async () => {},
   };
   const [wallet, transactions, matches, interest, advance] = await Promise.all([
@@ -150,7 +204,19 @@ async function exerciseWalletFlow(initiatorId: string, recipientId: string) {
 
   try {
     for (const member of [alice, bob]) assert.equal((await request(member, "/api/wallet")).body.balance, "20.00");
-    const sent = await request(initiatorId, "/api/matches", "POST", { recipientId, message: "Hi" });
+    assert.equal((await request(initiatorId, "/api/matches", "POST", {
+      recipientId, message: "Hi",
+    })).response.status, 400, "old clients cannot spend without an explicit confirmation contract");
+    assert.equal((await request(initiatorId, "/api/matches", "POST", {
+      recipientId, message: "Hi", confirmedGate: "gate1", confirmedAmountCents: 499,
+    })).response.status, 409, "stale Gate 1 price cannot create or debit a match");
+    assert.equal(state.matches.size, 0);
+    assert.equal(state.transactions.length, 0);
+    assert.equal(state.wallets.get(initiatorId)!.balance, "20.00");
+
+    const sent = await request(initiatorId, "/api/matches", "POST", {
+      recipientId, message: "Hi", confirmedGate: "gate1", confirmedAmountCents: 500,
+    });
     assert.equal(sent.response.status, 201);
     assert.equal(sent.body.chargedAmount, 5);
     assert.equal(sent.body.paymentType, "wallet");
@@ -166,7 +232,9 @@ async function exerciseWalletFlow(initiatorId: string, recipientId: string) {
 
     assert.equal((await request(initiatorId, `/api/matches/${id}/advance`, "POST")).response.status, 403, "initiator cannot accept Gate 1");
     assert.equal((await request(initiatorId, "/api/wallet")).body.balance, "15.00", "denial cannot debit");
-    const accepted = await request(recipientId, `/api/matches/${id}/advance`, "POST");
+    const accepted = await request(recipientId, `/api/matches/${id}/advance`, "POST", {
+      confirmedGate: "gate1", confirmedAmountCents: 500,
+    });
     assert.equal(accepted.response.status, 200);
     assert.equal(accepted.body.currentGate, "gate2");
     assert.equal(accepted.body.status, "active");
@@ -197,10 +265,14 @@ async function exerciseWalletFlow(initiatorId: string, recipientId: string) {
     assert.deepEqual(state.transactions.map(t => [t.walletId, t.amount, t.relatedMatchId ?? null]), [
       [`wallet-${initiatorId}`, "-5.00", null], [`wallet-${recipientId}`, "-5.00", id],
     ]);
-    assert.ok([403, 409].includes((await request(recipientId, `/api/matches/${id}/advance`, "POST")).response.status),
+    assert.ok([403, 409].includes((await request(recipientId, `/api/matches/${id}/advance`, "POST", {
+      confirmedGate: "gate1", confirmedAmountCents: 500,
+    })).response.status),
       "QA middleware may reject a post-Gate-1 repeat before the handler sees it");
     assert.equal((await request(recipientId, "/api/wallet")).body.balance, "15.00", "repeat cannot debit");
-    assert.equal((await request(recipientId, "/api/matches", "POST", { recipientId: initiatorId })).response.status, 409);
+    assert.equal((await request(recipientId, "/api/matches", "POST", {
+      recipientId: initiatorId, confirmedGate: "gate1", confirmedAmountCents: 500,
+    })).response.status, 409);
     assert.equal(state.matches.size, 1);
     assert.equal(state.transactions.length, 2, "duplicate/repeat attempts cannot add ledger rows");
   } finally {

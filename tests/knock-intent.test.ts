@@ -14,13 +14,19 @@ test("pre-knock intent is included in the single interest-creation request", asy
     request,
     "recipient-1",
     MATCH_INTENT_OPTIONS[2].value,
+    { confirmedGate: "gate1", confirmedAmountCents: 500 },
   );
 
   assert.equal(result.id, "match-1");
   assert.deepEqual(calls, [{
     method: "POST",
     url: "/api/matches",
-    data: { recipientId: "recipient-1", initiatorIntent: "activity_partner" },
+    data: {
+      recipientId: "recipient-1",
+      initiatorIntent: "activity_partner",
+      confirmedGate: "gate1",
+      confirmedAmountCents: 500,
+    },
   }]);
 });
 
@@ -32,7 +38,12 @@ test("a failed atomic knock does not attempt a follow-up intent write", async ()
   };
 
   await assert.rejects(
-    sendKnockWithIntent(request, "recipient-1", "serious_romance"),
+    sendKnockWithIntent(
+      request,
+      "recipient-1",
+      "serious_romance",
+      { confirmedGate: "gate1", confirmedAmountCents: 500 },
+    ),
     /interest creation failed/,
   );
   assert.equal(calls, 1);

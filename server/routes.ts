@@ -64,6 +64,13 @@ const createMatchSchema = z.object({
     typeof MATCH_INTENT_OPTIONS[number]["value"],
     ...typeof MATCH_INTENT_OPTIONS[number]["value"][],
   ]).optional(),
+  confirmedGate: z.enum(["gate1", "gate2", "gate3", "gate4", "gate5"]),
+  confirmedAmountCents: z.number().int().nonnegative(),
+});
+
+const walletSpendConfirmationSchema = z.object({
+  confirmedGate: z.enum(["gate1", "gate2", "gate3", "gate4", "gate5"]),
+  confirmedAmountCents: z.number().int().nonnegative(),
 });
 
 export async function registerRoutes(
@@ -809,7 +816,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         });
       }
 
-      const { recipientId, message, initiatorIntent } = validationResult.data;
+      const { recipientId, message, initiatorIntent, confirmedGate, confirmedAmountCents } = validationResult.data;
 
       if (recipientId === userId) {
         return res.status(400).json({ message: "You cannot send interest to yourself" });
@@ -842,68 +849,14 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
         return res.status(400).json({ message: "Complete your profile before sending interest" });
       }
 
-      const isPremium = profile.subscriptionTier === "premium";
-
-      const rewards = await storage.getUserRewards(userId);
-      const eligibleForFirstMatchFree = !isPremium && rewards && !rewards.firstMatchFreeUsed;
-
-      const wallet = await storage.getWallet(userId);
-      if (!isPremium && !eligibleForFirstMatchFree) {
-        if (!wallet || parseFloat(wallet.balance) < GATE_COSTS.gate1) {
-          return res.status(400).json({ message: "Insufficient wallet balance" });
-        }
-      }
-
-      let chargedAmount: number = GATE_COSTS.gate1;
-      let paymentType = "wallet";
-      if (isPremium) {
-        chargedAmount = 0;
-        paymentType = "premium";
-      } else if (eligibleForFirstMatchFree) {
-        chargedAmount = 0;
-        paymentType = "first_match_free";
-      }
-
-      // Create the match first
-      const match = await storage.createMatch({
+      const payment = await storage.createMatchWithPayment({
         initiatorId: userId,
         recipientId,
         message,
         initiatorIntent,
         lastActionBy: userId,
-      });
-
-      // Now process payment or use perks
-      if (isPremium) {
-        // Premium members get Gate 1 free on every match
-        if (wallet) {
-          await storage.createTransaction({
-            walletId: wallet.id,
-            amount: "0.00",
-            type: "gate_payment",
-            description: "Gate 1: Interest request sent (Premium Perk - Free!)",
-          });
-        }
-      } else if (eligibleForFirstMatchFree) {
-        await storage.useFirstMatchFree(userId);
-        if (wallet) {
-          await storage.createTransaction({
-            walletId: wallet.id,
-            amount: "0.00",
-            type: "gate_payment",
-            description: "Gate 1: Interest request sent (First Match Free!)",
-          });
-        }
-      } else if (wallet) {
-        const newBalance = (parseFloat(wallet.balance) - GATE_COSTS.gate1).toFixed(2);
-        await storage.updateWalletBalance(userId, newBalance);
-        await storage.createTransaction({
-          walletId: wallet.id,
-          amount: (-GATE_COSTS.gate1).toFixed(2),
-          type: "gate_payment",
-          description: "Gate 1: Interest request sent",
-        });
-      }
+      }, userId, confirmedGate, confirmedAmountCents);
+      const { match, chargedAmount, paymentType } = payment;
 
       // Send email notification to recipient about interest
       try {
@@ -927,6 +880,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       res.status(201).json({ ...match, chargedAmount, paymentType });
     } catch (error) {
+      if ((error as any)?.code === "MATCH_OPERATION_CONFLICT") {
+        return res.status(409).json({ message: (error as Error).message });
+      }
+      if ((error as any)?.code === "INSUFFICIENT_WALLET") {
+        return res.status(400).json({ message: (error as Error).message });
+      }
       console.error("Error creating match:", error);
       res.status(500).json({ message: "Failed to create match" });
     }
@@ -936,6 +895,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     try {
       const userId = req.user.claims.sub;
       const matchId = req.params.id;
+      const confirmation = walletSpendConfirmationSchema.safeParse(req.body);
+      if (!confirmation.success) {
+        return res.status(400).json({ message: "Confirmed chapter and amount are required" });
+      }
 
       const match = await storage.getMatch(matchId);
       if (!match) {
@@ -951,7 +914,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       }
 
       if (match.currentGate === "completed") {
-        return res.status(400).json({ message: "Match already completed" });
+        return res.status(409).json({ message: "Match already completed" });
+      }
+      if (match.status === "declined") {
+        return res.status(409).json({ message: "Declined matches cannot be charged" });
       }
 
       if (match.gatePaused) {
@@ -965,36 +931,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       const gateNum = parseInt(match.currentGate.replace("gate", ""));
       
-      const baseCost = GATE_COSTS[match.currentGate as keyof typeof GATE_COSTS];
-      const profile = await storage.getProfile(userId);
-      const isPremium = profile?.subscriptionTier === "premium";
-      const cost = isPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
-      const wallet = await storage.getWallet(userId);
-      
-      if (!wallet || parseFloat(wallet.balance) < cost) {
-        return res.status(400).json({ message: "Insufficient wallet balance" });
-      }
-
-      const newBalance = (parseFloat(wallet.balance) - cost).toFixed(2);
-      await storage.updateWalletBalance(userId, newBalance);
-
-      await storage.createTransaction({
-        walletId: wallet.id,
-        amount: (-cost).toFixed(2),
-        type: "gate_payment",
-        description: `Gate ${gateNum}: Payment${isPremium ? ' (50% Premium Discount)' : ''}`,
-        relatedMatchId: matchId,
-      });
-
-      const nextGate = gateNum >= 5 ? "completed" : `gate${gateNum + 1}`;
-      
-      const gatePaidByField = `gate${gateNum}PaidBy` as keyof typeof match;
-      const updatedMatch = await storage.updateMatch(matchId, {
-        currentGate: nextGate as any,
-        status: gateNum === 1 ? "active" : match.status,
-        lastActionBy: userId,
-        [gatePaidByField]: userId,
-      });
+      const updatedMatch = await storage.advanceMatchWithPayment(
+        matchId,
+        userId,
+        confirmation.data.confirmedGate,
+        confirmation.data.confirmedAmountCents,
+      );
 
       // Create bidirectional connections when match becomes active (gate 1 paid)
       if (gateNum === 1) {
@@ -1025,6 +967,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       res.json(updatedMatch);
     } catch (error) {
+      if ((error as any)?.code === "MATCH_OPERATION_CONFLICT") {
+        return res.status(409).json({ message: (error as Error).message });
+      }
+      if ((error as any)?.code === "INSUFFICIENT_WALLET") {
+        return res.status(400).json({ message: (error as Error).message });
+      }
       console.error("Error advancing gate:", error);
       res.status(500).json({ message: "Failed to advance gate" });
     }
@@ -1034,6 +982,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     try {
       const userId = req.user.claims.sub;
       const matchId = req.params.id;
+      const confirmation = walletSpendConfirmationSchema.safeParse(req.body);
+      if (!confirmation.success) {
+        return res.status(400).json({ message: "Confirmed chapter and amount are required" });
+      }
 
       const match = await storage.getMatch(matchId);
       if (!match) {
@@ -1045,35 +997,22 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       }
 
       if (match.currentGate === "completed") {
-        return res.status(400).json({ message: "Match already completed" });
+        return res.status(409).json({ message: "Match already completed" });
+      }
+      if (match.status === "declined") {
+        return res.status(409).json({ message: "Declined matches cannot be charged" });
       }
 
       if (match.gatePaused) {
         return res.status(400).json({ message: "Gate progression is paused. Resume before skipping." });
       }
 
-      const wallet = await storage.getWallet(userId);
-      if (!wallet || parseFloat(wallet.balance) < SKIP_AHEAD_COST) {
-        return res.status(400).json({ message: "Insufficient wallet balance for skip" });
-      }
-
-      const newBalance = (parseFloat(wallet.balance) - SKIP_AHEAD_COST).toFixed(2);
-      await storage.updateWalletBalance(userId, newBalance);
-
-      await storage.createTransaction({
-        walletId: wallet.id,
-        amount: (-SKIP_AHEAD_COST).toFixed(2),
-        type: "gate_payment",
-        description: "Skip ahead: Covers both members; all remaining chapters unlocked; both at Connected for date planning and voice calls",
-        relatedMatchId: matchId,
-      });
-
-      const updatedMatch = await storage.updateMatch(matchId, {
-        currentGate: "completed",
-        status: "completed",
-        skipPaid: true,
-        lastActionBy: userId,
-      });
+      const updatedMatch = await storage.skipMatchWithPayment(
+        matchId,
+        userId,
+        confirmation.data.confirmedGate,
+        confirmation.data.confirmedAmountCents,
+      );
 
       // Create bidirectional connections when skipping ahead
       try {
@@ -1102,6 +1041,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       res.json(updatedMatch);
     } catch (error) {
+      if ((error as any)?.code === "MATCH_OPERATION_CONFLICT") {
+        return res.status(409).json({ message: (error as Error).message });
+      }
+      if ((error as any)?.code === "INSUFFICIENT_WALLET") {
+        return res.status(400).json({ message: (error as Error).message });
+      }
       console.error("Error skipping ahead:", error);
       res.status(500).json({ message: "Failed to skip ahead" });
     }
@@ -1495,59 +1440,29 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       if (pullRequest.requestedFrom !== userId) {
         return res.status(403).json({ message: "Only the requested person can respond" });
       }
+      if (match.initiatorId !== userId && match.recipientId !== userId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
 
       if (action === "decline") {
-        await storage.updateGatePullRequest(pullId, {
-          status: "declined",
-          respondedAt: new Date(),
-        });
+        await storage.respondToGatePullRequest(matchId, pullId, userId, "decline");
         return res.json({ message: "Pull request declined. The original person must pay to advance." });
       }
 
-      // Accept: the responder pays the gate
-      const gateNum = pullRequest.gateNumber;
-      const baseCost = GATE_COSTS[`gate${gateNum}` as keyof typeof GATE_COSTS];
-      const profile = await storage.getProfile(userId);
-      const isPremium = profile?.subscriptionTier === "premium";
-
-      // Check if gate 1 is free for premium initiator
-      let cost = isPremium ? baseCost * PREMIUM_GATE_DISCOUNT : baseCost;
-      if (gateNum === 1 && isPremium && match.initiatorId === userId) {
-        cost = 0;
+      const confirmation = walletSpendConfirmationSchema.safeParse(req.body);
+      if (!confirmation.success) {
+        return res.status(400).json({ message: "Confirmed chapter and amount are required to accept" });
       }
-
-      const wallet = await storage.getWallet(userId);
-      if (!wallet || (cost > 0 && parseFloat(wallet.balance) < cost)) {
-        return res.status(400).json({ message: "Insufficient wallet balance" });
-      }
-
-      if (cost > 0) {
-        const newBalance = (parseFloat(wallet.balance) - cost).toFixed(2);
-        await storage.updateWalletBalance(userId, newBalance);
-
-        await storage.createTransaction({
-          walletId: wallet.id,
-          amount: (-cost).toFixed(2),
-          type: "gate_payment",
-          description: `Gate ${gateNum}: Payment (Pull Request accepted)${isPremium ? ' (50% Premium Discount)' : ''}`,
-          relatedMatchId: matchId,
-        });
-      }
-
-      const nextGate = gateNum >= 5 ? "completed" : `gate${gateNum + 1}`;
-      const gatePaidByField = `gate${gateNum}PaidBy` as keyof typeof match;
-
-      const updatedMatch = await storage.updateMatch(matchId, {
-        currentGate: nextGate as any,
-        status: gateNum === 1 ? "active" : match.status,
-        lastActionBy: userId,
-        [gatePaidByField]: userId,
-      });
-
-      await storage.updateGatePullRequest(pullId, {
-        status: "accepted",
-        respondedAt: new Date(),
-      });
+      const result = await storage.respondToGatePullRequest(
+        matchId,
+        pullId,
+        userId,
+        "accept",
+        confirmation.data.confirmedGate,
+        confirmation.data.confirmedAmountCents,
+      );
+      const updatedMatch = result.match;
+      const gateNum = result.gateNumber;
 
       if (gateNum === 1) {
         try {
@@ -1559,7 +1474,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       }
 
       try {
-        const requesterUserId = pullRequest.requestedBy;
+        const requesterUserId = result.requestedBy;
         const requesterProfile = await storage.getProfile(requesterUserId);
         const payerProfile = await storage.getProfile(userId);
         const requesterUser = await authStorage.getUser(requesterUserId);
@@ -1577,6 +1492,18 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       res.json(updatedMatch);
     } catch (error) {
+      if ((error as any)?.code === "MATCH_OPERATION_CONFLICT") {
+        return res.status(409).json({ message: (error as Error).message });
+      }
+      if ((error as any)?.code === "INSUFFICIENT_WALLET") {
+        return res.status(400).json({ message: (error as Error).message });
+      }
+      if ((error as any)?.code === "MATCH_NOT_AUTHORIZED") {
+        return res.status(403).json({ message: (error as Error).message });
+      }
+      if ((error as any)?.code === "MATCH_NOT_FOUND") {
+        return res.status(404).json({ message: (error as Error).message });
+      }
       console.error("Error responding to pull request:", error);
       res.status(500).json({ message: "Failed to respond to pull request" });
     }

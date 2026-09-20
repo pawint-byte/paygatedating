@@ -23,3 +23,13 @@ Releasing a lock then lets retries overlap a still-running wallet debit.
 
 **How to apply:** Release in the asynchronous operation's `finally`, and skip a new
 operation if the request was already aborted before dispatch.
+
+Payment confirmation authorizes one specific chapter and quoted amount, not whatever
+chapter happens to be current when a retry arrives.
+
+**Why:** A request replayed after a successful transition can otherwise become a
+second legitimate-looking purchase of the next chapter, even with database locks.
+
+**How to apply:** Bind spending to the displayed chapter and amount, revalidate
+both with canonical eligibility inside the transaction, and require a fresh
+confirmation after a conflict. Apply the same rule to delegated payment requests.

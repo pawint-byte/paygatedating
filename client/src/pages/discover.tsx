@@ -9,25 +9,22 @@ import { ReferrerHighlight } from "@/components/dashboard/referrer-highlight";
 import { SharePromoBanner } from "@/components/dashboard/share-promo-banner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { WalletSpendConfirmation } from "@/components/dashboard/wallet-spend-confirmation";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlidersHorizontal } from "lucide-react";
-import { GATE_COSTS, MATCH_INTENT_OPTIONS, type MatchIntent, type Profile, type SearchPreferences } from "@shared/schema";
+import { MATCH_INTENT_OPTIONS, type MatchIntent, type Profile, type SearchPreferences, type UserRewards, type Wallet } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { sendKnockWithIntent } from "@/lib/knock-intent";
+import {
+  confirmedSpend,
+  isStaleSpendConfirmation,
+  knockSpendQuote,
+  type ConfirmedSpend,
+} from "@/lib/wallet-spend";
 
 interface EnrichedProfile extends Profile {
   wishlistPreview?: Array<{
@@ -56,6 +53,14 @@ export default function Discover() {
 
   const { data: myProfile } = useQuery<Profile>({
     queryKey: ["/api/profile"],
+  });
+
+  const { data: wallet } = useQuery<Wallet>({
+    queryKey: ["/api/wallet"],
+  });
+
+  const { data: rewards } = useQuery<UserRewards>({
+    queryKey: ["/api/rewards"],
   });
 
   const { data: searchPrefs } = useQuery<SearchPreferences>({
@@ -121,12 +126,20 @@ export default function Discover() {
   });
 
   const sendInterestMutation = useMutation({
-    mutationFn: async ({ recipientId, intent }: { recipientId: string; intent: MatchIntent }) => {
+    mutationFn: async ({
+      recipientId,
+      intent,
+      confirmation,
+    }: {
+      recipientId: string;
+      intent: MatchIntent;
+      confirmation: ConfirmedSpend;
+    }) => {
       return await sendKnockWithIntent<{
         id: string;
         chargedAmount: number;
         paymentType: "wallet" | "premium" | "first_match_free";
-      }>(apiRequest, recipientId, intent);
+      }>(apiRequest, recipientId, intent, confirmation);
     },
     onSuccess: (result) => {
       const paymentDescription = result.paymentType === "premium"
@@ -146,6 +159,18 @@ export default function Discover() {
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
     },
     onError: (error: Error) => {
+      if (isStaleSpendConfirmation(error)) {
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+        toast({
+          title: "Confirmation expired",
+          description: "The price or eligibility changed. Start the knock again and review the updated details.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -237,6 +262,8 @@ export default function Discover() {
   const handleShareClick = () => {
     setLocation("/profile");
   };
+
+  const interestQuote = knockSpendQuote(wallet, myProfile?.subscriptionTier, rewards);
 
   return (
     <div className="p-4 md:p-6">
@@ -404,7 +431,7 @@ export default function Discover() {
         </div>
       )}
 
-      <AlertDialog
+      <WalletSpendConfirmation
         open={!!interestProfile}
         onOpenChange={(open) => {
           if (!open && !sendInterestMutation.isPending) {
@@ -412,15 +439,27 @@ export default function Discover() {
             setInterestIntent("");
           }
         }}
+        memberName={interestProfile?.displayName ?? ""}
+        chapterLabel="Chapter 1: The Spark — paid interest / pending knock"
+        quote={interestQuote}
+        accessDescription="Creates a paid pending interest. The other member must accept before the match becomes active; this payment alone does not unlock the next chapter for both."
+        onConfirm={() => {
+          if (interestProfile && interestIntent) {
+            sendInterestMutation.mutate({
+              recipientId: interestProfile.userId,
+              intent: interestIntent,
+              confirmation: confirmedSpend("gate1", interestQuote),
+            });
+          }
+        }}
+        isPending={sendInterestMutation.isPending}
+        testId="confirm-knock"
+        canConfirm={!!interestIntent}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Knock with an intent</AlertDialogTitle>
-            <AlertDialogDescription>
-              Choose what you are open to with {interestProfile?.displayName}. They will see your intent on this connection.
-              Only knock with an intent you mean. This costs up to ${GATE_COSTS.gate1}; Premium and first-match-free benefits are applied automatically.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Choose what you are open to with {interestProfile?.displayName}. They will see your intent on this connection.
+          </p>
           <Select value={interestIntent} onValueChange={(value) => setInterestIntent(value as MatchIntent)}>
             <SelectTrigger aria-label="Choose your intent" data-testid="select-knock-intent">
               <SelectValue placeholder="Choose your intent" />
@@ -431,23 +470,9 @@ export default function Discover() {
               ))}
             </SelectContent>
           </Select>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={sendInterestMutation.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={!interestProfile || !interestIntent || sendInterestMutation.isPending}
-              onClick={(event) => {
-                event.preventDefault();
-                if (interestProfile && interestIntent) {
-                  sendInterestMutation.mutate({ recipientId: interestProfile.userId, intent: interestIntent });
-                }
-              }}
-              data-testid="button-confirm-interest"
-            >
-              {sendInterestMutation.isPending ? "Sending..." : "Knock"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          {!interestIntent && <p className="text-xs text-destructive">Choose an intent before confirming.</p>}
+        </div>
+      </WalletSpendConfirmation>
     </div>
   );
 }

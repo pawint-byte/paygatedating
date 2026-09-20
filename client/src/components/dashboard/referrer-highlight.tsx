@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,8 +15,15 @@ import {
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { MATCH_INTENT_OPTIONS, type MatchIntent } from "@shared/schema";
+import { MATCH_INTENT_OPTIONS, type MatchIntent, type Profile, type UserRewards, type Wallet } from "@shared/schema";
 import { sendKnockWithIntent } from "@/lib/knock-intent";
+import { WalletSpendConfirmation } from "./wallet-spend-confirmation";
+import {
+  confirmedSpend,
+  isStaleSpendConfirmation,
+  knockSpendQuote,
+  type ConfirmedSpend,
+} from "@/lib/wallet-spend";
 
 interface ReferrerProfile {
   userId: string;
@@ -38,6 +45,7 @@ export function ReferrerHighlight({ currentUserId }: ReferrerHighlightProps) {
   const [dismissed, setDismissed] = useState(false);
   const [referrerUserId, setReferrerUserId] = useState<string | null>(null);
   const [intent, setIntent] = useState<MatchIntent | "">("");
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,37 +67,55 @@ export function ReferrerHighlight({ currentUserId }: ReferrerHighlightProps) {
     enabled: !!referrerUserId && !dismissed,
   });
 
+  const { data: profile } = useQuery<Profile>({ queryKey: ["/api/profile"] });
+  const { data: wallet } = useQuery<Wallet>({ queryKey: ["/api/wallet"] });
+  const { data: rewards } = useQuery<UserRewards>({ queryKey: ["/api/rewards"] });
+
   const handleDismiss = () => {
     setDismissed(true);
     localStorage.setItem('referrerHighlightShown', 'true');
     localStorage.removeItem('referrerUserId');
   };
 
-  const handleExpressInterest = async () => {
-    if (!referrerUserId || !intent) return;
-    try {
-      await sendKnockWithIntent(apiRequest, referrerUserId, intent);
-      
+  const interestMutation = useMutation({
+    mutationFn: async (confirmation: ConfirmedSpend) => {
+      if (!referrerUserId || !intent) throw new Error("Choose an intent before confirming.");
+      return sendKnockWithIntent(apiRequest, referrerUserId, intent, confirmation);
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
       toast({
         title: "Interest sent!",
         description: `${referrer?.displayName} will see your stated intent on this connection.`,
       });
-      
       handleDismiss();
-    } catch (error: any) {
+    },
+    onError: (error: Error) => {
+      if (isStaleSpendConfirmation(error)) {
+        queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
+        toast({
+          title: "Confirmation expired",
+          description: "The price or eligibility changed. Reopen the confirmation and review the updated details.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({
         title: "Couldn't express interest",
         description: error.message || "Please try again later",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
 
   if (dismissed || !referrerUserId || isLoading || !referrer) {
     return null;
   }
+
+  const interestQuote = knockSpendQuote(wallet, profile?.subscriptionTier, rewards);
 
   return (
     <Card 
@@ -184,8 +210,8 @@ export function ReferrerHighlight({ currentUserId }: ReferrerHighlightProps) {
         <div className="flex gap-2 mt-3">
           <Button 
             className="flex-1"
-            onClick={handleExpressInterest}
-            disabled={!intent}
+            onClick={() => setConfirmationOpen(true)}
+            disabled={!intent || interestMutation.isPending}
             data-testid="button-express-interest-referrer"
           >
             <Heart className="w-4 h-4 mr-2" />
@@ -204,6 +230,18 @@ export function ReferrerHighlight({ currentUserId }: ReferrerHighlightProps) {
           {referrer.displayName} shared their profile with you. Show them you're interested!
         </p>
       </CardContent>
+      <WalletSpendConfirmation
+        open={confirmationOpen}
+        onOpenChange={setConfirmationOpen}
+        memberName={referrer.displayName}
+        chapterLabel="Chapter 1: The Spark — paid interest / pending knock"
+        quote={interestQuote}
+        accessDescription="Creates a paid pending interest. The other member must accept before the match becomes active; this payment alone does not unlock the next chapter for both."
+        onConfirm={() => interestMutation.mutate(confirmedSpend("gate1", interestQuote))}
+        isPending={interestMutation.isPending}
+        testId="confirm-referrer-knock"
+        canConfirm={!!intent}
+      />
     </Card>
   );
 }

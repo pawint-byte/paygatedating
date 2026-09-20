@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
+import { z } from "zod";
 import { SKIP_AHEAD_COST } from "../shared/schema";
 import { SKIP_LABEL, SKIP_SUBCOPY, SKIP_EXPLANATION, SKIP_SUCCESS, SKIP_FAQ } from "../shared/skip-copy";
 import { FAQ_ITEMS, faqStructuredData } from "../shared/faq-content";
@@ -50,6 +51,10 @@ function skipHandler(storage: object) {
   assert.ok(expression);
   const context = vm.createContext({
     storage, SKIP_AHEAD_COST, console,
+    walletSpendConfirmationSchema: z.object({
+      confirmedGate: z.enum(["gate1", "gate2", "gate3", "gate4", "gate5"]),
+      confirmedAmountCents: z.number().int().nonnegative(),
+    }),
     authStorage: { getUser: async () => undefined },
     emailService: {},
     handler: undefined,
@@ -70,9 +75,17 @@ test("real Skip handler charges either payer $50 once and advances the shared ma
       const handler = skipHandler({
         getMatch: async () => match,
         getWallet: async (id: string) => ({ id: `wallet-${id}`, balance: String(balances[id]) }),
-        updateWalletBalance: async (id: string, balance: string) => { balances[id] = Number(balance); },
-        createTransaction: async (entry: any) => ledger.push(entry),
-        updateMatch: async (_id: string, update: object) => (match = { ...match, ...update }),
+        skipMatchWithPayment: async (_id: string, id: string, confirmedGate: string, confirmedAmountCents: number) => {
+          const cost = SKIP_AHEAD_COST;
+          const description = "Skip ahead: Covers both members; all remaining chapters unlocked";
+          if (match.currentGate !== confirmedGate || match.currentGate === "completed" || confirmedAmountCents !== cost * 100) {
+            throw Object.assign(new Error("This match has already changed"), { code: "MATCH_OPERATION_CONFLICT" });
+          }
+          balances[id] -= cost;
+          ledger.push({ walletId: `wallet-${id}`, amount: (-cost).toFixed(2), description });
+          match = { ...match, currentGate: "completed", status: "completed", skipPaid: true, lastActionBy: id };
+          return match;
+        },
         createConnectionIfNotExists: async (...args: string[]) => connections.push(args),
         getProfile: async () => undefined,
       });
@@ -80,7 +93,17 @@ test("real Skip handler charges either payer $50 once and advances the shared ma
         status(code: number) { this.statusCode = code; return this; },
         json(body: any) { this.body = body; return this; },
       };
-      const req = { user: { claims: { sub: payer } }, params: { id: "pair" } };
+      const req = {
+        user: { claims: { sub: payer } },
+        params: { id: "pair" },
+        body: { confirmedGate: gate, confirmedAmountCents: 5000 },
+      };
+      await handler({ ...req, body: { ...req.body, confirmedAmountCents: 4999 } }, res);
+      assert.equal(res.statusCode, 409, "a stale confirmed price is rejected");
+      assert.equal(balances[payer], 100);
+      assert.equal(ledger.length, 0);
+
+      res.statusCode = 200;
       await handler(req, res);
       assert.equal(res.statusCode, 200);
       assert.equal(balances[payer], 50);
@@ -93,7 +116,7 @@ test("real Skip handler charges either payer $50 once and advances the shared ma
       assert.match(ledger[0].description, /Covers both members/);
       assert.deepEqual(connections, [["alice", "bob", "pair"], ["bob", "alice", "pair"]]);
       await handler(req, res);
-      assert.equal(res.statusCode, 400);
+      assert.ok([400, 409].includes(res.statusCode));
       assert.equal(ledger.length, 1);
     }
   }
