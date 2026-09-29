@@ -99,7 +99,8 @@ export function MobileBottomNav() {
             </SheetHeader>
             <div className="overflow-y-auto space-y-1 pb-6">
               {moreMenuItems.map((item) => {
-                const isActive = location === item.url;
+                const isActive = location === item.url ||
+                  (["/nearby", "/radar"].includes(location) && ["/nearby", "/radar"].includes(item.url));
                 return (
                   <Link key={item.url} href={item.url}>
                     <button

@@ -10,7 +10,7 @@ export const INTERNAL_NONLIVE_CAPABILITY_CHECKLIST = [
   {
     capability: "Travel-area scan",
     status: "production_unconfirmed",
-    evidence: "Nearby has current, saved, and searched-city map code, but repository implementation does not confirm the deployed production path.",
-    publishWhen: "The deployed Nearby route, city lookup, live toggle, and privacy behavior are verified end to end.",
+    evidence: "Radar aliases the signed-in Nearby map, which has current, saved, and searched-city selection; repository implementation does not confirm a deployed production travel-area scan.",
+    publishWhen: "Any travel-area promotion requires deployed route, city lookup, live toggle, and privacy behavior verified end to end.",
   },
 ] as const;

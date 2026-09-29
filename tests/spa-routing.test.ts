@@ -32,7 +32,7 @@ test("serveStatic serves assets and limits the SPA shell to real GET/HEAD routes
   const { server, base } = await listen(app);
   t.after(() => server.close());
 
-  for (const pathname of ["/", "/settings", "/p/member-1", "/invite/code-1"]) {
+  for (const pathname of ["/", "/settings", "/nearby", "/radar", "/p/member-1", "/invite/code-1"]) {
     const get = await fetch(base + pathname);
     assert.equal(get.status, 200, pathname);
     assert.match(await get.text(), /APP SHELL/);
@@ -94,4 +94,24 @@ test("SPA allowlist matches every top-level App route", async () => {
   for (const route of routes) {
     assert.equal(isAppPath(route.replace(/:[^/]+/g, "example")), true, route);
   }
+});
+
+test("Radar and Nearby share the signed-in map, while signed-out entry offers the landing login path", async () => {
+  const app = await readFile("client/src/App.tsx", "utf8");
+  const dashboard = await readFile("client/src/pages/dashboard-layout.tsx", "utf8");
+  const mobile = await readFile("client/src/components/dashboard/mobile-bottom-nav.tsx", "utf8");
+  const sidebar = await readFile("client/src/components/dashboard/app-sidebar.tsx", "utf8");
+  const landingNav = await readFile("client/src/components/landing/nav-header.tsx", "utf8");
+  for (const route of ["/nearby", "/radar"]) {
+    assert.match(app, new RegExp(`!user\\s*\\?\\s*\\([\\s\\S]*?<Route path="${route}">[\\s\\S]*?<Landing \\/>`));
+  }
+  assert.match(app, /<Route path="\/radar" component=\{DashboardLayout\} \/>/);
+  for (const route of ["/nearby", "/radar"]) {
+    assert.ok(isAppPath(route));
+    assert.ok(dashboard.includes(`<Route path="${route}" component={Nearby} />`));
+    assert.ok(mobile.includes(`url: "${route}"`));
+  }
+  assert.match(mobile, /\["\/nearby", "\/radar"\]\.includes\(location\)/);
+  assert.match(sidebar, /item\.url === "\/nearby" && location === "\/radar"/);
+  assert.match(landingNav, /href="\/api\/login"/);
 });

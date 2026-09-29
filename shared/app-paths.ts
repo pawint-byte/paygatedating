@@ -17,6 +17,7 @@ export const APP_PATHS = [
   "/faq",
   "/discover",
   "/nearby",
+  "/radar",
   "/matches",
   "/messages",
   "/profile",

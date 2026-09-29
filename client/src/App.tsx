@@ -61,14 +61,23 @@ function Router() {
         <Route path="/invite/:referralCode" component={InvitePage} />
         <Route path="/p/:userId" component={PublicProfile} />
         {!user ? (
-          <Route path="/">
-            <Landing />
-          </Route>
+          <>
+            <Route path="/nearby">
+              <Landing />
+            </Route>
+            <Route path="/radar">
+              <Landing />
+            </Route>
+            <Route path="/">
+              <Landing />
+            </Route>
+          </>
         ) : (
           <>
             <Route path="/" component={DashboardLayout} />
             <Route path="/discover" component={DashboardLayout} />
             <Route path="/nearby" component={DashboardLayout} />
+            <Route path="/radar" component={DashboardLayout} />
             <Route path="/matches" component={DashboardLayout} />
             <Route path="/messages" component={DashboardLayout} />
             <Route path="/profile" component={DashboardLayout} />

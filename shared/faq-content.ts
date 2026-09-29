@@ -5,7 +5,7 @@ export const FAQ_TITLE = "FAQ | PayGate Dating";
 export const FAQ_H1 = "PayGate Dating FAQ";
 export const FAQ_CANONICAL = "https://paygatedating.com/faq";
 export const FAQ_DESCRIPTION =
-      "Answers about joining PayGate Dating for free, five pay-as-you-go chapters, connection intent, profile visibility, wallet funds, Stripe payments, gift shipping privacy, and retailer fulfillment.";
+      "Answers about joining PayGate Dating, Radar/Nearby and Go Live, pay-as-you-go chapters, profile visibility, wallet funds, payments, and gift shipping privacy.";
 
 export const FAQ_ITEMS = [
       SKIP_FAQ,
@@ -20,6 +20,14 @@ export const FAQ_ITEMS = [
       {
             question: "Can I be on the site and stay invisible?",
             answer: "You can stay off discovery. In Settings under Visibility, turn off Show My Profile to stay off browse and search results; this does not erase existing connections. The current visibility control also makes your public profile link unavailable, so PayGate does not yet offer a link-only hidden mode. Turn visibility back on before sharing your profile link or QR.",
+      },
+      {
+            question: "What is Radar (Nearby), and how do I choose an area?",
+            answer: "Radar and Nearby open the same signed-in map. Explore using your current location if you allow browser location access, your saved location, or a city or town you search for manually. The map requests visible Go Live profiles within 15 km of the selected area; results can be limited and may not include everyone. Browsing Radar has no extra Nearby fee. If you choose to connect with someone, the normal knock and chapter costs still apply.",
+      },
+      {
+            question: "What does Go Live share on Radar, and when does it stop?",
+            answer: "Go Live is optional. Turning it on shares your selected general location and profile with other members on the Nearby map while your profile is visible. Map coordinates returned for live profiles are rounded to approximately 500 m, not an exact pin, but this is still location sharing. The separate Show Location setting controls whether your city/area appears on your public profile; turning it off does not prevent Go Live from sharing your map position. Go Live stays on until you turn it off; choosing a different map area alone does not update your live location. Turning Go Live on can send nearby members an alert. Turn it off when you no longer want to share.",
       },
       {
             question: "What happens if I stop mid-story?",

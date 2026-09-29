@@ -252,6 +252,7 @@ export default function DashboardLayout() {
             <Switch>
               <Route path="/discover" component={Discover} />
               <Route path="/nearby" component={Nearby} />
+              <Route path="/radar" component={Nearby} />
               <Route path="/matches" component={Matches} />
               <Route path="/messages" component={Messages} />
               <Route path="/profile" component={ProfilePage} />

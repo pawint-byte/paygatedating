@@ -65,11 +65,37 @@ test("FAQ publishes only supported intents and accurately describes hidden and m
   assert.match(stopped.answer, /non-withdrawable/);
   assert.match(stopped.answer, /not refunded/);
 
-  assert.ok(!FAQ_ITEMS.some(item => /travel|nearby map/i.test(`${item.question} ${item.answer}`)));
+  assert.ok(!FAQ_ITEMS.some(item => /travel-area scan|travel meet|on a trip|production-verified travel/i.test(`${item.question} ${item.answer}`)));
   assert.deepEqual(INTERNAL_NONLIVE_CAPABILITY_CHECKLIST.map(item => item.capability), [
     "Link-only hidden profile",
     "Travel-area scan",
   ]);
+});
+
+test("Radar FAQ matches Nearby controls, costs, sharing, and server/client FAQ output", () => {
+  const location = FAQ_ITEMS.find(item => item.question === "What is Radar (Nearby), and how do I choose an area?");
+  const live = FAQ_ITEMS.find(item => item.question === "What does Go Live share on Radar, and when does it stop?");
+  assert.ok(location && live);
+  assert.match(location.answer, /same signed-in map/);
+  assert.match(location.answer, /current location.*saved location.*city or town/);
+  assert.match(location.answer, /15 km/);
+  assert.match(location.answer, /no extra Nearby fee.*normal knock and chapter costs/);
+  assert.match(live.answer, /optional.*selected general location/);
+  assert.match(live.answer, /500 m/);
+  assert.match(live.answer, /Show Location.*does not prevent Go Live from sharing your map position/);
+  assert.match(live.answer, /until you turn it off/);
+  assert.match(live.answer, /can send nearby members an alert/);
+  assert.doesNotMatch(`${location.answer} ${live.answer}`, /background tracking|real-time tracking|exact location|expires automatically|verified production travel/i);
+  const html = renderFaqDocument(template);
+  const schema = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+  for (const item of [location, live]) {
+    assert.ok(html.includes(escapeHtml(item.answer)));
+    assert.equal(schema.mainEntity.find((entry: { name: string }) => entry.name === item.question).acceptedAnswer.text, item.answer);
+  }
+  const nearby = fs.readFileSync("client/src/pages/nearby.tsx", "utf8");
+  assert.match(nearby, /href="\/faq"/);
+  assert.match(nearby, /radius=15/);
+  assert.match(nearby, /switch-go-live/);
 });
 
 test("knock UI and match UI share the schema intent options", () => {

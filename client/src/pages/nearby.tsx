@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -349,6 +350,10 @@ export default function NearbyPage() {
             You're still live at your saved location. Turn Go Live off and on to share this map area instead.
           </p>
         )}
+        <p className="mt-2 text-sm text-muted-foreground">
+          Questions about Radar, Go Live, or location sharing?{" "}
+          <Link href="/faq" className="underline underline-offset-2 hover:text-foreground">Read the FAQ</Link>.
+        </p>
       </div>
 
       <div className="flex-1 relative isolate min-h-[400px]">

@@ -126,7 +126,7 @@ export function AppSidebar({ user, profile }: AppSidebarProps) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={location === item.url}
+                    isActive={location === item.url || (item.url === "/nearby" && location === "/radar")}
                     data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                   >
                     <Link href={item.url}>
