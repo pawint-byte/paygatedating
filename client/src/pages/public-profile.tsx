@@ -45,6 +45,7 @@ interface PublicWishlistItem {
 
 interface PublicProfile {
   userId: string;
+  setupGate?: "serious_romance" | "activity_partner" | null;
   displayName: string;
   age?: number;
   location?: string;
@@ -180,7 +181,12 @@ export default function PublicProfile() {
                       <VerifiedBadge size="lg" />
                     )}
                   </div>
-                  {profile.tagline && (
+                    {profile.setupGate && (
+                      <p className="mt-2 text-sm font-medium">
+                        {profile.setupGate === "activity_partner" ? "Activity Partner" : "Serious Romance"}
+                      </p>
+                    )}
+                    {profile.tagline && (
                     <p className="text-white/80 text-sm mb-1" data-testid="text-profile-tagline">
                       {profile.tagline}
                     </p>

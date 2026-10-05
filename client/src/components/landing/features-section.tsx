@@ -12,6 +12,7 @@ import {
   Sparkles,
   QrCode
 } from "lucide-react";
+import { Link } from "wouter";
 
 const features = [
   {
@@ -123,6 +124,27 @@ export function FeaturesSection() {
             );
           })}
         </div>
+        <Link
+          href="/assistant-guide"
+          className="group mt-8 flex flex-col gap-4 rounded-xl border border-primary/20 bg-card p-5 transition-colors hover:border-primary/40 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+          data-testid="feature-member-owned-ai-pilot"
+        >
+          <div className="flex items-start gap-4">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold">Connect your own AI</h3>
+                <span className="rounded-full border border-primary/25 bg-primary/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary">Development pilot</span>
+              </div>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                A member-owned connector can read approved context and prepare private drafts. You stay in control; the pilot is not released publicly.
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 text-sm font-medium text-primary underline underline-offset-4">Read the connection guide</span>
+        </Link>
       </div>
     </section>
   );

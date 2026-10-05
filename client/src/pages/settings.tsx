@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Bell, Eye, Shield, MapPin } from "lucide-react";
+import { Wallet, Bell, Eye, Shield, MapPin, KeyRound, ArrowRight } from "lucide-react";
 import type { Profile } from "@shared/schema";
 import { isUnauthorizedError } from "@/lib/auth-utils";
 import { ReferralCard } from "@/components/dashboard/referral-card";
@@ -93,6 +94,25 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      <Link href="/assistant-access" className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <Card className="transition-colors group-hover:border-primary/40">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary">
+                  <KeyRound className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle>Assistant access</CardTitle>
+                  <CardDescription className="mt-1">Connect an external AI you control and review every draft yourself.</CardDescription>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
 
       <Card>
         <CardHeader>

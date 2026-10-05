@@ -5,9 +5,25 @@ export const FAQ_TITLE = "FAQ | PayGate Dating";
 export const FAQ_H1 = "PayGate Dating FAQ";
 export const FAQ_CANONICAL = "https://paygatedating.com/faq";
 export const FAQ_DESCRIPTION =
-      "Answers about joining PayGate Dating, Radar/Nearby and Go Live, pay-as-you-go chapters, profile visibility, wallet funds, payments, and gift shipping privacy.";
+      "Answers about joining PayGate Dating, member-owned AI setup, Radar/Nearby and Go Live, pay-as-you-go chapters, profile visibility, payments, and gift shipping privacy.";
 
 export const FAQ_ITEMS = [
+      {
+            question: "Can I connect the AI I already use to PayGate?",
+            answer: "The member-owned AI connection is a development pilot, not a publicly released feature. It lets a compatible private AI tool read permitted profile preferences and gate-request summaries and propose private profile or wishlist drafts. PayGate does not host another model or import your existing conversations. The original five-field profile setup and first Accept remain human-first; assistant profile management starts after that initial acceptance. Read the two-sided setup guide at /assistant-guide.",
+      },
+      {
+            question: "How do I set up the connection on PayGate and in my AI?",
+            answer: "On PayGate, sign in, accept your initial profile, and open Settings → Assistant access. Name a private connection, choose its draft permissions, and copy the key shown once. In an AI client that supports OpenAPI HTTP tools, import the API specification linked on that page and set API Key authentication to Bearer. Put the key only in private connector credentials, never in chat, notes, screenshots, or a public/shared assistant. A private ChatGPT custom GPT with Actions is one setup option, subject to your account and reachable HTTPS access; each member must own their private connector. Full instructions and troubleshooting are at /assistant-guide. Ordinary chat alone, native Claude MCP connectors, and ChatGPT MCP apps are not this HTTP interface.",
+      },
+      {
+            question: "What can my AI do without me, and what still needs my approval?",
+            answer: "Read permission covers limited profile preferences and permitted gate summaries, including incoming requests, current chapter, pause state, and requests to pay a gate. Profile and wishlist draft permissions are separate opt-ins. Every proposed change stays private until you review, edit, and Accept it on PayGate; Reject leaves live data unchanged. The assistant cannot publish, send messages or invitations, progress a gate, spend credits, purchase a gift, or book a date. Summaries are returned when your AI requests them; this pilot does not automatically send emails or push alerts. Gate protections still apply.",
+      },
+      {
+            question: "Can I stop the AI connection, and does access expire?",
+            answer: "You can revoke a connection immediately in Assistant access. Access review becomes due after 30 days; after seven more days without review, new assistant drafts pause, while reads remain permitted until revocation. Extend keeps the current key and grants another 30 days. Renew rotates the key, invalidates the old one, and shows the new key once. Stop or Revoke blocks the key. The assistant cannot renew its own access or accept its own drafts. Member-visible history records writes without exposing keys.",
+      },
       SKIP_FAQ,
       {
             question: "When does messaging unlock, and do I pay per message?",

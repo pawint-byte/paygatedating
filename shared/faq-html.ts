@@ -24,7 +24,7 @@ export function renderFaqBody() {
 <div class="faq-public">
 <nav class="faq-nav" aria-label="Main navigation">
   <a class="faq-brand" href="/">PayGate Dating</a>
-  <div class="faq-links"><a href="/pricing">Pricing</a><a href="/faq" aria-current="page">FAQ</a><a href="/api/login">Log in / Join free</a></div>
+  <div class="faq-links"><a href="/pricing">Pricing</a><a href="/faq" aria-current="page">FAQ</a><a href="/assistant-guide">AI setup guide</a><a href="/api/login">Log in / Join free</a></div>
 </nav>
 <main>
   <p class="faq-kicker">Your story, five chapters</p>

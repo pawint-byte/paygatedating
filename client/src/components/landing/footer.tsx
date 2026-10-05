@@ -69,6 +69,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/assistant-guide" className="hover:text-foreground transition-colors">
+                  Connect your own AI
+                </Link>
+              </li>
+              <li>
                 <Link href="/safety" className="hover:text-foreground transition-colors" data-testid="link-safety">
                   Safety Tips
                 </Link>

@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { registerMemberSetupRoutes } from "./member-setup";
+import { registerAgentApi } from "./agent-api";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
 import { 
@@ -88,6 +90,7 @@ export async function registerRoutes(
     acquireActionLock: acquireQaActionLock,
   }));
   registerAuthRoutes(app);
+  registerMemberSetupRoutes(app);
 
   app.post(
     "/api/registry/import-amazon/preview",
@@ -146,89 +149,8 @@ export async function registerRoutes(
   });
 
   app.post("/api/profile", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      console.log("POST /api/profile - userId:", userId, "photos count:", req.body.photos?.length || 0);
-      
-      const existingProfile = await storage.getProfile(userId);
-      if (existingProfile) {
-        return res.status(400).json({ message: "Profile already exists" });
-      }
-
-      const validationResult = insertProfileSchema.safeParse({
-        ...req.body,
-        userId,
-      });
-
-      if (!validationResult.success) {
-        return res.status(400).json({ 
-          message: "Invalid profile data",
-          errors: validationResult.error.flatten().fieldErrors,
-        });
-      }
-
-      const profile = await storage.createProfile(validationResult.data);
-      
-      let wallet = await storage.getWallet(userId);
-      if (!wallet) {
-        const referredBy = req.body.referralCode || null;
-        wallet = await storage.createWallet({ userId, referredBy });
-      }
-
-      if (!wallet.trialCreditsReceived) {
-        const newBalance = (parseFloat(wallet.balance) + TRIAL_CREDITS_AMOUNT).toFixed(2);
-        await storage.updateWalletBalance(userId, newBalance);
-        await storage.markTrialCreditsReceived(userId);
-        
-        await storage.createTransaction({
-          walletId: wallet.id,
-          amount: TRIAL_CREDITS_AMOUNT.toFixed(2),
-          type: "trial_bonus",
-          description: `Welcome bonus: $${TRIAL_CREDITS_AMOUNT} free credits!`,
-        });
-
-        if (wallet.referredBy) {
-          const referrerWallet = await storage.getWalletByReferralCode(wallet.referredBy);
-          if (referrerWallet && referrerWallet.userId !== userId) {
-            const referral = await storage.createReferral({
-              referrerUserId: referrerWallet.userId,
-              referredUserId: userId,
-            });
-            
-            const referrerNewBalance = (parseFloat(referrerWallet.balance) + REFERRAL_BONUS_AMOUNT).toFixed(2);
-            await storage.updateWalletBalance(referrerWallet.userId, referrerNewBalance);
-            
-            await storage.createTransaction({
-              walletId: referrerWallet.id,
-              amount: REFERRAL_BONUS_AMOUNT.toFixed(2),
-              type: "referral_bonus",
-              description: `Referral bonus for inviting a friend`,
-            });
-
-            await storage.markReferralBonusPaid(referral.id);
-            
-            // Increment referral count and check for tier rewards
-            const tierResult = await storage.incrementReferralCount(referrerWallet.userId);
-            if (tierResult.tierReached) {
-              console.log(`Referrer ${referrerWallet.userId} reached ${tierResult.tierReached} tier!`);
-            }
-          }
-        }
-      }
-
-      // Send welcome email (non-blocking)
-      const userEmail = req.user.claims.email;
-      if (userEmail) {
-        emailService.sendWelcome(userEmail, profile.displayName || 'there').catch(err => 
-          console.error('Failed to send welcome email:', err)
-        );
-      }
-
-      res.status(201).json(profile);
-    } catch (error) {
-      console.error("Error creating profile:", error);
-      res.status(500).json({ message: "Failed to create profile" });
-    }
+    // New profiles may only be published by explicitly accepting a saved draft.
+    return res.status(409).json({ message: "Make and accept your draft in first-time setup.", destination: "/setup" });
   });
 
   app.patch("/api/profile", isAuthenticated, async (req: any, res) => {
@@ -520,6 +442,10 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
             profiles.push(profile);
           }
         }
+      }
+
+      if (req.query.gate === "serious_romance" || req.query.gate === "activity_partner") {
+        profiles = profiles.filter(profile => profile.setupGate === req.query.gate);
       }
 
       const dayOfWeek = new Date().getDay();
@@ -1815,11 +1741,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       // lookingFor is relationship intent, shown if interests are public
       const publicProfile = {
         userId: profile.userId,
+        setupGate: profile.setupGate,
         displayName: profile.showFirstNamePublicly ? profile.displayName : "PayGate User",
         age: profile.showAgePublicly ? profile.age : undefined,
         location: profile.showLocationPublicly ? profile.location : undefined,
         city: profile.showLocationPublicly ? profile.city : undefined,
-        bio: profile.bio ? profile.bio.substring(0, 300) : undefined, // Limit bio preview
+        bio: profile.bio ? profile.bio.substring(0, profile.setupGate ? 550 : 300) : undefined,
         tagline: profile.tagline,
         photos: profile.showPhotoPublicly && profile.photos ? profile.photos.slice(0, 3) : [],
         verificationStatus: profile.verificationStatus,
@@ -2235,7 +2162,7 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
   function isAwinMerchant(hostname: string): { name: string; id: string } | null {
     for (const [name, merchant] of Object.entries(AWIN_MERCHANTS)) {
-      if (merchant.hostnames.some(h => hostname.includes(h))) {
+      if (merchant.hostnames.some(h => hostname === h || hostname.endsWith(`.${h}`))) {
         return { name, id: merchant.id };
       }
     }
@@ -2280,8 +2207,9 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     try {
       const urlObj = new URL(url);
       const hostname = urlObj.hostname.toLowerCase();
-      const isAmazon = hostname.includes('amazon.com') || hostname.includes('amzn.to') || hostname.includes('amzn.com') || hostname === 'a.co';
-      const isTravel = hostname.includes('viator.com') || hostname.includes('klook.com') || hostname.includes('tp.st') || hostname.includes('travelpayouts.com');
+      const atRetailer = (domain: string) => hostname === domain || hostname.endsWith(`.${domain}`);
+      const isAmazon = ['amazon.com', 'amzn.to', 'amzn.com', 'a.co'].some(atRetailer);
+      const isTravel = ['viator.com', 'klook.com', 'tp.st', 'travelpayouts.com'].some(atRetailer);
       const isAwin = isAwinMerchant(hostname) !== null;
       
       if (!isAmazon && !isTravel && !isAwin) {
@@ -2371,6 +2299,16 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
     }
     return url;
   }
+
+  registerAgentApi(app, {
+    validate: isValidAffiliateUrl,
+    prepare: async (url) => {
+      const tagged = addAffiliateTag(url);
+      const host = new URL(tagged).hostname;
+      return host.includes("viator.com") || host.includes("klook.com")
+        ? await convertViatorToAffiliate(tagged) : tagged;
+    },
+  });
 
   app.post("/api/registry/scrape-url", isAuthenticated, async (req: any, res) => {
     try {

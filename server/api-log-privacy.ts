@@ -3,5 +3,5 @@
  * bodies out of logs for every gift endpoint, including errors and nested data.
  */
 export function shouldLogApiResponseBody(path: string): boolean {
-  return !/^\/api\/gifts(?:\/|$)/i.test(path.split("?")[0]);
+  return !/^\/api\/(?:gifts|setup|agent|assistant)(?:\/|$)/i.test(path.split("?")[0]);
 }

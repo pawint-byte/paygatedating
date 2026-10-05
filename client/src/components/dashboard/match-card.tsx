@@ -95,7 +95,7 @@ export function MatchCard({ profile, onSendInterest, isPending, mutualConnection
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold text-lg" data-testid={`text-name-${profile.id}`}>
               {displayName}
-              {showAge && <span>, {profile.age}</span>}
+              {showAge && profile.age != null && <span>, {profile.age}</span>}
             </h3>
             <VerificationStatusIndicator 
               status={profile.verificationStatus || "none"} 

@@ -1,7 +1,8 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, timestamp, decimal, pgEnum, jsonb, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, serial, boolean, timestamp, decimal, pgEnum, jsonb, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { users } from "./models/auth";
 
 export * from "./models/auth";
 
@@ -59,7 +60,8 @@ export const profiles = pgTable("profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().unique(),
   displayName: varchar("display_name", { length: 100 }).notNull(),
-  age: integer("age").notNull(),
+  age: integer("age"),
+  setupGate: varchar("setup_gate", { length: 30 }),
   gender: varchar("gender", { length: 50 }),
   location: varchar("location", { length: 100 }),
   bio: text("bio"),
@@ -161,6 +163,54 @@ export const profiles = pgTable("profiles", {
   subscriptionTier: subscriptionTierEnum("subscription_tier").default("free").notNull(),
   isPremiumSince: timestamp("is_premium_since"),
   isVisible: boolean("is_visible").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Private first-time setup lives separately: no public profile exists until Accept.
+export const profileSetupDrafts = pgTable("profile_setup_drafts", {
+  userId: varchar("user_id").primaryKey(),
+  firstName: varchar("first_name", { length: 60 }).notNull(),
+  gate: varchar("gate", { length: 30 }).notNull(),
+  wants: varchar("wants", { length: 240 }).notNull(),
+  willNot: varchar("will_not", { length: 240 }).notNull(),
+  photo: text("photo"),
+  bio: text("bio").notNull(),
+  revision: serial("revision").notNull(),
+});
+
+export const agentKeys = pgTable("agent_keys", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 80 }).notNull(),
+  tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
+  scopes: text("scopes").array().notNull(),
+  reviewDueAt: timestamp("review_due_at").notNull(),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const agentDrafts = pgTable("agent_drafts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  keyId: varchar("key_id").notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 100 }).notNull(),
+  requestHash: varchar("request_hash", { length: 64 }).notNull(),
+  kind: varchar("kind", { length: 20 }).notNull(),
+  operation: varchar("operation", { length: 20 }).notNull(),
+  targetId: varchar("target_id"),
+  changes: jsonb("changes").$type<Record<string, any>>().notNull(),
+  before: jsonb("before").$type<Record<string, any>>().notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  revision: integer("revision").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, table => [unique("agent_draft_request_unique").on(table.keyId, table.idempotencyKey)]);
+
+export const agentEvents = pgTable("agent_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  keyId: varchar("key_id"),
+  draftId: varchar("draft_id"),
+  action: varchar("action", { length: 80 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

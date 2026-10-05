@@ -159,7 +159,7 @@ export default function Profile() {
                 profile
                   ? {
                       displayName: profile.displayName,
-                      age: profile.age,
+                      age: profile.age ?? undefined,
                       gender: profile.gender || "",
                       location: profile.location || "",
                       tagline: profile.tagline || "",

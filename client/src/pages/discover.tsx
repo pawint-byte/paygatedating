@@ -38,7 +38,9 @@ interface EnrichedProfile extends Profile {
   wishlistCount?: number;
 }
 
-export default function Discover() {
+type DiscoverGate = "serious_romance" | "activity_partner";
+
+export default function Discover({ gate }: { gate?: DiscoverGate } = {}) {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [filterOpen, setFilterOpen] = useState(false);
@@ -78,8 +80,9 @@ export default function Discover() {
     }
   }, [searchPrefs]);
 
+  const discoverUrl = gate ? `/api/profiles/discover?gate=${gate}` : "/api/profiles/discover";
   const { data: profiles, isLoading, error } = useQuery<EnrichedProfile[]>({
-    queryKey: ["/api/profiles/discover"],
+    queryKey: [discoverUrl],
   });
 
   // Debug: Log profiles data on production
@@ -112,7 +115,7 @@ export default function Discover() {
         title: "Filters Updated",
         description: "Your search preferences have been saved.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+      queryClient.invalidateQueries({ queryKey: [discoverUrl] });
       queryClient.invalidateQueries({ queryKey: ["/api/search-preferences"] });
       setFilterOpen(false);
     },
@@ -154,7 +157,7 @@ export default function Discover() {
       });
       setInterestProfile(null);
       setInterestIntent("");
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+      queryClient.invalidateQueries({ queryKey: [discoverUrl] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
     },
@@ -163,7 +166,7 @@ export default function Discover() {
         queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
         queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
         queryClient.invalidateQueries({ queryKey: ["/api/rewards"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+        queryClient.invalidateQueries({ queryKey: [discoverUrl] });
         toast({
           title: "Confirmation expired",
           description: "The price or eligibility changed. Start the knock again and review the updated details.",
@@ -210,7 +213,7 @@ export default function Discover() {
         title: "Demo Profiles Added!",
         description: `Created ${data.count} demo profiles to explore.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/profiles/discover"] });
+      queryClient.invalidateQueries({ queryKey: [discoverUrl] });
     },
     onError: (error: Error) => {
       if (error.message.includes("already exist")) {
@@ -279,9 +282,11 @@ export default function Discover() {
 
       <div className="mb-4 md:mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight" data-testid="text-discover-title">Discover</h1>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight" data-testid="text-discover-title">
+            {gate === "serious_romance" ? "Serious Romance" : gate === "activity_partner" ? "Activity Partner" : "Discover"}
+          </h1>
           <p className="text-sm text-muted-foreground" data-testid="text-discover-subtitle">
-            Browse profiles and wishlists to find your match
+            {gate ? "Explore people who chose this same gate." : "Browse profiles and wishlists to find your match"}
           </p>
         </div>
         

@@ -15,7 +15,11 @@ export const APP_PATHS = [
   "/features",
   "/stories",
   "/faq",
+  "/assistant-guide",
   "/discover",
+  "/setup",
+  "/serious-romance",
+  "/activity-partner",
   "/nearby",
   "/radar",
   "/matches",
@@ -23,6 +27,7 @@ export const APP_PATHS = [
   "/profile",
   "/verification",
   "/settings",
+  "/assistant-access",
   "/wallet",
   "/wishlist",
   "/feedback",
@@ -38,12 +43,15 @@ export const APP_PATHS = [
 export const APP_DYNAMIC_PATHS = [
   "/invite/:referralCode",
   "/p/:userId",
+  "/serious-romance/p/:userId",
+  "/activity-partner/p/:userId",
 ] as const;
 
 const exactPaths: ReadonlySet<string> = new Set(APP_PATHS);
 const dynamicPathPatterns = [
   /^\/invite\/[^/]+\/?$/,
   /^\/p\/[^/]+\/?$/,
+  /^\/(?:serious-romance|activity-partner)\/p\/[^/]+\/?$/,
 ];
 
 export function isAppPath(pathname: string): boolean {

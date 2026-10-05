@@ -13,3 +13,5 @@
 - [PHONE-DOWN AUTONOMY](phone-down-autonomy.md) — proceed through approved delivery without repeated approval requests; escalate only defined blockers and preserve mandatory platform controls.
 - [Gift shipping privacy](gift-shipping-privacy.md) — retailer-supported private delivery is a recipient attestation, not something a product link or ordinary gift checkbox can guarantee.
 - [Media browser verification](media-browser-verification.md) — check codec support before treating a blank MP4 preview as a delivery failure; file tracks alone do not prove playback.
+- [First-time setup consent](first-time-setup-consent.md) — five inputs, private drafts, explicit Accept before visibility; this setup change must not add AI or extra questions.
+- [Member-owned assistant](member-owned-assistant.md) — external AI pilot stays draft-only; Agent tests, owner tests, joint verification and explicit acceptance must precede publishing.

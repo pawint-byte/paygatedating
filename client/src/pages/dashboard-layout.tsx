@@ -21,6 +21,7 @@ import Messages from "./messages";
 import ProfilePage from "./profile";
 import Verification from "./verification";
 import Settings from "./settings";
+import AssistantAccess from "./assistant-access";
 import Wishlist from "./wishlist";
 import Help from "./help";
 import AdminFeedback from "./admin-feedback";
@@ -250,7 +251,13 @@ export default function DashboardLayout() {
 
           <main className="flex-1 overflow-auto pb-20 md:pb-0">
             <Switch>
-              <Route path="/discover" component={Discover} />
+              <Route path="/discover"><Discover /></Route>
+              <Route path="/serious-romance">
+                <Discover gate="serious_romance" />
+              </Route>
+              <Route path="/activity-partner">
+                <Discover gate="activity_partner" />
+              </Route>
               <Route path="/nearby" component={Nearby} />
               <Route path="/radar" component={Nearby} />
               <Route path="/matches" component={Matches} />
@@ -258,6 +265,7 @@ export default function DashboardLayout() {
               <Route path="/profile" component={ProfilePage} />
               <Route path="/verification" component={Verification} />
               <Route path="/settings" component={Settings} />
+              <Route path="/assistant-access" component={AssistantAccess} />
               <Route path="/wishlist" component={Wishlist} />
               <Route path="/gifts" component={GiftClaim} />
               <Route path="/feedback" component={Help} />
