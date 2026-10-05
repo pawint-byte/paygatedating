@@ -16,8 +16,8 @@ test("external assistant authority, private drafts, explicit approval, isolation
   const other = `agent-test-${randomUUID()}`;
   await db.insert(users).values([{ id: member }, { id: other }]);
   await db.insert(profiles).values([
-    { userId: member, displayName: "Fixture owner", age: 30, bio: "Original bio", isVisible: true },
-    { userId: other, displayName: "Other fixture", age: 30, bio: "Other bio", isVisible: true, showFirstNamePublicly: false },
+    { userId: member, displayName: "Fixture owner", age: 30, bio: "Original bio", isVisible: false },
+    { userId: other, displayName: "Other fixture", age: 30, bio: "Other bio", isVisible: false, showFirstNamePublicly: false },
   ]);
   const [foreignItem] = await db.insert(registryItems).values({ userId: other, title: "Other item", affiliateUrl: "https://amazon.com/dp/B000000000", price: "30.00" }).returning();
   const [incoming] = await db.insert(matches).values({ initiatorId: other, recipientId: member, status: "pending" }).returning();
@@ -71,7 +71,7 @@ test("external assistant authority, private drafts, explicit approval, isolation
   assert.equal("tokenHash" in key, false);
   const [stored] = await db.select().from(agentKeys).where(eq(agentKeys.id, key.id));
   assert.equal(stored.tokenHash, createHash("sha256").update(bearer).digest("hex"));
-  assert.notEqual(stored.tokenHash, bearer);
+  assert.ok(stored.tokenHash !== bearer, "Only a hash is persisted, never the credential");
   const access = await request("/api/assistant/access", { owner: member });
   assert.equal(JSON.stringify(access.data).includes(bearer), false);
   assert.equal(JSON.stringify(access.data).includes(stored.tokenHash), false);

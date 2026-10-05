@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectorManager } from "@/components/assistant-access/connector-manager";
 import { DraftReview } from "@/components/assistant-access/draft-review";
+import { AssistantTaskQueue } from "@/components/assistant-access/assistant-task-queue";
 import { ASSISTANT_ACCESS_QUERY_KEY } from "@/components/assistant-access/types";
 import type { AssistantAccessData } from "@/components/assistant-access/types";
 
@@ -18,6 +19,9 @@ export default function AssistantAccess() {
       const response = await apiRequest("GET", "/api/assistant/access");
       return response.json();
     },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
   const healthQuery = useQuery({
     queryKey: ["/api/agent/health"],
@@ -92,7 +96,7 @@ export default function AssistantAccess() {
           <div className="space-y-2">
             <h2 className="font-semibold">No actions happen on your behalf</h2>
             <p className="text-sm leading-6 text-muted-foreground">
-              With read access, your external AI can summarize gate requests and read your own profile or wishlist. With draft scopes, it can propose profile or wishlist fields. It cannot message anyone, send gate requests, create pending payments, book dates, purchase items, or publish a profile. Review every draft here; only your explicit acceptance applies its permitted profile or wishlist changes.
+              With read access, your external AI can see credits, your profile and wishlist, permitted matches and knocks, and notification metadata only—never messages, private partner content, or shipping details. Draft scopes only propose editable profile or wishlist fields. Task scopes only allow polling and reporting task status; they do not grant publishing rights. It cannot message anyone, send gate requests, create pending payments, book dates, purchase items, or publish a profile. Review every draft here; only your explicit acceptance applies permitted changes.
             </p>
             <p className="text-sm leading-6 text-muted-foreground">
               This uses a private connector or custom action that supports bearer-authenticated HTTP tools. Not every AI client supports that, and PayGate never syncs your AI chat history.
@@ -116,6 +120,8 @@ export default function AssistantAccess() {
       </Card>
 
       <ConnectorManager keys={access.keys} onRefresh={refreshAccess} isRefreshing={accessQuery.isFetching} />
+
+      <AssistantTaskQueue key={user?.id} memberId={user?.id ?? ""} />
 
       <DraftReview
         drafts={access.drafts}

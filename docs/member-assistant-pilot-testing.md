@@ -2,6 +2,23 @@
 
 This version is for development testing. It is not published or approved for release.
 
+## Scout polling queue: six acceptance checks
+
+Use only owned QA fixtures; never paste keys into tasks, model chat, screenshots, notes, or logs. No task text is executed by PayGate.
+
+1. Open `/assistant-guide`. Its full-documentation link/copy uses the actual site origin plus `/assistant-openapi.json`. Fetch that URL: it must return OpenAPI JSON documenting bearer auth, all five scopes, member-session submission, bearer queue reads/updates, and human draft review. `/api/agent/openapi.json` is the assistant-only import, excluding member-session submission/cookie auth so AI tools do not receive human approval or submission operations.
+2. On PayGate, create a private connection with `read`, `tasks_read`, `tasks_write`, and `profile_drafts`. Existing keys are not upgraded. Submit `Add 'QA test' to the end of my bio` in Assistant access. Bearer `GET /api/assistant/tasks?status=pending` returns the request; the live bio must not change.
+3. Bearer `PATCH /api/assistant/tasks/:id` with `{"status":"claimed"}`, then `{"status":"done","note":"AI reported completion; member approval is still required."}`. Refresh the member queue after each state. A second connection must not finish the first connection's claim. Done is not evidence of an accepted or applied draft.
+4. A second fixture member's key returns none of the first member's tasks. Knowing another member's task ID must not allow claiming or completion.
+5. Read the current bio, save a private bio proposal using `/api/agent/profile-drafts` with a new JSON `requestId`, verify it in the member's draft-review UI, and explicitly Accept as the member. The live bio changes only then. Reject before acceptance leaves live data unchanged; accepted changes have no automatic revert endpoint and require an ordinary manual profile/wishlist edit to correct.
+6. Backdate only owned QA pending/claimed tasks beyond their 24-hour expiry. Poll pending: those requests disappear, show Expired in member history, and cannot be claimed or completed. Terminal done/failed records remain history. Expiry is applied on queue read/update, not by a background prompt runner.
+
+Poll every 2–5 minutes. GET accepts `status`, `offset`, and `limit` (1–10, default 10), returns `{tasks,hasMore,nextOffset}`, and sorts bearer results oldest first. Member-session results default to all statuses, newest first. Poll pending from offset 0 again after claims, since queue positions change. The per-key limit is 60 requests/minute across all agent and queue routes; 429 includes `Retry-After: 60`. Invalid/revoked keys return 401, missing scopes or paused writes 403, conflicting/expired work 409, and unavailable service 503. Do not retry by claiming success.
+
+Read access covers own credits without spending/creating a wallet, own profile/wishlist, and permitted match/knock summaries. Notification reads expose only current incoming knock/payment-request metadata—not a general inbox, message text, or protected partner details. Initial five-field setup and member-controlled draft acceptance remain unchanged.
+
+The API fixture tests simulate a polling client. They do not prove the owner's Scout app has connected successfully. An actual owner-client test, joint verification, and explicit acceptance are still required before publishing. Development schema changes do not update the live site until that approved release.
+
 ## What is included
 
 - A private, member-authorized connection to an existing AI client that supports bearer-authenticated HTTP tools.

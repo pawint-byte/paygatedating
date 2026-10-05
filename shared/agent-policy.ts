@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-export const AGENT_SCOPES = ["read", "profile_drafts", "wishlist_drafts"] as const;
+export const AGENT_SCOPES = ["read", "profile_drafts", "wishlist_drafts", "tasks_read", "tasks_write"] as const;
 export const agentRequestId = z.string().regex(/^[A-Za-z0-9_.:-]{1,100}$/, "Use a unique requestId with 1–100 letters, digits, _, ., :, or -.");
 export const agentKeyInput = z.object({
   name: z.string().trim().min(1).max(80),
-  scopes: z.array(z.enum(AGENT_SCOPES)).min(1).max(3)
+  scopes: z.array(z.enum(AGENT_SCOPES)).min(1).max(5)
     .refine(scopes => scopes.includes("read"), "Read permission is required."),
 }).strict();
 const words = z.array(z.string().trim().min(1).max(100)).max(20);

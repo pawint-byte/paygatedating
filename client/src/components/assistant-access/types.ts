@@ -1,6 +1,6 @@
 import type { Profile, RegistryItem } from "@shared/schema";
 
-export type AssistantScope = "read" | "profile_drafts" | "wishlist_drafts";
+export type AssistantScope = "read" | "profile_drafts" | "wishlist_drafts" | "tasks_read" | "tasks_write";
 export type AssistantKeyStatus = "active" | "review_due" | "paused" | "revoked";
 export type AssistantKey = {
   id: string;
@@ -45,8 +45,8 @@ export const ASSISTANT_ACCESS_QUERY_KEY = ["/api/assistant/access"];
 export const assistantScopeOptions: Array<{ value: AssistantScope; label: string; description: string }> = [
   {
     value: "read",
-    label: "Read profile, wishlist, and gate-request context",
-    description: "Summarize gate requests and refer to your own profile or wishlist without sending anything.",
+    label: "Read permitted member context",
+    description: "Read credits, your profile and wishlist, permitted matches and knocks, and notification metadata only.",
   },
   {
     value: "profile_drafts",
@@ -57,6 +57,16 @@ export const assistantScopeOptions: Array<{ value: AssistantScope; label: string
     value: "wishlist_drafts",
     label: "Propose wishlist drafts",
     description: "Prepare editable wishlist-field suggestions for your review.",
+  },
+  {
+    value: "tasks_read",
+    label: "Poll member-submitted tasks",
+    description: "Read the task queue you submitted from PayGate. This does not grant draft or publishing permissions.",
+  },
+  {
+    value: "tasks_write",
+    label: "Claim and update task status",
+    description: "Claim your submitted tasks and report done or failed. This does not publish or apply drafts.",
   },
 ];
 

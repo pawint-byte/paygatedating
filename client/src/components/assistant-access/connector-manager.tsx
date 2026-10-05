@@ -30,6 +30,8 @@ export function ConnectorManager({
   const [name, setName] = useState("");
   const [profileDraftScope, setProfileDraftScope] = useState(false);
   const [wishlistDraftScope, setWishlistDraftScope] = useState(false);
+  const [tasksReadScope, setTasksReadScope] = useState(false);
+  const [tasksWriteScope, setTasksWriteScope] = useState(false);
   const [actionError, setActionError] = useState<AccessPageError | null>(null);
   const [credential, setCredential] = useState<OneTimeCredential | null>(null);
   const [keyToRevoke, setKeyToRevoke] = useState<AssistantKey | null>(null);
@@ -47,6 +49,8 @@ export function ConnectorManager({
       setName("");
       setProfileDraftScope(false);
       setWishlistDraftScope(false);
+      setTasksReadScope(false);
+      setTasksWriteScope(false);
       void refreshAfterChange();
     },
     onError: (error) => setActionError(getAccessError(error, "connector key")),
@@ -91,6 +95,8 @@ export function ConnectorManager({
     const scopes: AssistantScope[] = ["read"];
     if (profileDraftScope) scopes.push("profile_drafts");
     if (wishlistDraftScope) scopes.push("wishlist_drafts");
+    if (tasksReadScope) scopes.push("tasks_read");
+    if (tasksWriteScope) scopes.push("tasks_write");
     setActionError(null);
     createKey.mutate({ name: trimmedName, scopes });
   };
@@ -135,7 +141,7 @@ export function ConnectorManager({
                     <Checkbox id="scope-read" checked disabled />
                     <div>
                       <Label htmlFor="scope-read" className="font-medium">{assistantScopeOptions[0].label}</Label>
-                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Required. Suggestions can only refer to your own member-owned content.</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">Required. Reads credits, your profile and wishlist, permitted matches and knocks, and notification metadata only—not messages, private partner details, or shipping information.</p>
                     </div>
                   </div>
                 </div>
@@ -150,6 +156,22 @@ export function ConnectorManager({
                     </div>
                   ))}
                 </div>
+                <div className="space-y-3 border-t border-border pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Polling task scopes · optional</p>
+                  {[
+                    { state: tasksReadScope, set: setTasksReadScope, id: "scope-tasks-read", item: assistantScopeOptions[3] },
+                    { state: tasksWriteScope, set: setTasksWriteScope, id: "scope-tasks-write", item: assistantScopeOptions[4] },
+                  ].map(({ state, set, id, item }) => (
+                    <div key={id} className="flex gap-3 rounded-xl border border-border p-3">
+                      <Checkbox id={id} checked={state} onCheckedChange={(checked) => set(checked === true)} />
+                      <div>
+                        <Label htmlFor={id} className="font-medium">{item.label}</Label>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs leading-5 text-muted-foreground">Existing keys keep their current permissions. Create a new key to add any scope; task scopes do not grant profile or wishlist draft access.</p>
               </fieldset>
               <Button type="submit" className="w-full sm:w-auto" disabled={createKey.isPending}>
                 {createKey.isPending ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
@@ -176,13 +198,16 @@ export function ConnectorManager({
             </div>
             <div className="flex flex-wrap gap-3 text-sm">
               <a href="/api/agent/openapi.json" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-medium text-primary underline underline-offset-4">
-                API specification <ExternalLink className="h-3.5 w-3.5" />
+                Assistant-tool import schema <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+              <a href="/assistant-openapi.json" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-medium text-primary underline underline-offset-4">
+                Full API documentation <ExternalLink className="h-3.5 w-3.5" />
               </a>
               <a href="/api/agent/health" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-medium text-primary underline underline-offset-4">
                 Connector health <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
-            <p className="text-xs text-muted-foreground">The read, profile-draft, and wishlist-draft scopes are enforced by the server. No credentials are stored in this browser.</p>
+            <p className="text-xs text-muted-foreground">The read, profile_drafts, wishlist_drafts, tasks_read, and tasks_write scopes are enforced by the server. No credentials are stored in this browser.</p>
           </CardContent>
         </Card>
       </section>

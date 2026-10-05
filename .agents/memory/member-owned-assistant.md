@@ -20,3 +20,9 @@ Update the site, FAQ, and instructions for setting up both the PayGate side and 
 **Why:** The owner repeated: “as always update site, faq, how to set this up on both sides (site and members AI)”.
 
 **How to apply:** Keep setup instructions visible on the site, not just in repository documentation or chat. Distinguish verified client capabilities from an actual owner-tested connection.
+
+Use a member-submitted, pollable request queue for the Scout pilot, not inbound webhooks. The queue carries requests and AI-reported status only; all proposed live changes still require the existing human draft review.
+
+**Why:** The owner's supplied requirements state that the connected Scout cannot receive inbound webhooks and must poll for member requests.
+
+**How to apply:** Keep polling permissions separate from draft permissions, and never treat a task marked done as consent to publish or as proof that a live change happened.

@@ -1,0 +1,28 @@
+Piece 1: fix the API docs (broken)
+Symptoms (verified 2026-10-05):
+The assistant guide page renders an unreplaced {{ docsUrl }} template where the docs link should be.
+https://paygatedating.com/assistant-openapi.json returns 404.
+Fix:
+Replace the template with the real docs URL.
+Serve the valid OpenAPI JSON at a stable path (e.g. /assistant-openapi.json).
+The schema must document: auth (bearer key header), existing scopes (read-only: credits, profile, wishlist, knock requests, notifications, matches; draft scopes: profile-draft, wishlist-draft), draft review/approve/revert flow, and every endpoint in Piece 2.
+
+Piece 2: pollable AI task queue
+Why: the connected AI (Scout) cannot receive inbound webhooks, so it polls for work. The member's request must land somewhere the AI can fetch with the member's bearer key.
+Endpoints (all under the existing bearer-key auth; a key sees ONLY its own member's tasks):
+POST /api/assistant/tasks — submit a task. Auth: member session. Body: { "prompt": "Add 'AI test' to the end of my bio" }. Returns { "id", "status": "pending", "created_at" }.
+GET /api/assistant/tasks?status=pending — list tasks. Auth: bearer key. Returns the member's pending tasks, oldest first. Support ?status= filter (pending, claimed, done, failed).
+PATCH /api/assistant/tasks/:id — update status. Auth: bearer key. Body: { "status": "claimed" | "done" | "failed", "note": "..." }. Only the key that claimed a task may move it to done/failed.
+Rules:
+Scope it: add tasks-read / tasks-write scopes (or document which existing scopes cover these); the key-creation UI must offer them.
+Tasks expire after 24h (status → expired, excluded from pending).
+Rate-limit the poll endpoint (generous — polling every 2–5 minutes is the expected pattern).
+The existing draft/approval flow is unchanged: the AI reads via API, writes go through profile-draft/wishlist-draft scopes, drafts pause in the review UI, the member approves. The queue only carries the request, never executes it.
+
+Acceptance tests (run all six before calling it done)
+Guide page shows a working docs link; the OpenAPI URL returns valid JSON describing auth, scopes, and all endpoints.
+As a signed-in member: POST a task "Add 'QA test' to the end of my bio" → GET with that member's bearer key returns it as pending.
+PATCH the task to claimed, then done → member's task list reflects both states.
+Create a second member; its bearer key does NOT see the first member's tasks (403 or empty).
+Full draft loop still works: AI drafts a bio change via profile-draft scope → draft appears in review UI → member approves → bio updated.
+A task older than 24h no longer appears in pending.

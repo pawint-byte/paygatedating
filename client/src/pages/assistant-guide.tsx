@@ -5,9 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyPanel, GuideSectionHeading, GuideSteps } from "@/components/assistant-guide/guide-primitives";
+import { AssistantPollingGuide } from "@/components/assistant-guide/assistant-polling-guide";
+import { AssistantToolSchemaLink } from "@/components/assistant-guide/assistant-tool-schema-link";
 import { Footer } from "@/components/landing/footer";
 import { NavHeader } from "@/components/landing/nav-header";
 import { Seo } from "@/components/seo";
+import { useAuth } from "@/hooks/use-auth";
 
 const modelInstructions = `Only act when I explicitly ask. Use only facts I provide about myself; do not invent or infer personal details.
 
@@ -48,9 +51,10 @@ const troubleshooting = [
 ];
 
 export default function AssistantGuide() {
+  const { user } = useAuth();
   const [copiedSpec, setCopiedSpec] = useState(false);
   const [copySpecError, setCopySpecError] = useState(false);
-  const specificationUrl = `${window.location.origin}/api/agent/openapi.json`;
+  const specificationUrl = `${window.location.origin}/assistant-openapi.json`;
 
   const copySpecificationUrl = async () => {
     setCopySpecError(false);
@@ -87,7 +91,11 @@ export default function AssistantGuide() {
                   Use an AI tool and account you control. PayGate provides a private, scoped API key; it does not host your assistant or sign in to your AI account.
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
-                  <Button asChild><Link href="/assistant-access">Open Assistant access<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+                  {user ? (
+                    <Button asChild><Link href="/assistant-access">Open Assistant access<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+                  ) : (
+                    <Button asChild><a href="/api/login">Sign in to continue<ArrowRight className="ml-2 h-4 w-4" /></a></Button>
+                  )}
                   <a href="#paygate-setup" className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium hover:bg-muted">
                     Read the setup steps<ArrowDown className="h-4 w-4" />
                   </a>
@@ -140,11 +148,11 @@ export default function AssistantGuide() {
               },
               {
                 title: "Open Settings → Assistant access",
-                body: <>Create a named private connection you will recognize. <strong className="text-foreground">Read</strong> access is required and selected by default. Profile-draft and wishlist-draft permissions are separate, optional opt-ins.</>,
+                body: <>Create a named private connection you will recognize. <strong className="text-foreground">Read</strong> access is required and selected by default. Profile-draft and wishlist-draft permissions are separate, optional opt-ins. For polling tasks, select <code>tasks_read</code> and <code>tasks_write</code> on a new key; existing keys are not upgraded automatically.</>,
               },
               {
                 title: "Choose only the scopes you need",
-                body: <>Read can summarize gate requests and refer to your own profile or wishlist. Draft scopes allow suggestions only for their respective fields. Assistant profile management requires an already-accepted profile; the server returns <code>409</code> until then.</>,
+                body: <>Read covers credits, your profile and wishlist, permitted matches and knocks, and notification metadata only—not messages, private partner details, or shipping information. Draft scopes allow suggestions only for their respective fields. Assistant profile management requires an already-accepted profile; the server returns <code>409</code> until then.</>,
               },
               {
                 title: "Copy the key once into a private credential field",
@@ -154,16 +162,16 @@ export default function AssistantGuide() {
             <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
               <Card className="border-primary/20 bg-primary/[0.035]">
                 <CardHeader>
-                  <CardTitle className="text-base">API specification for this site</CardTitle>
-                  <CardDescription>Use the origin currently serving this guide; do not substitute a hardcoded production address.</CardDescription>
+                  <CardTitle className="text-base">Full API documentation for this site</CardTitle>
+                  <CardDescription>Complete reference on this origin, including session-cookie authentication and member-session task submission. Use the assistant-only schema—not this full document—for GPT Actions.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <code className="block break-all rounded-lg border border-border bg-background p-3 text-xs leading-5">{specificationUrl}</code>
                   <div className="flex flex-wrap items-center gap-3">
-                    <a href="/api/agent/openapi.json" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline underline-offset-4">
-                      Open this origin’s OpenAPI document<ExternalLink className="h-3.5 w-3.5" />
+                    <a href={specificationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline underline-offset-4">
+                      Open full API documentation<ExternalLink className="h-3.5 w-3.5" />
                     </a>
-                    <Button type="button" size="sm" variant="outline" onClick={() => void copySpecificationUrl()}>{copiedSpec ? "Copied" : "Copy URL"}</Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => void copySpecificationUrl()}>{copiedSpec ? "Copied" : "Copy full-doc URL"}</Button>
                   </div>
                   <p className="text-xs text-muted-foreground" role={copySpecError ? "alert" : undefined}>
                     {copySpecError ? "Copy unavailable. Select the URL above and copy it manually." : "The OpenAPI link is relative to this site; the displayed URL uses window.location.origin."}
@@ -181,8 +189,9 @@ export default function AssistantGuide() {
 
           <section aria-labelledby="ai-setup-heading">
             <GuideSectionHeading id="ai-setup-heading" eyebrow="Part two · Your AI tool" title="Configure a private Bearer HTTP connector">
-              Import the OpenAPI document into a tool that can make authenticated HTTP requests. Choose API Key authentication with Bearer as the authorization method.
+              Use the assistant-only schema below for authenticated Bearer HTTP tools. The full site documentation is for reference; it also contains member-session routes that should not be imported into an assistant.
             </GuideSectionHeading>
+            <AssistantToolSchemaLink />
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -192,7 +201,7 @@ export default function AssistantGuide() {
                 <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
                   <ol className="list-decimal space-y-2 pl-5">
                     <li>In your private custom GPT builder, open <strong className="text-foreground">Configure → Actions</strong>.</li>
-                    <li>Import the OpenAPI specification using the URL above, or paste the JSON from that URL.</li>
+                    <li>Import the assistant-only schema linked above. Do not import the full site documentation URL.</li>
                     <li>Set authentication to <strong className="text-foreground">API Key</strong> and choose <strong className="text-foreground">Bearer</strong>. Enter your own PayGate key only in that private credential field.</li>
                     <li>Save the GPT as <strong className="text-foreground">Only me</strong> or the equivalent private setting. Never publish or share it.</li>
                   </ol>
@@ -210,7 +219,7 @@ export default function AssistantGuide() {
                   <CardDescription>Only test tools with private bearer-authenticated HTTP actions.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
-                  <p>Import the same OpenAPI document into a private connector, set API Key/Bearer authentication, and store your PayGate key in that connector’s private secret field. Anonymous API calls and assistant password or OAuth login are not supported.</p>
+                  <p>Import the assistant-only schema above into a private connector, set API Key/Bearer authentication, and store your PayGate key in that connector’s private secret field. Anonymous API calls and assistant password or OAuth login are not supported.</p>
                   <div className="rounded-lg border border-border bg-muted/25 p-3">
                     <p className="font-medium text-foreground">Not the same connector protocol</p>
                     <p className="mt-1">This pilot API is not MCP and does not offer OAuth. Claude’s native custom connectors use MCP, so they cannot connect to this pilot directly. ChatGPT MCP apps/developer mode are also different from GPT Actions.</p>
@@ -220,6 +229,8 @@ export default function AssistantGuide() {
               </Card>
             </div>
           </section>
+
+          <AssistantPollingGuide />
 
           <section aria-labelledby="request-rules-heading">
             <GuideSectionHeading id="request-rules-heading" eyebrow="Draft request rules" title="Use the API’s JSON request contract">
@@ -319,9 +330,15 @@ export default function AssistantGuide() {
 
           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
             <p className="max-w-2xl text-xs leading-5 text-muted-foreground">This pilot guide describes connection boundaries and review steps; it does not make promises about legal or age-compliance status.</p>
-            <Link href="/assistant-access" className="inline-flex items-center gap-2 text-sm font-medium text-primary underline underline-offset-4">
-              Manage your PayGate connection<ArrowRight className="h-4 w-4" />
-            </Link>
+            {user ? (
+              <Link href="/assistant-access" className="inline-flex items-center gap-2 text-sm font-medium text-primary underline underline-offset-4">
+                Manage your PayGate connection<ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <a href="/api/login" className="inline-flex items-center gap-2 text-sm font-medium text-primary underline underline-offset-4">
+                Sign in to manage your connection<ArrowRight className="h-4 w-4" />
+              </a>
+            )}
           </div>
         </div>
       </main>

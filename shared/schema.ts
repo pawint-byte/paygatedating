@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, serial, boolean, timestamp, decimal, pgEnum, jsonb, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, serial, boolean, timestamp, decimal, pgEnum, jsonb, unique, index, check } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { users } from "./models/auth";
@@ -213,6 +213,23 @@ export const agentEvents = pgTable("agent_events", {
   action: varchar("action", { length: 80 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const agentTasks = pgTable("agent_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  prompt: varchar("prompt", { length: 2000 }).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  claimedByKeyId: varchar("claimed_by_key_id").references(() => agentKeys.id, { onDelete: "set null" }),
+  note: varchar("note", { length: 1000 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").default(sql`now() + interval '24 hours'`).notNull(),
+  claimedAt: timestamp("claimed_at"),
+  finishedAt: timestamp("finished_at"),
+}, table => [
+  index("agent_task_member_status_created").on(table.userId, table.status, table.createdAt),
+  check("agent_task_valid_status", sql`${table.status} IN ('pending', 'claimed', 'done', 'failed', 'expired')`),
+]);
 
 export const wallets = pgTable("wallets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

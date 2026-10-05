@@ -8,6 +8,8 @@ import { agentKeyInput, agentKeyStatus, nextAgentReview, profileAgentChanges, wi
 import { isAuthenticated } from "./replit_integrations/auth";
 import { storage } from "./storage";
 import { agentOpenApi } from "./agent-openapi";
+import { AgentError, safeAgentRoute as safeRoute, registerAgentTasks } from "./agent-tasks";
+import { registerAgentReads } from "./agent-reads";
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const stable = (value: Record<string, any>) => JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))));
@@ -16,16 +18,6 @@ const metadata = ({ tokenHash: _secret, ...key }: typeof agentKeys.$inferSelect)
 const snapshot = (row: Record<string, any>, changes: Record<string, any>) =>
   Object.fromEntries(Object.keys(changes).sort().map(key => [key, row[key] ?? null]));
 const revisionInput = z.object({ revision: z.number().int().positive() }).strict();
-class AgentError extends Error {
-  constructor(public status: number, message: string) { super(message); }
-}
-const safeRoute = (handler: (req: any, res: any) => Promise<any>): RequestHandler => async (req, res) => {
-  try { await handler(req, res); } catch (error) {
-    res.status(error instanceof AgentError ? error.status : 503).json({
-      message: error instanceof AgentError ? error.message : "Assistant access is temporarily unavailable. Please try again.",
-    });
-  }
-};
 const ownerOnly: RequestHandler = (req, res, next) => {
   const origin = req.get("origin");
   let validOrigin = !origin;
@@ -49,7 +41,10 @@ export function registerAgentApi(
     next();
   });
   app.get("/api/agent/health", (_req, res) => res.json({ ok: true }));
-  app.get("/api/agent/openapi.json", (req, res) => res.json(agentOpenApi(`${req.protocol}://${req.get("host")}`)));
+  app.get(["/assistant-openapi.json", "/api/agent/openapi.json"], (req, res) =>
+    res.set("Cache-Control", "no-store").json(agentOpenApi(
+      `${req.protocol}://${req.get("host")}`, req.path === "/assistant-openapi.json" ? "documentation" : "tools",
+    )));
 
   app.post("/api/agent/keys", isAuthenticated, ownerOnly, safeRoute(async (req, res) => {
     const parsed = agentKeyInput.safeParse(req.body);
@@ -195,15 +190,20 @@ export function registerAgentApi(
     });
     const window = windows.get(key.id);
     if (!window || now - window.start >= 60_000) windows.set(key.id, { start: now, count: 1 });
-    else if (++window.count > 60) throw new AgentError(429, "Too many requests. Wait one minute.");
+    else if (++window.count > 60) {
+      res.set("Retry-After", "60");
+      throw new AgentError(429, "Too many requests. Wait one minute.");
+    }
     req.agentKey = key;
     // This middleware continues only after authentication; safeRoute catches errors.
     req.agentNext();
   });
-  app.use("/api/agent", (req: any, res, next) => {
+  const agentAuth: RequestHandler = (req: any, res, next) => {
     req.agentNext = next;
     authenticateAgent(req, res, next);
-  });
+  };
+  app.use("/api/agent", agentAuth);
+  registerAgentTasks(app, agentAuth, ownerOnly);
   async function gateContext(userId: string) {
     const matches = await storage.getMatchesByUser(userId);
     return Promise.all(matches.filter(match => !["declined", "completed"].includes(match.status)).map(async match => {
@@ -239,6 +239,7 @@ export function registerAgentApi(
     });
   }));
   app.get("/api/agent/gates", safeRoute(async (req, res) => res.json({ gates: await gateContext(req.agentKey.userId) })));
+  registerAgentReads(app, gateContext);
   app.get("/api/agent/wishlist", safeRoute(async (req, res) => {
     const items = await storage.getRegistryItems(req.agentKey.userId);
     res.json({ items: items.map(({ id, title, description, affiliateUrl, price, visibility, priceTier, isPurchased, isReserved }) => ({ id, title, description, affiliateUrl, price, visibility, priceTier, isPurchased, isReserved })) });

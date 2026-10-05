@@ -139,7 +139,7 @@ export function FeaturesSection() {
                 <span className="rounded-full border border-primary/25 bg-primary/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-primary">Development pilot</span>
               </div>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                A member-owned connector can read approved context and prepare private drafts. You stay in control; the pilot is not released publicly.
+                Queue a task for your own private AI to read permitted context and prepare private drafts. You stay in control; this development pilot is not released publicly.
               </p>
             </div>
           </div>
