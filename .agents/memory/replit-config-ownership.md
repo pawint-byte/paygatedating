@@ -10,3 +10,9 @@ Treat the existing Replit runtime, workflow, and deployment configuration as pro
 **How to apply:** Preserve those settings unless the user explicitly authorizes a relevant configuration change. For an authorized change, use the appropriate Replit configuration or secrets tooling and keep unrelated settings intact. Never copy secret values into code, logs, documentation, or memory. Creating or updating this ownership note alone must not trigger configuration changes, workflow restarts, or publishing.
 
 **Verification caution:** A temporary fixed-port test server can make Replit automatically add a `[[ports]]` mapping without an explicit configuration edit. Prefer short-lived, ephemeral-port tests and inspect `.replit` afterward; clean up only mappings introduced by your own verification so the original configuration remains unchanged.
+
+Preserve the current production database when repairing sign-in failures; do not switch database targets or remove connection configuration as a shortcut.
+
+**Why:** The user chose to keep the current database rather than switch databases.
+
+**How to apply:** Restore access to the existing database. Establish whether it is platform-managed or separately owned before requesting provider access; a Neon error or the presence of `DATABASE_URL` alone does not establish external ownership.
