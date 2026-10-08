@@ -7,6 +7,8 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
+import { newSignUpReceipt } from "../../signup-analytics";
+import type { SignUpReceipt } from "../../../shared/signup-analytics";
 
 const getOidcConfig = memoize(
   async () => {
@@ -50,14 +52,14 @@ function updateUserSession(
   user.expires_at = user.claims?.exp;
 }
 
-async function upsertUser(claims: any) {
+async function upsertUser(claims: any, onAccountCreated?: () => void) {
   await authStorage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
-  });
+  }, onAccountCreated);
 }
 
 export async function setupAuth(app: Express) {
@@ -72,9 +74,11 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
+    const user: { analyticsSignUp?: SignUpReceipt } = {};
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    await upsertUser(tokens.claims(), () => {
+      user.analyticsSignUp = newSignUpReceipt();
+    });
     verified(null, user);
   };
 

@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { User } from "@shared/models/auth";
+import { SIGNUP_ANALYTICS_HEADER } from "@shared/signup-analytics";
+import { trackConfirmedSignUp } from "@/lib/signup-analytics";
 
 async function fetchUser(): Promise<User | null> {
   const response = await fetch("/api/auth/user", {
@@ -14,7 +16,12 @@ async function fetchUser(): Promise<User | null> {
     throw new Error(`${response.status}: ${response.statusText}`);
   }
 
-  return response.json();
+  const user = await response.json();
+  if (user) {
+    void trackConfirmedSignUp(response.headers.get(SIGNUP_ANALYTICS_HEADER))
+      .catch(() => console.warn("Signup analytics could not be queued."));
+  }
+  return user;
 }
 
 async function logout(): Promise<void> {
