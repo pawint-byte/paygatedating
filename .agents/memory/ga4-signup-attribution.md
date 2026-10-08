@@ -7,4 +7,4 @@ Count a GA4 signup only after a new account is durably created, not on form star
 
 **Why:** The owner uses signup completion for paid-ad decisions and explicitly requires one conversion per new account, with no PII, while preserving the site's existing signup flow.
 
-**How to apply:** Observe the persisted creation result atomically to avoid a pre-insert race. Test in preview before publishing. A successful GA4 collection request is transport evidence, not confirmation that the event appears in GA4 DebugView; report those separately.
+**How to apply:** Observe the persisted creation result atomically to avoid a pre-insert race. Test in preview before publishing. A successful GA4 collection request is transport evidence, not confirmation that the event appears in GA4 DebugView; report those separately. A synthetic authentication fixture is not a real end-to-end OAuth signup: disclose that distinction rather than calling it the normal signup flow.
