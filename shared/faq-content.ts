@@ -113,6 +113,10 @@ export const FAQ_ITEMS = [
             question: "How does paying support PayGate and its founder?",
             answer: "PayGate makes money from chapter fees and gift service charges. Those charges are how we keep this community running. Joining and browsing remain free, while chosen paid steps give members a way to pursue a connection and help sustain the platform. It is paid software offering real value, not a promise of guaranteed romantic results.",
       },
+    {
+        question: "What does 'Her Terms' mean?",
+        answer: "It means the person receiving attention sets the terms before anything happens. One link, their terms, agreed before you meet. Things move forward one gate at a time, only when both sides agree — and what each gate costs is shown plainly up front, so nobody is guessing.",
+    },
 ] as const;
 
 export function faqStructuredData() {
