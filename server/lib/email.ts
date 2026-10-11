@@ -57,6 +57,64 @@ function escapeHtml(value: string): string {
 
 // Email templates
 const templates = {
+  subscriptionConfirmation: (firstName: string, tier: string, amount: string, timestamp: string) => ({
+    subject: "You're now PayGate Premium!",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">You're now PayGate Premium!</h1>
+        <p>Hey ${escapeHtml(firstName)},</p>
+        <p>Your subscription is active.</p>
+        <p><strong>Tier:</strong> ${escapeHtml(tier)}</p>
+        <p><strong>Amount paid:</strong> ${escapeHtml(amount)}</p>
+        <p><strong>Date:</strong> ${escapeHtml(timestamp)}</p>
+      </div>
+    `
+  }),
+
+  subscriptionAdminAlert: (buyerName: string, buyerEmail: string, tier: string, amount: string, timestamp: string) => ({
+    subject: `Premium Subscription: ${tier} — ${amount}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">Premium Subscription</h1>
+        <p><strong>Buyer:</strong> ${escapeHtml(buyerName)}</p>
+        <p><strong>Buyer email:</strong> ${escapeHtml(buyerEmail)}</p>
+        <p><strong>Amount paid:</strong> ${escapeHtml(amount)}</p>
+        <p><strong>Tier:</strong> ${escapeHtml(tier)}</p>
+        <p><strong>Timestamp:</strong> ${escapeHtml(timestamp)}</p>
+      </div>
+    `
+  }),
+
+  giftPurchaseReceipt: (firstName: string, giftName: string, amount: string, recipientName: string) => ({
+    subject: 'Your gift purchase receipt',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">Your Gift Purchase Receipt</h1>
+        <p>Hey ${escapeHtml(firstName)},</p>
+        <p><strong>Gift:</strong> ${escapeHtml(giftName)}</p>
+        <p><strong>Amount paid (PayGate gift service fee):</strong> ${escapeHtml(amount)}</p>
+        <p><strong>Recipient:</strong> ${escapeHtml(recipientName)}</p>
+        <p>This receipt covers the PayGate service fee only. The gift product and any shipping are paid separately to the retailer.</p>
+      </div>
+    `
+  }),
+
+  giftPurchaseAdminAlert: (buyerName: string, buyerEmail: string, recipientName: string, recipientEmail: string, giftName: string, amount: string, timestamp: string) => ({
+    subject: `Gift Purchase: ${amount}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #8b5cf6;">Gift Purchase</h1>
+        <p><strong>Buyer:</strong> ${escapeHtml(buyerName)}</p>
+        <p><strong>Buyer email:</strong> ${escapeHtml(buyerEmail)}</p>
+        <p><strong>Recipient:</strong> ${escapeHtml(recipientName)}</p>
+        <p><strong>Recipient email:</strong> ${escapeHtml(recipientEmail)}</p>
+        <p><strong>Gift:</strong> ${escapeHtml(giftName)}</p>
+        <p><strong>Amount paid (PayGate gift service fee):</strong> ${escapeHtml(amount)}</p>
+        <p><strong>Timestamp:</strong> ${escapeHtml(timestamp)}</p>
+      </div>
+    `
+  }),
+
   welcome: (firstName: string) => ({
     subject: 'Welcome to PayGate Dating!',
     html: `
@@ -314,6 +372,18 @@ export async function sendEmail(
     let emailContent: { subject: string; html: string };
     
     switch (template) {
+      case 'subscriptionConfirmation':
+        emailContent = templates.subscriptionConfirmation(data.firstName, data.tier, data.amount, data.timestamp);
+        break;
+      case 'subscriptionAdminAlert':
+        emailContent = templates.subscriptionAdminAlert(data.buyerName, data.buyerEmail, data.tier, data.amount, data.timestamp);
+        break;
+      case 'giftPurchaseReceipt':
+        emailContent = templates.giftPurchaseReceipt(data.firstName, data.giftName, data.amount, data.recipientName);
+        break;
+      case 'giftPurchaseAdminAlert':
+        emailContent = templates.giftPurchaseAdminAlert(data.buyerName, data.buyerEmail, data.recipientName, data.recipientEmail, data.giftName, data.amount, data.timestamp);
+        break;
       case 'welcome':
         emailContent = templates.welcome(data.firstName);
         break;
@@ -377,6 +447,18 @@ export async function sendEmail(
 
 // Convenience functions for specific notifications
 export const emailService = {
+  sendSubscriptionConfirmation: (to: string, firstName: string, tier: string, amount: string, timestamp: string) =>
+    sendEmail(to, 'subscriptionConfirmation', { firstName, tier, amount, timestamp }),
+
+  sendSubscriptionAdminAlert: (to: string, buyerName: string, buyerEmail: string, tier: string, amount: string, timestamp: string) =>
+    sendEmail(to, 'subscriptionAdminAlert', { buyerName, buyerEmail, tier, amount, timestamp }),
+
+  sendGiftPurchaseReceipt: (to: string, firstName: string, giftName: string, amount: string, recipientName: string) =>
+    sendEmail(to, 'giftPurchaseReceipt', { firstName, giftName, amount, recipientName }),
+
+  sendGiftPurchaseAdminAlert: (to: string, buyerName: string, buyerEmail: string, recipientName: string, recipientEmail: string, giftName: string, amount: string, timestamp: string) =>
+    sendEmail(to, 'giftPurchaseAdminAlert', { buyerName, buyerEmail, recipientName, recipientEmail, giftName, amount, timestamp }),
+
   sendWelcome: (to: string, firstName: string) => 
     sendEmail(to, 'welcome', { firstName }),
   

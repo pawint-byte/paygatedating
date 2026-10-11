@@ -110,6 +110,25 @@ export class WebhookHandlers {
             
             // Update profile tier
             await storage.updateProfile(userId, { subscriptionTier: 'premium' });
+            void Promise.all([
+              authStorage.getUser(userId),
+              storage.getProfile(userId),
+            ]).then(([buyerUser, buyerProfile]) => {
+              const buyerEmail = buyerUser?.email || session.customer_details?.email;
+              const buyerName = buyerProfile?.displayName || [buyerUser?.firstName, buyerUser?.lastName].filter(Boolean).join(' ') || 'Member';
+              const firstName = buyerUser?.firstName || buyerProfile?.displayName?.split(' ')[0] || 'there';
+              const tier = 'Premium';
+              const amount = typeof session.amount_total === 'number' ? `$${(session.amount_total / 100).toFixed(2)}` : 'Unavailable';
+              const timestamp = new Date(event.created ? event.created * 1000 : Date.now()).toISOString();
+              if (buyerEmail) {
+                void emailService.sendSubscriptionConfirmation(
+                  buyerEmail, firstName, tier, amount, timestamp
+                ).catch(err => console.error('Error sending subscription confirmation email:', err));
+              }
+              void emailService.sendSubscriptionAdminAlert(
+                'pawint@me.com', buyerName, buyerEmail || 'Unavailable', tier, amount, timestamp
+              ).catch(err => console.error('Error sending subscription admin alert:', err));
+            }).catch(err => console.error('Error preparing subscription emails:', err));
             
             console.log(`Subscription activated for user ${userId}`);
           } catch (error) {
@@ -166,6 +185,27 @@ export class WebhookHandlers {
           } catch (emailError) {
             console.error('Error sending gift received email:', emailError);
           }
+          void Promise.all([
+            authStorage.getUser(buyerUserId),
+            authStorage.getUser(recipientUserId),
+          ]).then(([buyerUser, recipientUser]) => {
+            const buyerEmail = buyerUser?.email || session.customer_details?.email;
+            const buyerName = buyerProfile?.displayName || [buyerUser?.firstName, buyerUser?.lastName].filter(Boolean).join(' ') || 'Member';
+            const firstName = buyerUser?.firstName || buyerProfile?.displayName?.split(' ')[0] || 'there';
+            const recipientName = recipientProfile?.displayName || [recipientUser?.firstName, recipientUser?.lastName].filter(Boolean).join(' ') || 'Recipient';
+            const giftName = item?.title || 'a gift';
+            const amount = typeof session.amount_total === 'number' ? `$${(session.amount_total / 100).toFixed(2)}` : 'Unavailable';
+            const timestamp = new Date(event.created ? event.created * 1000 : Date.now()).toISOString();
+            if (buyerEmail) {
+              void emailService.sendGiftPurchaseReceipt(
+                buyerEmail, firstName, giftName, amount, recipientName
+              ).catch(err => console.error('Error sending gift purchase receipt:', err));
+            }
+            void emailService.sendGiftPurchaseAdminAlert(
+              'pawint@me.com', buyerName, buyerEmail || 'Unavailable', recipientName,
+              recipientUser?.email || 'Unavailable', giftName, amount, timestamp
+            ).catch(err => console.error('Error sending gift purchase admin alert:', err));
+          }).catch(err => console.error('Error preparing gift purchase emails:', err));
         } catch (error) {
           console.error('Error processing gift purchase:', error);
         }
