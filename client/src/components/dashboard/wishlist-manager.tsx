@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Loader2, Sparkles } from "lucide-react";
+import { Gift, Plus, Trash2, ExternalLink, Lock, Users, Globe, Clipboard, ShoppingBag, CheckCircle2, Plane, Loader2, Sparkles, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RegistryItem } from "@shared/schema";
@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { SiAmazon } from "react-icons/si";
 import { AmazonWishlistImport } from "@/components/dashboard/amazon-wishlist-import";
+import { suggestWishlistPriceTier, type WishlistPreview, type WishlistSearchResponse } from "@shared/wishlist-discovery";
 
 const SUPPORTED_HOSTNAMES = [
   'amazon.com', 'amzn.to', 'amzn.com', 'a.co',
@@ -28,10 +29,24 @@ const SUPPORTED_HOSTNAMES = [
 ];
 
 function isSupportedRetailer(hostname: string): boolean {
-  return SUPPORTED_HOSTNAMES.some(h => hostname.includes(h));
+  return SUPPORTED_HOSTNAMES.some(h => hostname === h || hostname.endsWith(`.${h}`));
 }
 
-const SUPPORTED_RETAILERS_LIST = "Amazon, Viator, Klook, Promeed, Lashterally, Abracadabra NYC, and YCZ Fragrance";
+function isHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password &&
+      (!url.port || url.port === "443") && url.hostname.includes(".") &&
+      !/^(?:\d{1,3}\.){3}\d{1,3}$/.test(url.hostname) &&
+      !/\.(?:localhost|local|internal|test|invalid)$/i.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isPartnerProductUrl(value: string): boolean {
+  try { return isSupportedRetailer(new URL(value).hostname.toLowerCase()); } catch { return false; }
+}
 
 interface AddItemFormData {
   title: string;
@@ -45,7 +60,7 @@ interface AddItemFormData {
 
 const priceTierLabels = {
   starter: { label: "Starter", description: "Under $50", icon: Gift },
-  impressive: { label: "Impressive", description: "$50-$100", icon: Gift },
+  impressive: { label: "Impressive", description: "$50 to under $100", icon: Gift },
   vip: { label: "VIP", description: "$100+", icon: Gift },
 };
 
@@ -94,6 +109,28 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [urlPasted, setUrlPasted] = useState(false);
   const [isScraping, setIsScraping] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchCategory, setSearchCategory] = useState<CategoryFilter>(categoryFilter);
+  const [searchResults, setSearchResults] = useState<WishlistPreview[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [preview, setPreview] = useState<WishlistPreview | null>(null);
+  const [previewMessage, setPreviewMessage] = useState("");
+  const [searchCurrencyMessage, setSearchCurrencyMessage] = useState("");
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const searchSequenceRef = useRef(0);
+  const previewSequenceRef = useRef(0);
+  const activeUrlRef = useRef("");
+  const autofilledRef = useRef({ title: "", imageUrl: "", price: "" });
+  const dialogOpenRef = useRef(isAddDialogOpen);
+
+  useEffect(() => {
+    dialogOpenRef.current = isAddDialogOpen;
+  }, [isAddDialogOpen]);
+
+  useEffect(() => {
+    setSearchCategory(categoryFilter);
+  }, [categoryFilter]);
 
   useEffect(() => {
     if (openAddDialog && !isAddDialogOpen) {
@@ -131,9 +168,16 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
         description: "Your wishlist item has been added.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/registry"] });
+      abortDiscovery();
       setIsAddDialogOpen(false);
       setCurrentStep(1);
       setUrlPasted(false);
+      setSearchQuery("");
+      setSearchResults([]);
+      setSearchError("");
+      setPreview(null);
+      setPreviewMessage("");
+      setSearchCurrencyMessage("");
       form.reset();
     },
     onError: (error: Error) => {
@@ -181,62 +225,183 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
 
   const scrapeAbortRef = useRef<AbortController | null>(null);
 
-  const scrapeUrl = async (url: string) => {
-    if (scrapeAbortRef.current) {
-      scrapeAbortRef.current.abort();
+  const clearAutofilledDetails = () => {
+    for (const field of ["title", "imageUrl", "price"] as const) {
+      if (autofilledRef.current[field] && form.getValues(field) === autofilledRef.current[field]) {
+        form.setValue(field, "");
+      }
     }
+    autofilledRef.current = { title: "", imageUrl: "", price: "" };
+    form.setValue("priceTier", suggestWishlistPriceTier(form.getValues("price")));
+  };
+
+  const abortDiscovery = () => {
+    searchAbortRef.current?.abort();
+    searchAbortRef.current = null;
+    scrapeAbortRef.current?.abort();
+    scrapeAbortRef.current = null;
+    if (scrapeTimerRef.current) {
+      clearTimeout(scrapeTimerRef.current);
+      scrapeTimerRef.current = null;
+    }
+    searchSequenceRef.current += 1;
+    previewSequenceRef.current += 1;
+    setIsSearching(false);
+    setIsScraping(false);
+  };
+
+  useEffect(() => () => {
+    searchAbortRef.current?.abort();
+    scrapeAbortRef.current?.abort();
+    searchAbortRef.current = null;
+    scrapeAbortRef.current = null;
+    searchSequenceRef.current += 1;
+    previewSequenceRef.current += 1;
+    if (scrapeTimerRef.current) {
+      clearTimeout(scrapeTimerRef.current);
+      scrapeTimerRef.current = null;
+    }
+  }, []);
+
+  const runSearch = async () => {
+    const query = searchQuery.trim();
+    if (!query) {
+      setSearchResults([]);
+      setSearchError("");
+      return;
+    }
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    const sequence = ++searchSequenceRef.current;
+    setIsSearching(true);
+    setSearchError("");
+    try {
+      const params = new URLSearchParams({ q: query, category: searchCategory });
+      const response = await fetch(`/api/wishlist/search?${params.toString()}`, {
+        method: "GET",
+        credentials: "include",
+        signal: controller.signal,
+      });
+      let payload: WishlistSearchResponse | null = null;
+      if (response.ok) {
+        payload = await response.json() as WishlistSearchResponse;
+      } else {
+        let responseMessage = "";
+        try {
+          const failure = await response.json() as { message?: string; error?: string };
+          responseMessage = failure.message || failure.error || "";
+        } catch {
+          responseMessage = await response.text().catch(() => "");
+        }
+        throw Object.assign(new Error(responseMessage || `Search failed (${response.status})`), { status: response.status });
+      }
+      if (controller.signal.aborted || sequence !== searchSequenceRef.current || !dialogOpenRef.current) return;
+      const results = Array.isArray(payload?.results) ? payload.results : [];
+      setSearchResults(results);
+      if (payload?.message) setSearchError(payload.message);
+      else if (results.length === 0) setSearchError("No matching products were found. Try another search or paste a product link.");
+    } catch (error) {
+      if (controller.signal.aborted || sequence !== searchSequenceRef.current || !dialogOpenRef.current) return;
+      const message = error instanceof Error ? error.message : "";
+      const status = typeof error === "object" && error !== null && "status" in error
+        ? Number((error as { status?: unknown }).status)
+        : 0;
+      const providerUnavailable = status === 503 || message.toLowerCase().includes("not configured");
+      setSearchResults([]);
+      setSearchError(providerUnavailable
+        ? "Product search is not configured right now. You can still paste a product link or enter details manually."
+        : "Search could not be completed. You can still paste a product link or enter details manually.");
+    } finally {
+      if (sequence === searchSequenceRef.current) setIsSearching(false);
+      if (searchAbortRef.current === controller) searchAbortRef.current = null;
+    }
+  };
+
+  const scrapeUrl = async (url: string) => {
+    scrapeAbortRef.current?.abort();
     const controller = new AbortController();
     scrapeAbortRef.current = controller;
-
+    const sequence = ++previewSequenceRef.current;
+    if (url !== activeUrlRef.current) clearAutofilledDetails();
+    const valuesAtRequest = form.getValues();
+    activeUrlRef.current = url;
+    setPreview(null);
+    setPreviewMessage("");
     setIsScraping(true);
     try {
-      const response = await apiRequest("POST", "/api/registry/scrape-url", { url });
-      if (controller.signal.aborted) return;
-      
-      const data = await response.json();
-      if (controller.signal.aborted) return;
-
-      if (data.error) {
-        toast({
-          title: "Link Added",
-          description: data.error === "scrape_failed" 
-            ? "Couldn't load the page. Please fill in details manually."
-            : "Please fill in the product details manually.",
-        });
+      const response = await fetch("/api/wishlist/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+        credentials: "include",
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`Preview request failed (${response.status})`);
+      const data = await response.json() as WishlistPreview;
+      if (controller.signal.aborted || sequence !== previewSequenceRef.current || activeUrlRef.current !== url || !dialogOpenRef.current) return;
+      setPreview(data);
+      if (data.error === "unavailable") {
+        setPreviewMessage("We could not read product details from this page. Add the details below, or try another link.");
         return;
       }
-
-      if (data.title) form.setValue("title", data.title);
-      if (data.price) form.setValue("price", data.price);
-      if (data.imageUrl) form.setValue("imageUrl", data.imageUrl);
-      if (data.priceTier) form.setValue("priceTier", data.priceTier);
-      
-      const filledFields = [data.title, data.price, data.imageUrl].filter(Boolean).length;
-      if (filledFields > 0) {
-        toast({
-          title: "Product Details Found",
-          description: `Auto-filled ${filledFields} field${filledFields > 1 ? "s" : ""} from ${data.platform || "the link"}. Review and adjust as needed.`,
-        });
-      } else {
-        toast({
-          title: "Link Added",
-          description: "Couldn't auto-detect product details. Please fill them in manually.",
-        });
+      if (data.title && form.getValues("title") === valuesAtRequest.title) {
+        form.setValue("title", data.title);
+        autofilledRef.current.title = data.title;
       }
-    } catch (err: any) {
-      if (err?.name === "AbortError" || controller.signal.aborted) return;
-      toast({
-        title: "Link Added",
-        description: "Please fill in the product details manually.",
-      });
+      if (data.imageUrl && form.getValues("imageUrl") === valuesAtRequest.imageUrl) {
+        form.setValue("imageUrl", data.imageUrl);
+        autofilledRef.current.imageUrl = data.imageUrl;
+      }
+      if (data.price && data.currency?.toUpperCase() === "USD" && form.getValues("price") === valuesAtRequest.price) {
+        form.setValue("price", data.price);
+        autofilledRef.current.price = data.price;
+        form.setValue("priceTier", suggestWishlistPriceTier(data.price));
+      } else if (data.price && data.currency?.toUpperCase() !== "USD") {
+        if (form.getValues("price") === valuesAtRequest.price) form.setValue("price", "");
+        setPreviewMessage(data.currency
+          ? `Price shown in ${data.currency}; enter the amount in US dollars below.`
+          : "The price currency could not be confirmed. Enter the amount in US dollars below.");
+      }
+      if (!data.title && !data.imageUrl && !data.price) {
+        setPreviewMessage("Product details were not available. You can enter them manually below.");
+      }
+    } catch (error) {
+      if (controller.signal.aborted || sequence !== previewSequenceRef.current || !dialogOpenRef.current) return;
+      setPreview(null);
+      setPreviewMessage("We could not preview this page. You can still enter the product details manually.");
     } finally {
-      if (!controller.signal.aborted) {
-        setIsScraping(false);
-      }
-      if (scrapeAbortRef.current === controller) {
-        scrapeAbortRef.current = null;
-      }
+      if (!controller.signal.aborted && sequence === previewSequenceRef.current) setIsScraping(false);
+      if (scrapeAbortRef.current === controller) scrapeAbortRef.current = null;
     }
+  };
+
+  const chooseSearchResult = (result: WishlistPreview) => {
+    if (!isHttpsUrl(result.url)) {
+      setSearchError("This result does not have a secure HTTPS product link. Choose another result or paste a secure link.");
+      return;
+    }
+    abortDiscovery();
+    setPreview(result);
+    setPreviewMessage("");
+    setSearchCurrencyMessage("");
+    form.setValue("affiliateUrl", result.url, { shouldValidate: true });
+    form.setValue("title", result.title);
+    form.setValue("imageUrl", result.imageUrl || "");
+    activeUrlRef.current = result.url;
+    autofilledRef.current = { title: result.title, imageUrl: result.imageUrl || "", price: "" };
+    if (result.currency?.toUpperCase() === "USD") {
+      form.setValue("price", result.price || "");
+      autofilledRef.current.price = result.price || "";
+      form.setValue("priceTier", suggestWishlistPriceTier(result.price));
+    } else {
+      form.setValue("price", "");
+      setSearchCurrencyMessage(result.price
+        ? `This result is priced in ${result.currency || "an unconfirmed currency"}. Enter its US dollar amount to continue.`
+        : "The price is unavailable. Enter its US dollar amount to continue.");
+    }
+    setUrlPasted(true);
+    setCurrentStep(2);
   };
 
   const handlePasteFromClipboard = async () => {
@@ -247,19 +412,10 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
         
         try {
           const url = new URL(text);
-          const hostname = url.hostname.toLowerCase();
-          
-          if (isSupportedRetailer(hostname)) {
-            setUrlPasted(true);
-            setCurrentStep(2);
-            scrapeUrl(text);
-          } else {
-            toast({
-              title: "Invalid Link",
-              description: `Only ${SUPPORTED_RETAILERS_LIST} links are supported.`,
-              variant: "destructive",
-            });
-          }
+          if (url.protocol !== "https:") throw new Error("Invalid URL");
+          setUrlPasted(true);
+          setCurrentStep(2);
+          scrapeUrl(text);
         } catch {
           toast({
             title: "Invalid URL",
@@ -279,8 +435,21 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
 
   const handleDialogClose = (open: boolean) => {
     if (!open) {
+      abortDiscovery();
+      if (scrapeTimerRef.current) {
+        clearTimeout(scrapeTimerRef.current);
+        scrapeTimerRef.current = null;
+      }
+      activeUrlRef.current = "";
+      autofilledRef.current = { title: "", imageUrl: "", price: "" };
       setCurrentStep(1);
       setUrlPasted(false);
+      setSearchQuery("");
+      setSearchResults([]);
+      setSearchError("");
+      setPreview(null);
+      setPreviewMessage("");
+      setSearchCurrencyMessage("");
       form.reset();
     }
     setIsAddDialogOpen(open);
@@ -294,21 +463,16 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
       clearTimeout(scrapeTimerRef.current);
       scrapeTimerRef.current = null;
     }
-    if (value) {
-      try {
-        const url = new URL(value);
-        const hostname = url.hostname.toLowerCase();
-        if (isSupportedRetailer(hostname)) {
-          setUrlPasted(true);
-          setCurrentStep(2);
-          scrapeTimerRef.current = setTimeout(() => {
-            scrapeUrl(value);
-          }, 500);
-        }
-      } catch {
-        // Invalid URL, don't advance
-      }
-    }
+    scrapeAbortRef.current?.abort();
+    scrapeAbortRef.current = null;
+    previewSequenceRef.current += 1;
+    if (value !== activeUrlRef.current) clearAutofilledDetails();
+    activeUrlRef.current = value;
+    setPreview(null);
+    setPreviewMessage("");
+    setIsScraping(false);
+    // Typing must not replace this input with the review step mid-URL.
+    // A full paste or the explicit Continue button starts the preview.
   };
 
   return (
@@ -338,6 +502,99 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
 
               {currentStep === 1 && !urlPasted && (
                 <div className="space-y-6 overflow-y-auto flex-1">
+                  <section className="rounded-xl border border-primary/20 bg-primary/[0.035] p-4 space-y-3" aria-label="Search products">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 rounded-lg bg-primary/10 p-2">
+                        <Search className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-sm">Find something to add</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">Search products and experiences without leaving your wishlist.</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        value={searchQuery}
+                        placeholder="Try wireless earbuds or a jazz club"
+                        aria-label="Search wishlist products"
+                        data-testid="input-wishlist-search"
+                        onChange={(event) => {
+                          searchAbortRef.current?.abort();
+                          searchAbortRef.current = null;
+                          searchSequenceRef.current += 1;
+                          setIsSearching(false);
+                          setSearchQuery(event.target.value);
+                          setSearchError("");
+                          setSearchResults([]);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            void runSearch();
+                          }
+                        }}
+                      />
+                      <Button type="button" onClick={() => void runSearch()} disabled={isSearching || !searchQuery.trim()} className="sm:min-w-[104px]" data-testid="button-wishlist-search">
+                        {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                        {isSearching ? "Searching" : "Search"}
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="Search category">
+                      {([
+                        ["all", "All"],
+                        ["gifts", "Gifts"],
+                        ["experiences", "Experiences"],
+                      ] as const).map(([value, label]) => (
+                        <Button
+                          key={value}
+                          type="button"
+                          size="sm"
+                          variant={searchCategory === value ? "secondary" : "ghost"}
+                          className="h-7 px-3 text-xs"
+                          onClick={() => {
+                            searchAbortRef.current?.abort();
+                            searchAbortRef.current = null;
+                            searchSequenceRef.current += 1;
+                            setIsSearching(false);
+                            setSearchCategory(value);
+                            setSearchResults([]);
+                            setSearchError("");
+                          }}
+                          data-testid={`wishlist-search-category-${value}`}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                    {searchError && (
+                      <p role="status" className="rounded-md border border-muted bg-background/80 px-3 py-2 text-xs text-muted-foreground">
+                        {searchError}
+                      </p>
+                    )}
+                    {searchResults.length > 0 && (
+                      <div className="max-h-64 overflow-y-auto space-y-2 pr-1" aria-label="Search results">
+                        {searchResults.map((result, index) => (
+                          <div key={`${result.url}-${index}`} className="flex items-center gap-3 rounded-lg border bg-background p-2.5">
+                            {result.imageUrl ? (
+                              <img src={result.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-md object-cover bg-muted" />
+                            ) : (
+                              <div className="h-14 w-14 shrink-0 rounded-md bg-muted flex items-center justify-center">
+                                <Gift className="w-5 h-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="line-clamp-2 text-sm font-medium">{result.title}</p>
+                              <p className="text-xs text-muted-foreground">{result.currency} {result.price} · {result.platform}</p>
+                            </div>
+                            <Button type="button" size="sm" variant="outline" onClick={() => chooseSearchResult(result)} data-testid={`button-add-search-result-${index}`}>
+                              Add
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
                   <div className="bg-muted/50 rounded-lg p-4 space-y-3">
                     <h4 className="font-medium flex items-center gap-2">
                       <ShoppingBag className="w-4 h-4" />
@@ -475,6 +732,16 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                         form.setValue("affiliateUrl", e.target.value);
                         handleUrlChange(e.target.value);
                       }}
+                      onPaste={(event) => {
+                        const value = event.clipboardData.getData("text").trim();
+                        if (!isHttpsUrl(value)) return;
+                        event.preventDefault();
+                        form.setValue("affiliateUrl", value);
+                        handleUrlChange(value);
+                        setUrlPasted(true);
+                        setCurrentStep(2);
+                        void scrapeUrl(value);
+                      }}
                       data-testid="input-item-url-step1"
                     />
                     {form.watch("affiliateUrl") && !urlPasted && (
@@ -485,16 +752,14 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           const url = form.getValues("affiliateUrl");
                           if (url) {
                             try {
-                              const urlObj = new URL(url);
-                              const hostname = urlObj.hostname.toLowerCase();
-                              if (isSupportedRetailer(hostname)) {
+                              if (isHttpsUrl(url)) {
                                 setUrlPasted(true);
                                 setCurrentStep(2);
                                 scrapeUrl(url);
                               } else {
                                 toast({
-                                  title: "Invalid Link",
-                                  description: `Only ${SUPPORTED_RETAILERS_LIST} links are supported.`,
+                                  title: "Invalid URL",
+                                  description: "Please enter a valid product URL.",
                                   variant: "destructive",
                                 });
                               }
@@ -529,11 +794,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                         validate: (value) => {
                           if (!value) return "Product URL is required";
                           try {
-                            const url = new URL(value);
-                            const hostname = url.hostname.toLowerCase();
-                            if (!isSupportedRetailer(hostname)) {
-                              return `Only ${SUPPORTED_RETAILERS_LIST} links are supported`;
-                            }
+                            if (!isHttpsUrl(value)) return "Please use a public HTTPS product URL";
                             return true;
                           } catch {
                             return "Please enter a valid URL";
@@ -557,10 +818,53 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                               </p>
                             </div>
                           </div>
+                          {!isPartnerProductUrl(field.value) && (
+                            <p className="text-xs text-muted-foreground">
+                              You can save this link to your wishlist. Gifting is currently available only through supported retailers.
+                            </p>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+                    {preview && (
+                      <div className="rounded-lg border bg-muted/30 p-3" data-testid="wishlist-product-preview">
+                        <div className="flex gap-3">
+                          {preview.imageUrl ? (
+                            <img src={preview.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-md object-cover bg-muted" />
+                          ) : (
+                            <div className="h-16 w-16 shrink-0 rounded-md bg-muted flex items-center justify-center">
+                              <Gift className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1 self-center">
+                            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{preview.platform || "Product preview"}</p>
+                            <p className="line-clamp-2 text-sm font-medium">{preview.title || "Product details"}</p>
+                            {(preview.price || preview.currency) && (
+                              <p className="mt-0.5 text-sm font-semibold">{preview.currency} {preview.price}</p>
+                            )}
+                          </div>
+                        </div>
+                        {previewMessage && <p className="mt-2 text-xs text-muted-foreground">{previewMessage}</p>}
+                      </div>
+                    )}
+                    {!preview && previewMessage && (
+                      <p role="status" className="rounded-md border border-muted bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                        {previewMessage}
+                      </p>
+                    )}
+                    {searchCurrencyMessage && (
+                      <p role="status" className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                        {searchCurrencyMessage}
+                      </p>
+                    )}
+                    {isScraping && !preview && (
+                      <div className="flex items-center gap-2 rounded-md border border-muted bg-muted/20 px-3 py-2 text-xs text-muted-foreground" role="status">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Checking the product page. You can continue entering details.
+                      </div>
+                    )}
 
                     <FormField
                       control={form.control}
@@ -655,7 +959,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="starter">Starter (Under $50)</SelectItem>
-                              <SelectItem value="impressive">Impressive ($50-$100)</SelectItem>
+                              <SelectItem value="impressive">Impressive ($50 to under $100)</SelectItem>
                               <SelectItem value="vip">VIP ($100+)</SelectItem>
                             </SelectContent>
                           </Select>
@@ -712,8 +1016,17 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                         type="button"
                         variant="outline"
                         onClick={() => {
+                          abortDiscovery();
+                          if (scrapeTimerRef.current) {
+                            clearTimeout(scrapeTimerRef.current);
+                            scrapeTimerRef.current = null;
+                          }
+                          activeUrlRef.current = "";
                           setCurrentStep(1);
                           setUrlPasted(false);
+                          setPreview(null);
+                          setPreviewMessage("");
+                          setSearchCurrencyMessage("");
                           form.reset();
                         }}
                         data-testid="button-back-step1"
@@ -722,10 +1035,10 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                       </Button>
                       <Button 
                         type="submit" 
-                        disabled={addItemMutation.isPending || isScraping}
+                        disabled={addItemMutation.isPending}
                         data-testid="button-submit-add-item"
                       >
-                        {addItemMutation.isPending ? "Adding..." : isScraping ? "Loading details..." : "Add to Wishlist"}
+                        {addItemMutation.isPending ? "Adding..." : "Add to Wishlist"}
                       </Button>
                     </DialogFooter>
                   </form>

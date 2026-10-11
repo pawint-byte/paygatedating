@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { registerMemberSetupRoutes } from "./member-setup";
+import { registerWishlistDiscovery } from "./wishlist-discovery";
+import { productUrl } from "./lib/wishlist-preview";
 import { registerAgentApi } from "./agent-api";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -91,6 +93,7 @@ export async function registerRoutes(
   }));
   registerAuthRoutes(app);
   registerMemberSetupRoutes(app);
+  registerWishlistDiscovery(app, isAuthenticated);
 
   app.post(
     "/api/registry/import-amazon/preview",
@@ -2447,12 +2450,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       
       let affiliateUrl = req.body.affiliateUrl;
       
-      // Validate URL is from supported affiliate partner
-      const urlValidation = isValidAffiliateUrl(affiliateUrl);
-      if (!urlValidation.valid) {
-        return res.status(400).json({ 
-          message: urlValidation.error,
-        });
+      // Public product links can be saved even when extraction is unavailable.
+      // Existing gifting routes still enforce retailer/payment eligibility.
+      try {
+        affiliateUrl = productUrl(affiliateUrl).href;
+      } catch {
+        return res.status(400).json({ message: "Enter a public HTTPS product link." });
       }
       
       // Add affiliate tags (sync for Amazon)
