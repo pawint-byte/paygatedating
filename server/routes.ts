@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { registerMemberSetupRoutes } from "./member-setup";
 import { registerWishlistDiscovery } from "./wishlist-discovery";
+import { productUrl } from "./lib/wishlist-preview";
 import { registerAgentApi } from "./agent-api";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -2449,12 +2450,12 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
       
       let affiliateUrl = req.body.affiliateUrl;
       
-      // Validate URL is from supported affiliate partner
-      const urlValidation = isValidAffiliateUrl(affiliateUrl);
-      if (!urlValidation.valid) {
-        return res.status(400).json({ 
-          message: urlValidation.error,
-        });
+      // Saving an idea does not imply that this retailer can be gifted.
+      // Gifting eligibility is checked before creating a fee-bearing purchase.
+      try {
+        affiliateUrl = productUrl(affiliateUrl).href;
+      } catch {
+        return res.status(400).json({ message: "Enter a public HTTPS product link." });
       }
       
       // Add affiliate tags (sync for Amazon)
@@ -2533,6 +2534,14 @@ Be strict but fair - the photos may have different lighting, angles, or ages. Fo
 
       if (item.userId !== recipientUserId) {
         return res.status(400).json({ message: "This item does not belong to the recipient" });
+      }
+
+      const retailerValidation = isValidAffiliateUrl(item.affiliateUrl);
+      if (!retailerValidation.valid) {
+        return res.status(400).json({
+          message: "This retailer is not yet supported for gifting. No service fee has been charged.",
+          code: "UNSUPPORTED_GIFT_RETAILER",
+        });
       }
 
       if (item.isPurchased || item.isReserved) {

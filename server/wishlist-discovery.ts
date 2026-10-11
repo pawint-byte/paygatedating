@@ -1,12 +1,13 @@
 import type { Express, RequestHandler } from "express";
-import type { WishlistCategory, WishlistPreview } from "../shared/wishlist-discovery";
+import type { WishlistCategory, WishlistPreview, WishlistDiscoveryCapabilities } from "../shared/wishlist-discovery";
 import { createPreviewScraper, productUrl } from "./lib/wishlist-preview";
-import { amazonProductPreview, createWishlistSearch, WishlistSearchError } from "./lib/wishlist-search";
+import { amazonProductPreview, createWishlistSearch, WishlistSearchError, wishlistDiscoveryCapabilities } from "./lib/wishlist-search";
 import { previewViator } from "./lib/viator-wishlist";
 
 type Dependencies = {
   search?: (query: string, category: WishlistCategory) => Promise<WishlistPreview[]>;
   preview?: (url: string) => Promise<WishlistPreview>;
+  capabilities?: () => WishlistDiscoveryCapabilities;
 };
 export function registerWishlistDiscovery(app: Express, authenticated: RequestHandler, dependencies: Dependencies = {}) {
   const scrape = createPreviewScraper();
@@ -43,6 +44,9 @@ export function registerWishlistDiscovery(app: Express, authenticated: RequestHa
     }
     next();
   };
+  app.get("/api/wishlist/capabilities", authenticated, limit, (_req, res) => {
+    res.json((dependencies.capabilities ?? wishlistDiscoveryCapabilities)());
+  });
   app.get("/api/wishlist/search", authenticated, limit, async (req, res) => {
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const category = typeof req.query.category === "string" ? req.query.category : "all";

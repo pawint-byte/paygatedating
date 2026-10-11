@@ -9,7 +9,7 @@ import express from "express";
 import { insertRegistryItemSchema } from "../shared/schema";
 import { suggestWishlistPriceTier } from "../shared/wishlist-discovery";
 import { createPreviewScraper, parseProductPage, productUrl, publicAddress, robotsPolicy } from "../server/lib/wishlist-preview";
-import { amazonProductPreview, createWishlistSearch, parseCatalogResults, WishlistSearchError } from "../server/lib/wishlist-search";
+import { amazonProductPreview, createWishlistSearch, parseCatalogResults, WishlistSearchError, wishlistDiscoveryCapabilities } from "../server/lib/wishlist-search";
 import { registerWishlistDiscovery } from "../server/wishlist-discovery";
 import { previewViator, searchViator } from "../server/lib/viator-wishlist";
 
@@ -18,6 +18,12 @@ const viator = "https://www.viator.com/tours/New-York-City/Jazz/d687-123P1";
 const product = `<title>Fallback</title><meta content="Earbuds &amp; Case" property="og:title">
   <meta property="og:image" content="https://images.example.com/buds.jpg">
   <script type="application/ld+json">{"@graph":[{"@type":"Product","name":"Earbuds","offers":{"@type":"Offer","price":"49.99","priceCurrency":"USD"}}]}</script>`;
+
+test("catalog availability truthfully distinguishes no catalog, experience-only, and full search", () => {
+  assert.deepEqual(wishlistDiscoveryCapabilities({ key: "", viatorKey: "" }), { giftsSearchAvailable: false, experiencesSearchAvailable: false });
+  assert.deepEqual(wishlistDiscoveryCapabilities({ key: "", viatorKey: "synthetic" }), { giftsSearchAvailable: false, experiencesSearchAvailable: true });
+  assert.deepEqual(wishlistDiscoveryCapabilities({ key: "synthetic", viatorKey: "" }), { giftsSearchAvailable: true, experiencesSearchAvailable: true });
+});
 
 test("price-tier suggestions use the exact 50 and 100 dollar boundaries", () => {
   assert.equal(suggestWishlistPriceTier("49.99"), "starter");
@@ -174,6 +180,7 @@ test("discovery endpoints enforce auth, validate queries, preserve response shap
     if (!req.headers["x-test-user"]) { res.sendStatus(401); return; }
     req.user = { claims: { sub: req.headers["x-test-user"] } }; next();
   }, {
+    capabilities: () => ({ giftsSearchAvailable: false, experiencesSearchAvailable: false }),
     search: async (q, category) => {
       if (q === "blocked") throw new WishlistSearchError(503, "Product search is not connected yet.");
       assert.equal(category, "gifts"); return [parseProductPage(product, amazon)];
@@ -185,6 +192,10 @@ test("discovery endpoints enforce auth, validate queries, preserve response shap
   const base = `http://127.0.0.1:${(server.address() as any).port}`;
   const headers = { "x-test-user": "discovery-test", "Content-Type": "application/json" };
   try {
+    assert.equal((await fetch(`${base}/api/wishlist/capabilities`)).status, 401);
+    const capabilities = await fetch(`${base}/api/wishlist/capabilities`, { headers });
+    assert.equal(capabilities.headers.get("Cache-Control"), "no-store");
+    assert.deepEqual(await capabilities.json(), { giftsSearchAvailable: false, experiencesSearchAvailable: false });
     assert.equal((await fetch(`${base}/api/wishlist/search?q=earbuds`)).status, 401);
     assert.equal((await fetch(`${base}/api/wishlist/search?q=x`, { headers })).status, 400);
     const search = await fetch(`${base}/api/wishlist/search?q=earbuds&category=gifts`, { headers });
@@ -242,4 +253,45 @@ test("actual registry handler saves manual public links but rejects unsafe URLs 
     }
     assert.equal(writes.length, 1);
   } finally { server.close(); await once(server, "close"); }
+});
+
+test("unsupported wishlist retailers are rejected before creating a purchase or charging a gifting fee", async () => {
+  const content = readFileSync("server/routes.ts", "utf8");
+  const source = ts.createSourceFile("routes.ts", content, ts.ScriptTarget.ES2020, true);
+  let expression: ts.Expression | undefined;
+  function visit(node: ts.Node) {
+    if (ts.isCallExpression(node) && node.expression.getText(source) === "app.post" &&
+        ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text === "/api/gifts/checkout") {
+      expression = node.arguments[node.arguments.length - 1];
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assert.ok(expression);
+  let writes = 0;
+  const handler = vm.runInNewContext(ts.transpileModule(`(${expression!.getText(source)})`, {
+    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
+  }).outputText, {
+    console,
+    isValidAffiliateUrl: (url: string) => {
+      assert.equal(url, "https://example.com/product/qa");
+      return { valid: false };
+    },
+    storage: new Proxy({}, {
+      get: (_target, name) => name === "getRegistryItem"
+        ? async () => ({ userId: "qa-recipient", affiliateUrl: "https://example.com/product/qa", price: "100.00" })
+        : async () => { writes++; throw new Error("No other operation should run."); },
+    }),
+  });
+  let status = 200;
+  let payload: any;
+  const response = {
+    status: (code: number) => { status = code; return response; },
+    json: (body: any) => { payload = body; return response; },
+  };
+  await handler({ user: { claims: { sub: "qa-buyer" } }, body: { registryItemId: "qa-item", recipientUserId: "qa-recipient" } }, response);
+  assert.equal(status, 400);
+  assert.equal(payload.code, "UNSUPPORTED_GIFT_RETAILER");
+  assert.match(payload.message, /No service fee has been charged/);
+  assert.equal(writes, 0);
 });

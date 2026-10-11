@@ -17,6 +17,11 @@ export interface WishlistSearchResponse {
   message?: string;
 }
 
+export interface WishlistDiscoveryCapabilities {
+  giftsSearchAvailable: boolean;
+  experiencesSearchAvailable: boolean;
+}
+
 export function suggestWishlistPriceTier(price: string | number): WishlistPriceTier {
   const amount = Number(price);
   if (Number.isFinite(amount) && amount >= 100) return "vip";

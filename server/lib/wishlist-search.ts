@@ -1,4 +1,4 @@
-import { suggestWishlistPriceTier, type WishlistCategory, type WishlistPreview } from "../../shared/wishlist-discovery";
+import { suggestWishlistPriceTier, type WishlistCategory, type WishlistPreview, type WishlistDiscoveryCapabilities } from "../../shared/wishlist-discovery";
 import { platformFor, productUrl } from "./wishlist-preview";
 import { searchViator } from "./viator-wishlist";
 
@@ -7,6 +7,14 @@ export class WishlistSearchError extends Error {
 }
 type SearchOptions = { key?: string; viatorKey?: string; fetch?: typeof fetch };
 const CACHE_TTL = 300000;
+
+export function wishlistDiscoveryCapabilities(options: SearchOptions = {}): WishlistDiscoveryCapabilities {
+  const giftsSearchAvailable = !!(options.key ?? process.env.SEARCHAPI_API_KEY);
+  return {
+    giftsSearchAvailable,
+    experiencesSearchAvailable: giftsSearchAvailable || !!(options.viatorKey ?? process.env.VIATOR_API_KEY),
+  };
+}
 
 function cleanPrice(value: unknown): string {
   const input = typeof value === "number" ? value : typeof value === "string" ? value.replace(/[$,\s]/g, "") : NaN;
@@ -89,9 +97,9 @@ export function createWishlistSearch(options: SearchOptions = {}) {
     if (!["all", "gifts", "experiences"].includes(category)) throw new WishlistSearchError(400, "Invalid category.");
     // Configuration is checked before reading the cache: removed credentials
     // must not make a disconnected provider look healthy.
-    const hasSearch = !!(options.key ?? process.env.SEARCHAPI_API_KEY);
-    const hasViator = !!(options.viatorKey ?? process.env.VIATOR_API_KEY);
-    if (!hasSearch && (category === "gifts" || !hasViator)) throw new WishlistSearchError(503, "Product search is not connected yet. You can still paste a product link or enter its details.");
+    const availability = wishlistDiscoveryCapabilities(options);
+    const hasSearch = availability.giftsSearchAvailable;
+    if (!hasSearch && (category === "gifts" || !availability.experiencesSearchAvailable)) throw new WishlistSearchError(503, "Product search is not connected yet. You can still paste a product link or enter its details.");
     const cacheKey = `${category}:${q.toLowerCase()}`;
     const cached = cache.get(cacheKey);
     if (cached && cached.expires > Date.now()) return cached.results.map(result => ({ ...result }));

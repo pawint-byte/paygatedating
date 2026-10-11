@@ -17,7 +17,7 @@ import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { SiAmazon } from "react-icons/si";
 import { AmazonWishlistImport } from "@/components/dashboard/amazon-wishlist-import";
-import { suggestWishlistPriceTier, type WishlistPreview, type WishlistSearchResponse } from "@shared/wishlist-discovery";
+import { suggestWishlistPriceTier, type WishlistPreview, type WishlistSearchResponse, type WishlistDiscoveryCapabilities } from "@shared/wishlist-discovery";
 
 const SUPPORTED_HOSTNAMES = [
   'amazon.com', 'amzn.to', 'amzn.com', 'a.co',
@@ -154,6 +154,17 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
     queryKey: ["/api/registry"],
   });
 
+  const { data: capabilities, isLoading: checkingSearch, isError: searchStatusError } = useQuery<WishlistDiscoveryCapabilities>({
+    queryKey: ["/api/wishlist/capabilities"],
+    enabled: isAddDialogOpen,
+    staleTime: 60000,
+    retry: false,
+  });
+  const catalogConnected = !!(capabilities?.giftsSearchAvailable || capabilities?.experiencesSearchAvailable);
+  const canSearch = searchCategory === "all" ? catalogConnected
+    : searchCategory === "gifts" ? !!capabilities?.giftsSearchAvailable
+    : !!capabilities?.experiencesSearchAvailable;
+
   const addItemMutation = useMutation({
     mutationFn: async (data: AddItemFormData) => {
       const res = await apiRequest("POST", "/api/registry", {
@@ -264,6 +275,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
   }, []);
 
   const runSearch = async () => {
+    if (!canSearch) return;
     const query = searchQuery.trim();
     if (!query) {
       setSearchResults([]);
@@ -508,16 +520,24 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                         <Search className="w-4 h-4 text-primary" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-sm">Find something to add</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">Search products and experiences without leaving your wishlist.</p>
+                        <h3 className="font-semibold text-sm">{catalogConnected ? "Find something to add" : "Add with a product link"}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5" role="status" data-testid="wishlist-search-availability">
+                          {checkingSearch ? "Checking catalog availability..."
+                            : searchStatusError ? "Catalog availability could not be checked. You can still browse partners or paste a product link below."
+                            : !catalogConnected ? "Catalog search is not connected. Browse partners below, then paste a product link to preview or enter its details."
+                            : !canSearch ? "Search is not connected for this category. Choose another category or paste a product link below."
+                            : "Search products and experiences without leaving your wishlist."}
+                        </p>
                       </div>
                     </div>
+                    {catalogConnected && (<>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Input
                         value={searchQuery}
                         placeholder="Try wireless earbuds or a jazz club"
                         aria-label="Search wishlist products"
                         data-testid="input-wishlist-search"
+                        disabled={!canSearch}
                         onChange={(event) => {
                           searchAbortRef.current?.abort();
                           searchAbortRef.current = null;
@@ -534,7 +554,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                           }
                         }}
                       />
-                      <Button type="button" onClick={() => void runSearch()} disabled={isSearching || !searchQuery.trim()} className="sm:min-w-[104px]" data-testid="button-wishlist-search">
+                      <Button type="button" onClick={() => void runSearch()} disabled={!canSearch || isSearching || !searchQuery.trim()} className="sm:min-w-[104px]" data-testid="button-wishlist-search">
                         {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
                         {isSearching ? "Searching" : "Search"}
                       </Button>
@@ -593,6 +613,7 @@ export function WishlistManager({ categoryFilter = "all", openAddDialog, onAddDi
                         ))}
                       </div>
                     )}
+                    </>)}
                   </section>
 
                   <div className="bg-muted/50 rounded-lg p-4 space-y-3">
