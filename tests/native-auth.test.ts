@@ -102,6 +102,18 @@ test("passwords use cost-12 bcrypt, enforce UTF-8 boundaries, and never verify m
   assert.notEqual(hash,password);
   assert.deepEqual(passwordIssues(password),[]);
   assert.ok(passwordIssues("weak").length);
+  assert.deepEqual(passwordIssues("Aa9xxxxxx"),["Use at least 10 characters."]);
+  assert.deepEqual(passwordIssues("Aa9xxxxxxx"),[]);
+  assert.deepEqual(passwordIssues("Aa9xxxxxxxx"),[]);
+  assert.deepEqual(passwordIssues("aa9xxxxxxx"),["Include an uppercase letter."]);
+  assert.deepEqual(passwordIssues("AA9XXXXXXX"),["Include a lowercase letter."]);
+  assert.deepEqual(passwordIssues("Aaxxxxxxxx"),["Include a number."]);
+  assert.deepEqual(passwordIssues("Aa9"+"x".repeat(70)),["Use no more than 72 UTF-8 bytes."]);
+  assert.deepEqual(passwordIssues("Aa9"+"é".repeat(7)),[]);
+  await assert.rejects(()=>hashPassword("Aa9xxxxxx"));
+  const minimumHash = await hashPassword("Aa9xxxxxxx");
+  assert.match(minimumHash,/^\$2[ab]\$12\$/);
+  assert.equal(await checkPassword("Aa9xxxxxxx",{password_hash:minimumHash} as any),true);
   assert.ok(passwordIssues(`Aa9${"é".repeat(40)}`).length);
   assert.deepEqual(passwordIssues("Aa9"+"x".repeat(69)),[]);
   const account = await fixture();

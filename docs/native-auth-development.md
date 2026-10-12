@@ -33,7 +33,7 @@ The registered-member correction adds only `password_prompt_skipped_at` to devel
 
 Continuation tokens are hashed, expire after 24 hours and are invalidated together on completion. Pending records do not expire with their tokens. Initial capture returns no bearer token: same-device continuation uses the server-side session. Email-link pages scrub tokens and exclude tracking; completion from a token-only page loads a clean document so the true persisted-account signup receipt can still be recorded.
 
-Passwords use bcrypt cost 12: at least 12 characters, uppercase, lowercase, number, and at most 72 UTF-8 bytes. Sessions reuse the existing seven-day PostgreSQL/Passport store with secure, HttpOnly, SameSite=Lax cookies and session rotation on sign-in.
+Passwords use bcrypt cost 12: at least 10 characters, uppercase, lowercase, number, and at most 72 UTF-8 bytes. Sessions reuse the existing seven-day PostgreSQL/Passport store with secure, HttpOnly, SameSite=Lax cookies and session rotation on sign-in.
 
 Persisted limits apply by IP, normalized email, and authenticated account as appropriate. Authentication POSTs require same-origin JSON and an approved request host. Passwords, tokens, and native-auth response bodies are excluded from API/error logging. Email links use the validated site origin, not a client-supplied return URL.
 

@@ -62,7 +62,7 @@ export function AccountSecurity({ passwordPrompt = false, onPasswordSaved }: { p
 
   const passwordBytes = new TextEncoder().encode(password).length;
   const passwordChecks: [string, boolean][] = [
-    ["At least 12 characters", Array.from(password).length >= 12],
+    ["At least 10 characters", Array.from(password).length >= 10],
     ["One uppercase letter", /[A-Z]/.test(password)],
     ["One lowercase letter", /[a-z]/.test(password)],
     ["One number", /\d/.test(password)],
@@ -73,8 +73,8 @@ export function AccountSecurity({ passwordPrompt = false, onPasswordSaved }: { p
     event.preventDefault();
     setError("");
     setNotice("");
-    if (Array.from(password).length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || passwordBytes > 72) {
-      setError("Use at least 12 characters with uppercase, lowercase, and a number, and no more than 72 UTF-8 bytes.");
+    if (Array.from(password).length < 10 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || passwordBytes > 72) {
+      setError("Use at least 10 characters with uppercase, lowercase, and a number, and no more than 72 UTF-8 bytes.");
       return;
     }
     setPasswordMutation.mutate();
@@ -127,7 +127,7 @@ export function AccountSecurity({ passwordPrompt = false, onPasswordSaved }: { p
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>}
               </div>
-              <p className="text-xs leading-5 text-muted-foreground">At least 12 characters; include uppercase, lowercase, and a number. Maximum 72 UTF-8 bytes.</p>
+              <p className="text-xs leading-5 text-muted-foreground">At least 10 characters; include uppercase, lowercase, and a number. Maximum 72 UTF-8 bytes.</p>
               {passwordPrompt && <div className="grid grid-cols-1 gap-2 rounded-xl border border-border bg-background/60 p-3 sm:grid-cols-2" aria-live="polite">
                 {passwordChecks.map(([rule, valid]) => <div key={rule} className={`flex items-center gap-2 text-xs ${valid ? "text-primary" : "text-muted-foreground"}`}>
                   <Check className={`h-3.5 w-3.5 ${valid ? "" : "opacity-30"}`} />{rule}

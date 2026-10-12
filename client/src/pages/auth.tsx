@@ -18,7 +18,7 @@ type SignupResume = { email: string; referralSource?: string; referralCode?: str
 function passwordRules(password: string) {
   const bytes = new TextEncoder().encode(password).length;
   return [
-    { label: "At least 12 characters", valid: Array.from(password).length >= 12 },
+    { label: "At least 10 characters", valid: Array.from(password).length >= 10 },
     { label: "One uppercase letter", valid: /[A-Z]/.test(password) },
     { label: "One lowercase letter", valid: /[a-z]/.test(password) },
     { label: "One number", valid: /\d/.test(password) },
