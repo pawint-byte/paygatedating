@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, timestamp, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, varchar, text, timestamp, integer, index, boolean } from "drizzle-orm/pg-core";
 import { users } from "./models/auth";
 
 // Credentials are deliberately separate from public User DTOs.
@@ -10,6 +10,7 @@ export const nativeAccounts = pgTable("native_auth_accounts", {
   sessionVersion: integer("session_version").notNull().default(0),
   adultConfirmedAt: timestamp("adult_confirmed_at"),
   termsAcceptedAt: timestamp("terms_accepted_at"),
+  passwordPromptSkippedAt: timestamp("password_prompt_skipped_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 export const nativeTokens = pgTable("native_auth_tokens", {
@@ -20,6 +21,7 @@ export const nativeTokens = pgTable("native_auth_tokens", {
   sessionVersion: integer("session_version").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   usedAt: timestamp("used_at"),
+  passwordSetup: boolean("password_setup").notNull().default(false),
 }, table => [index("native_auth_tokens_user_idx").on(table.userId)]);
 export const replitIdentities = pgTable("replit_auth_identities", {
   subject: varchar("subject").primaryKey(),
@@ -29,6 +31,21 @@ export const nativeRateLimits = pgTable("native_auth_rate_limits", {
   key: varchar("key", { length: 64 }).primaryKey(),
   hits: integer("hits").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const memberEmailPreferences = pgTable("member_email_preferences", {
+  userId: varchar("user_id").primaryKey().references(()=>users.id,{onDelete:"cascade"}),
+  emailNotifications: boolean("email_notifications").notNull().default(true),
+  marketingEmails: boolean("marketing_emails").notNull().default(false),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export const passwordMigrationDeliveries = pgTable("password_migration_deliveries", {
+  userId: varchar("user_id").primaryKey().references(()=>users.id,{onDelete:"cascade"}),
+  initiatedBy: varchar("initiated_by").notNull().references(()=>users.id),
+  status: varchar("status").notNull(),
+  attemptedAt: timestamp("attempted_at").notNull().defaultNow(),
+  finishedAt: timestamp("finished_at"),
+  providerId: text("provider_id"),
 });
 
 // Email capture is not an account, a profile, or marketing subscription consent.

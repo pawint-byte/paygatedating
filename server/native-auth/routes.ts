@@ -6,7 +6,7 @@ import { newSignUpReceipt } from "../signup-analytics";
 import { authOrigin } from "./origin";
 
 const PAID_CHECKOUTS = new Set(["/api/wallet/deposit","/api/subscription/create-checkout","/api/gifts/checkout"]);
-const genericEmailResponse = { message: "If this email has an account, a sign-in or recovery link will be sent. Check your inbox and spam folder." };
+const registeredEmailResponse = { registered:true,linkSent:true,message:"You're already registered with this email — we've sent you a sign-in link. Tap it to get in." };
 type Dependencies = {
   repository?: AuthRepository;
   send?: typeof sendAuthEmail;
@@ -31,7 +31,10 @@ export function registerNativeAuth(app: Express, authenticated: RequestHandler, 
   const wrap = (fn: (req: any,res: any) => Promise<any>): RequestHandler => async (req,res) => {
     try { await fn(req,res); }
     catch (error) {
-      if (error instanceof AuthError) res.status(error.status).json({message:error.message,code:error.code});
+      if (error instanceof AuthError) {
+        if (error.status === 429) res.setHeader("Retry-After","900");
+        res.status(error.status).json({message:error.message,code:error.code,...(error.code === "NO_ACCOUNT" ? {redirect:"/signup"} : {})});
+      }
       else { console.error("Native authentication operation failed."); res.status(503).json({message:"Sign-in is temporarily unavailable. Please try again."}); }
     }
   };
@@ -70,14 +73,43 @@ export function registerNativeAuth(app: Express, authenticated: RequestHandler, 
     const path = kind === "reset" ? `/reset-password?token=${token}` : `/auth/confirm?kind=${kind}&token=${token}`;
     return send(account.email,kind,origin+path);
   };
+  const noAccount = () => new AuthError(404,"No account is registered with this email. Create an account to get started.","NO_ACCOUNT");
+  // All email sign-in/reset sends share the existing 3-per-email, 9-per-IP
+  // budget, regardless of which front-door endpoint initiated the request.
+  const sendRegisteredLink = async (req: Request,account: Account,kind: TokenKind="signin") => {
+    const email = account.email;
+    if (!await repository.allowed(`email:ip:${req.ip}`,9)
+      || !await repository.allowed(`email:email:${email}`,3)
+      || ((req.user as any)?.claims?.sub && !await repository.allowed(`email:account:${(req.user as any).claims.sub}`,3))) {
+      throw new AuthError(429,"Too many attempts. Please wait 15 minutes before trying again.");
+    }
+    if (!await mail(req,account,kind))
+      throw new AuthError(503,"We couldn't send your sign-in or recovery link. Please try again shortly.");
+    return kind === "signin" ? registeredEmailResponse : {linkSent:true,message:"We've sent you a password reset link. Check your inbox and spam folder."};
+  };
   app.post("/api/native-auth/signup/start",limited("signup-start",3),wrap(async (req,res) => {
     const email = normalizeEmail(req.body?.email);
+    const registered = await repository.byEmail(email);
+    if (registered) {
+      res.json(await sendRegisteredLink(req,registered));
+      return;
+    }
     const source = req.body?.referralSource ?? "direct";
     const code = req.body?.referralCode;
     if (typeof source !== "string" || !source.trim() || source.length > 160
         || (code !== undefined && (typeof code !== "string" || !/^[a-zA-Z0-9]{1,10}$/.test(code))))
       throw new AuthError(400,"Invalid signup referral context.");
-    const {pending,token} = await repository.startSignup(email,source.trim(),code);
+    let started;
+    try { started = await repository.startSignup(email,source.trim(),code); }
+    catch (error) {
+      // An OIDC registration may have committed between detection and capture.
+      if (error instanceof AuthError && error.status === 409) {
+        const existing = await repository.byEmail(email);
+        if (existing) { res.json(await sendRegisteredLink(req,existing)); return; }
+      }
+      throw error;
+    }
+    const {pending,token} = started;
     req.session.pendingSignupToken = token;
     await new Promise<void>((resolve,reject) => req.session.save((error:unknown) => error ? reject(error) : resolve()));
     // Pending email is committed before delivery; no password/account exists yet.
@@ -103,23 +135,31 @@ export function registerNativeAuth(app: Express, authenticated: RequestHandler, 
   }));
   app.post("/api/native-auth/login",limited("login"),wrap(async (req,res) => {
     const account = await repository.byEmail(normalizeEmail(req.body.email));
+    if (!account) {
+      await checkPassword(req.body.password);
+      throw noAccount();
+    }
+    if (!account.password_hash) {
+      res.json(await sendRegisteredLink(req,account));
+      return;
+    }
     if (!await checkPassword(req.body.password,account)) throw new AuthError(401,"Email or password is incorrect. You can also request an email sign-in link.");
     await signIn(req,account!);
     res.json({redirect:"/"});
   }));
   for (const [path,kind] of [["request-link","signin"],["forgot-password","reset"]] as const) {
-    app.post(`/api/native-auth/${path}`,limited("email",3),wrap(async (req,res) => {
+    app.post(`/api/native-auth/${path}`,limited("email-submit",3),wrap(async (req,res) => {
       const email = normalizeEmail(req.body.email);
-      void repository.byEmail(email).then(account => account ? mail(req,account,kind) : undefined)
-        .catch(() => console.warn("Authentication email delivery or identity resolution needs attention."));
-      // Do not disclose email existence, duplicates, or mail delivery differences.
-      res.json(genericEmailResponse);
+      const account = await repository.byEmail(email);
+      if (!account) throw noAccount();
+      res.json(await sendRegisteredLink(req,account,!account.password_hash ? "signin" : kind));
     }));
   }
   app.get("/api/native-auth/status",authenticated,wrap(async (req,res) => {
     const account = await repository.ensureAccount(req.user.claims.sub);
     res.json({email:account.email,emailVerified:!!account.verified_at,hasPassword:!!account.password_hash,
-      canSetPassword:!!account.password_hash || recentProof(req,account),replitEmailMismatch:!!req.user.replitEmailMismatch});
+      canSetPassword:!!account.password_hash || recentProof(req,account),replitEmailMismatch:!!req.user.replitEmailMismatch,
+      passwordPromptSkipped:!!account.password_prompt_skipped_at});
   }));
   app.post("/api/native-auth/resend-verification",authenticated,limited("resend",3),wrap(async (req,res) => {
     const account = await repository.ensureAccount(req.user.claims.sub);
@@ -131,7 +171,11 @@ export function registerNativeAuth(app: Express, authenticated: RequestHandler, 
     if (!["verify","signin"].includes(req.body.kind) || typeof req.body.token !== "string") throw new AuthError(400,"Invalid sign-in link.");
     const account = await repository.consume(req.body.token,req.body.kind);
     await signIn(req,account);
-    res.json({redirect:"/"});
+    res.json({redirect:!account.password_hash && (!account.password_prompt_skipped_at || account.force_password_setup) ? "/set-password" : "/"});
+  }));
+  app.post("/api/native-auth/password-prompt/skip",authenticated,limited("password-prompt",5),wrap(async (req,res) => {
+    await repository.skipPasswordPrompt(await repository.ensureAccount(req.user.claims.sub));
+    res.json({skipped:true,redirect:"/"});
   }));
   app.post("/api/native-auth/reset-password",limited("reset",10),wrap(async (req,res) => {
     if (typeof req.body.token !== "string") throw new AuthError(400,"Invalid reset link.");

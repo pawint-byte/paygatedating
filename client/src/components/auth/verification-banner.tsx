@@ -4,6 +4,7 @@ import { MailCheck, ShieldAlert } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 export interface NativeAuthStatus {
   email: string;
@@ -11,6 +12,7 @@ export interface NativeAuthStatus {
   hasPassword: boolean;
   canSetPassword: boolean;
   replitEmailMismatch: boolean;
+  passwordPromptSkipped: boolean;
 }
 
 export function useNativeAuthStatus(enabled = true) {
@@ -46,6 +48,22 @@ export function VerificationBanner() {
             <MailCheck className="mr-1.5 h-3.5 w-3.5" />{resend.isPending ? "Sending…" : "Send verification link"}
           </Button>
         </div>
+      </div>
+    </aside>
+  );
+}
+
+export function PasswordSetupReminder() {
+  const { isAuthenticated } = useAuth();
+  const { data: status } = useNativeAuthStatus(isAuthenticated);
+  if (!isAuthenticated || !status || status.hasPassword) return null;
+  return (
+    <aside className="relative z-[69] border-b border-primary/10 bg-[hsl(var(--primary)/.045)] px-4 py-2 text-foreground" aria-label="Password reminder">
+      <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-1.5 sm:flex-row sm:items-center">
+        <p className="text-xs leading-5 sm:text-sm">Add a password for a quicker sign-in next time. Your account stays available as-is.</p>
+        <Link href="/set-password" className="inline-flex min-h-8 items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 hover:underline sm:shrink-0 sm:text-sm">
+          Set a password <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </aside>
   );

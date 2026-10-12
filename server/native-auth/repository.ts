@@ -5,6 +5,8 @@ export type TokenKind = "verify" | "signin" | "reset";
 export type Account = {
   user_id: string; email: string; password_hash: string | null;
   verified_at: Date | null; session_version: number;
+  password_prompt_skipped_at: Date | null;
+  force_password_setup?: boolean;
 };
 export type PendingSignup = {
   id: string; email: string; created_at: Date; last_submitted_at: Date;
@@ -135,18 +137,18 @@ export class AuthRepository {
     if (!rows.length) return undefined;
     return this.ensureAccount(rows[0].id);
   }
-  async issue(account: Account, kind: TokenKind): Promise<string> {
+  async issue(account: Account, kind: TokenKind, passwordSetup = false): Promise<string> {
     const token = randomBytes(32).toString("base64url");
     const ttl = kind === "verify" ? 24 * 3600 : 30 * 60;
-    await this.pool.query(`INSERT INTO native_auth_tokens (hash,user_id,email,kind,session_version,expires_at)
-      VALUES ($1,$2,$3,$4,$5,now()+$6*interval '1 second')`,
-      [tokenHash(token), account.user_id, account.email, kind, account.session_version, ttl]);
+    await this.pool.query(`INSERT INTO native_auth_tokens (hash,user_id,email,kind,session_version,expires_at,password_setup)
+      VALUES ($1,$2,$3,$4,$5,now()+$6*interval '1 second',$7)`,
+      [tokenHash(token), account.user_id, account.email, kind, account.session_version, ttl,passwordSetup]);
     return token;
   }
   async consume(token: string, kind: TokenKind, passwordHash?: string): Promise<Account> {
     if (!/^[\w-]{43}$/.test(token)) throw new AuthError(400, "This link is invalid or expired. Request a fresh link.");
     return this.transaction(async c => {
-      const { rows } = await c.query<Account & { hash: string }>(`SELECT a.*,t.hash FROM native_auth_tokens t
+      const { rows } = await c.query<Account & { hash: string; password_setup:boolean }>(`SELECT a.*,t.hash,t.password_setup FROM native_auth_tokens t
         JOIN native_auth_accounts a ON a.user_id=t.user_id
         WHERE t.hash=$1 AND t.kind=$2 AND t.used_at IS NULL AND t.expires_at>now()
           AND t.email=a.email AND t.session_version=a.session_version FOR UPDATE OF a,t`,
@@ -160,7 +162,7 @@ export class AuthRepository {
           session_version=session_version+CASE WHEN $2 THEN 1 ELSE 0 END
         WHERE user_id=$1 RETURNING *`, [rows[0].user_id,reset,passwordHash ?? null]);
       if (reset) await c.query("UPDATE native_auth_tokens SET used_at=now() WHERE user_id=$1 AND used_at IS NULL", [rows[0].user_id]);
-      return result.rows[0];
+      return {...result.rows[0],force_password_setup:rows[0].password_setup === true};
     });
   }
   async setPassword(account: Account, passwordHash: string): Promise<Account> {
@@ -168,6 +170,11 @@ export class AuthRepository {
       WHERE user_id=$1 AND session_version=$3 RETURNING *`, [account.user_id,passwordHash,account.session_version]);
     if (!result.rows[0]) throw new AuthError(409,"Your account changed. Sign in again before changing your password.");
     return result.rows[0];
+  }
+  async skipPasswordPrompt(account: Account): Promise<void> {
+    const result = await this.pool.query(`UPDATE native_auth_accounts SET password_prompt_skipped_at=now()
+      WHERE user_id=$1 AND password_hash IS NULL AND password_prompt_skipped_at IS NULL RETURNING user_id`,[account.user_id]);
+    if (!result.rowCount) throw new AuthError(409,"This password prompt has already been skipped, or a password is already set.","PASSWORD_PROMPT_ALREADY_SKIPPED");
   }
   async allowed(key: string, maximum: number): Promise<boolean> {
     if (Date.now() > this.nextCleanup) {
@@ -208,7 +215,7 @@ export class AuthRepository {
       if (duplicateCount.rowCount !== 1) {
         // A known OIDC subject must still reach its original profile. Ambiguous
         // emails cannot be used for native login/linking or paid verification.
-        return { account: { user_id:user.id,email:canonicalEmail,password_hash:null,verified_at:null,session_version:0 },created:false,emailMismatch };
+        return { account: { user_id:user.id,email:canonicalEmail,password_hash:null,verified_at:null,session_version:0,password_prompt_skipped_at:null },created:false,emailMismatch };
       }
       const { rows } = await c.query<Account>(`INSERT INTO native_auth_accounts (user_id,email,verified_at)
         VALUES ($1,$2,CASE WHEN $3 THEN now() ELSE NULL END) ON CONFLICT (user_id) DO UPDATE

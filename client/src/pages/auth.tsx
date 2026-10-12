@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AccountSecurity as AccountSecurityPanel } from "@/components/auth/account-security";
+import { useNativeAuthStatus } from "@/components/auth/verification-banner";
+import { EmailPreferences } from "@/components/auth/email-preferences";
 
 type AuthMode = "signup" | "signup-complete" | "login" | "forgot-password" | "reset-password" | "confirm";
 const consumedTokens = new Set<string>();
@@ -34,6 +36,19 @@ function getErrorMessage(error: unknown) {
     return message || "Something went wrong. Please try again.";
   }
 }
+
+function getErrorPayload(error: unknown): { code?: string; message?: string } {
+  if (!(error instanceof Error)) return {};
+  const message = error.message.replace(/^\d+:\s*/, "");
+  try {
+    return JSON.parse(message) as { code?: string; message?: string };
+  } catch {
+    return {};
+  }
+}
+
+const REGISTERED_SIGNIN_COPY = "You're already registered with this email — we've sent you a sign-in link. Tap it to get in.";
+const NO_ACCOUNT_COPY = "No account is registered with this email. Create an account to get started.";
 
 function AuthFrame({ children, eyebrow = "PAYGATE DATING" }: { children: ReactNode; eyebrow?: string }) {
   return (
@@ -82,6 +97,9 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
     ? "Replit sign-in could not be completed. Use your PayGate password or request an email sign-in link. Ambiguous accounts are not automatically merged."
     : "");
   const [notice, setNotice] = useState("");
+  const [registeredWait, setRegisteredWait] = useState(false);
+  const [registeredWaitEmail, setRegisteredWaitEmail] = useState("");
+  const [noAccount, setNoAccount] = useState(false);
   const confirmStarted = useRef(false);
   const resetToken = useRef("");
   const signupToken = useRef("");
@@ -100,6 +118,18 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
   const needsEmail = isSignupStart || isLogin || isForgot;
   const needsPassword = isSignupComplete || isLogin || isReset;
   const [pendingSignup, setPendingSignup] = useState<SignupResume | null>(null);
+  const showRegisteredWait = (recipient: string, message: string) => {
+    setRegisteredWaitEmail(recipient);
+    setRegisteredWait(true);
+    setNoAccount(false);
+    setError("");
+    setNotice(message || REGISTERED_SIGNIN_COPY);
+  };
+  const handleRequestError = (failure: unknown) => {
+    const payload = getErrorPayload(failure);
+    setNoAccount(payload.code === "NO_ACCOUNT");
+    setError(payload.code === "NO_ACCOUNT" ? (payload.message || NO_ACCOUNT_COPY) : getErrorMessage(failure));
+  };
   useEffect(() => {
     if (!isReset) return;
     const token = new URLSearchParams(window.location.search).get("token");
@@ -250,7 +280,21 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
         body = { token, password };
       }
       const response = await apiRequest("POST", endpoint, body);
-      const result = await response.json().catch(() => ({})) as { redirect?: string };
+      const result = await response.json().catch(() => ({})) as { redirect?: string; registered?: boolean; message?: string; linkSent?: boolean };
+      if ((isSignupStart || isForgot) && result.linkSent === false) {
+        setError(result.message || "We couldn’t send an email just now. Please try again.");
+        return;
+      }
+      const isSigninLinkResponse = result.registered === true &&
+        (isSignupStart || isLogin || (isForgot && result.message === REGISTERED_SIGNIN_COPY));
+      if (isSigninLinkResponse && result.linkSent === false) {
+        setError(result.message || "We couldn’t send a sign-in link just now. Please try again.");
+        return;
+      }
+      if (isSigninLinkResponse) {
+        showRegisteredWait(email.trim(), result.message || REGISTERED_SIGNIN_COPY);
+        return;
+      }
       if (isSignupStart) {
         setLocation("/signup/complete");
       } else if (isSignupComplete || isLogin || isReset) {
@@ -267,10 +311,10 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           setLocation(destination);
         }
       } else {
-        setNotice("If an account matches that email, you’ll receive a message with the next step.");
+        setNotice(result.message || "If an account matches that email, you’ll receive a message with the next step.");
       }
     } catch (failure) {
-      setError(getErrorMessage(failure));
+      handleRequestError(failure);
     } finally {
       setBusy(false);
     }
@@ -279,15 +323,52 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
   const requestLink = async () => {
     setError("");
     setNotice("");
+    setNoAccount(false);
     setBusy(true);
     try {
-      await apiRequest("POST", "/api/native-auth/request-link", { email: email.trim() });
-      setNotice("If an account matches that email, a sign-in link is on its way.");
+      const response = await apiRequest("POST", "/api/native-auth/request-link", { email: email.trim() });
+      const result = await response.json().catch(() => ({})) as { registered?: boolean; message?: string; linkSent?: boolean };
+      if (result.registered === true) {
+        showRegisteredWait(email.trim(), result.message || REGISTERED_SIGNIN_COPY);
+      } else if (result.linkSent === false) {
+        setError(result.message || "We couldn’t send a sign-in link just now. Please try again.");
+      } else {
+        setNotice(result.message || "If an account matches that email, a sign-in link is on its way.");
+      }
     } catch (failure) {
-      setError(getErrorMessage(failure));
+      handleRequestError(failure);
     } finally {
       setBusy(false);
     }
+  };
+
+  const resendRegisteredLink = async () => {
+    const recipient = registeredWaitEmail || email.trim();
+    setError("");
+    setNotice("");
+    setNoAccount(false);
+    setBusy(true);
+    try {
+      const response = await apiRequest("POST", "/api/native-auth/request-link", { email: recipient });
+      const result = await response.json().catch(() => ({})) as { registered?: boolean; message?: string; linkSent?: boolean };
+      if (result.linkSent === false) {
+        setError(result.message || "We couldn’t send a sign-in link just now. Please try again.");
+      } else {
+        setNotice(result.message || "A new sign-in link has been sent.");
+      }
+    } catch (failure) {
+      handleRequestError(failure);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const returnToEmailForm = () => {
+    setRegisteredWait(false);
+    setNotice("");
+    setError("");
+    setNoAccount(false);
+    setEmail("");
   };
 
   if (isConfirm) {
@@ -300,6 +381,28 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
       </p>
       {error && <Link href="/login" className="mt-7 inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground">Return to login</Link>}
     </div></AuthFrame>;
+  }
+
+  if (registeredWait) {
+    return (
+      <AuthFrame>
+        <div className="text-center">
+          <div className="mx-auto mb-6 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary"><Mail className="h-6 w-6" /></div>
+          <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Check your inbox</p>
+          <h1 className="mt-3 font-serif text-4xl">Your account is ready</h1>
+          <p className="mt-4 text-sm leading-6 text-muted-foreground">{registeredWaitEmail}</p>
+          <p role="status" className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4 text-left text-sm leading-6 text-foreground">{notice || REGISTERED_SIGNIN_COPY}</p>
+          {error && <p role="alert" className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-left text-sm text-destructive">{error}</p>}
+          {noAccount && <Link href="/signup" className="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">Create an account</Link>}
+          <Button type="button" onClick={resendRegisteredLink} disabled={busy} className="mt-6 h-12 w-full rounded-xl">
+            <Mail className="mr-2 h-4 w-4" />{busy ? "Sending…" : "Resend sign-in link"}
+          </Button>
+          <button type="button" onClick={returnToEmailForm} className="mt-5 text-sm font-semibold text-primary underline-offset-4 hover:underline">
+            Use another email
+          </button>
+        </div>
+      </AuthFrame>
+    );
   }
 
   if (isSignupComplete && signupResumeState !== "ready") {
@@ -340,7 +443,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
       <form onSubmit={submit} className="space-y-5" noValidate>
         {needsEmail && <div className="space-y-2">
           <Label htmlFor="auth-email">Email address</Label>
-          <Input id="auth-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className="h-12 rounded-xl" />
+          <Input id="auth-email" type="email" autoComplete="email" required value={email} onChange={(event) => { setEmail(event.target.value); setNoAccount(false); setError(""); }} placeholder="you@example.com" className="h-12 rounded-xl" />
         </div>}
         {needsPassword && <div className="space-y-2">
           <Label htmlFor="auth-password">{isReset ? "New password" : "Password"}</Label>
@@ -372,7 +475,10 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           </label>
           </div>
         </>}
-        {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">{error}</p>}
+        {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+          <p>{error}</p>
+          {noAccount && <Link href="/signup" className="mt-2 inline-flex rounded-md bg-primary px-3 py-2 font-semibold text-primary-foreground">Create an account</Link>}
+        </div>}
         {notice && <p role="status" className="rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5 text-sm text-foreground">{notice}</p>}
         <Button type="submit" disabled={busy} className="h-12 w-full rounded-xl text-sm font-semibold">
           {busy ? "Please wait…" : isSignupStart ? "Email me a continuation link" : isSignupComplete ? "Create account" : isLogin ? "Log in" : isForgot ? "Send reset link" : "Save new password"}
@@ -411,8 +517,71 @@ export function AccountPage() {
           <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Your account works before profile setup. Add an email password or keep using a secure sign-in link.</p>
         </header>
         <AccountSecurityPanel />
+        <section className="mt-6 rounded-xl border border-border bg-card p-6">
+          <h2 className="mb-5 text-lg font-semibold">Email preferences</h2>
+          <EmailPreferences />
+        </section>
       </div>
     </main>
   );
+}
+
+export function SetPasswordPage() {
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const { data: status, isLoading, isError, refetch } = useNativeAuthStatus();
+  const [skipError, setSkipError] = useState("");
+  const skipPrompt = useMutation({
+    mutationFn: async () => apiRequest("POST", "/api/native-auth/password-prompt/skip", {}),
+    onSuccess: async () => {
+      setSkipError("");
+      await queryClient.invalidateQueries({ queryKey: ["/api/native-auth/status"] });
+      setLocation("/");
+    },
+    onError: (failure: Error) => setSkipError(getErrorMessage(failure)),
+  });
+
+  useEffect(() => {
+    if (status?.hasPassword) setLocation("/");
+  }, [status?.hasPassword, setLocation]);
+
+  if (isLoading) {
+    return <AuthFrame><div role="status" aria-label="Loading password settings" className="space-y-4">
+      <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
+      <div className="h-9 w-2/3 animate-pulse rounded bg-muted" />
+      <div className="h-48 animate-pulse rounded-2xl bg-muted" />
+    </div></AuthFrame>;
+  }
+
+  if (isError || !status) {
+    return <AuthFrame><div className="text-center">
+      <h1 className="font-serif text-3xl">Password settings unavailable</h1>
+      <p role="alert" className="mt-3 text-sm leading-6 text-muted-foreground">We couldn’t check your sign-in settings. Try again before continuing.</p>
+      <Button type="button" variant="outline" onClick={() => refetch()} className="mt-6">Try again</Button>
+    </div></AuthFrame>;
+  }
+
+  if (status.hasPassword) {
+    return <AuthFrame><div className="text-center">
+      <h1 className="font-serif text-3xl">You’re all set</h1>
+      <p className="mt-3 text-sm text-muted-foreground">A password is already set for this account.</p>
+      <Link href="/" className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground">Continue to PayGate</Link>
+    </div></AuthFrame>;
+  }
+
+  return <AuthFrame>
+    <div className="mb-7">
+      <p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Optional account security</p>
+      <h1 className="mt-3 font-serif text-4xl leading-tight">Set a password</h1>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">Choose a password for quicker direct sign-in. This is optional; you can keep using email links.</p>
+    </div>
+    <AccountSecurityPanel passwordPrompt onPasswordSaved={() => setLocation("/")} />
+    {!status.passwordPromptSkipped && <div className="mt-5 border-t border-border pt-5">
+      {skipError && <p role="alert" className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">{skipError}</p>}
+      <Button type="button" variant="ghost" disabled={skipPrompt.isPending} onClick={() => skipPrompt.mutate()} className="w-full">
+        {skipPrompt.isPending ? "Saving…" : "Skip for now"}
+      </Button>
+    </div>}
+  </AuthFrame>;
 }
 

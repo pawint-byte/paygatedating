@@ -11,6 +11,7 @@ export const APP_PATHS = [
   "/reset-password",
   "/auth/confirm",
   "/account",
+  "/set-password",
   "/terms",
   "/privacy",
   "/safety",

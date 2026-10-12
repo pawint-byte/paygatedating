@@ -26,8 +26,8 @@ import AssistantGuide from "@/pages/assistant-guide";
 import { AssistantChat } from "@/components/assistant-chat";
 import MemberSetup from "@/pages/member-setup";
 import MemberGate from "@/pages/member-gate";
-import AuthPage, { AccountPage } from "@/pages/auth";
-import { VerificationBanner } from "@/components/auth/verification-banner";
+import AuthPage, { AccountPage, SetPasswordPage } from "@/pages/auth";
+import { PasswordSetupReminder, VerificationBanner } from "@/components/auth/verification-banner";
 
 type SetupGuardState = {
   accepted: boolean;
@@ -65,6 +65,9 @@ function Router() {
     return <AuthPage mode={mode} />;
   }
   if (routePath === "/account") return user ? <AccountPage /> : <Redirect to="/login" />;
+  // Admin migration review must not require publishing a personal profile.
+  if (routePath === "/admin/users" && user?.isAdmin) return <DashboardLayout />;
+  if (routePath === "/set-password") return user ? <SetPasswordPage /> : <Redirect to="/login" />;
 
   if (user && !setupQuery.data && !setupQuery.isError) {
     return (
@@ -194,6 +197,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <VerificationBanner />
+            <PasswordSetupReminder />
             <Router />
           </TooltipProvider>
         </SeasonalThemeProvider>

@@ -18,6 +18,7 @@ import { GiftHistory } from "@/components/dashboard/gift-history";
 import { DatePreferences } from "@/components/dashboard/date-preferences";
 import { MyQRCode } from "@/components/dashboard/my-qr-code";
 import { AccountSecurity } from "@/components/auth/account-security";
+import { EmailPreferences } from "@/components/auth/email-preferences";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -186,26 +187,8 @@ export default function Settings() {
             Configure how you receive updates
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="email-notifications">Email Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive email updates about new matches and messages
-              </p>
-            </div>
-            <Switch id="email-notifications" defaultChecked data-testid="switch-email-notifications" />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="marketing-emails">Marketing Emails</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive tips, updates, and special offers
-              </p>
-            </div>
-            <Switch id="marketing-emails" data-testid="switch-marketing-emails" />
-          </div>
+        <CardContent>
+          <EmailPreferences />
         </CardContent>
       </Card>
 

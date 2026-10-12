@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, KeyRound, MailCheck, ShieldCheck } from "lucide-react";
+import { Check, CheckCircle2, Eye, EyeOff, KeyRound, MailCheck, ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,13 @@ function messageFromError(error: unknown) {
   }
 }
 
-export function AccountSecurity() {
+export function AccountSecurity({ passwordPrompt = false, onPasswordSaved }: { passwordPrompt?: boolean; onPasswordSaved?: () => void }) {
   const queryClient = useQueryClient();
   const { data: status, isLoading, isError, refetch } = useNativeAuthStatus();
   const { isAuthenticated } = useAuth();
   const [password, setPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [requestedLink, setRequestedLink] = useState(false);
@@ -41,6 +42,7 @@ export function AccountSecurity() {
       setError("");
       setNotice("Your password is set. Use it the next time you log in.");
       await queryClient.invalidateQueries({ queryKey: ["/api/native-auth/status"] });
+      onPasswordSaved?.();
     },
     onError: (failure: Error) => setError(messageFromError(failure)),
   });
@@ -48,21 +50,30 @@ export function AccountSecurity() {
   const requestLink = useMutation({
     mutationFn: async () => {
       if (!status?.email) throw new Error("We couldn’t find the email for this account.");
-      await apiRequest("POST", "/api/native-auth/request-link", { email: status.email });
+      return (await apiRequest("POST", "/api/native-auth/request-link", { email: status.email })).json() as Promise<{message: string}>;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setError("");
       setRequestedLink(true);
-      setNotice("If we can send a sign-in link, it will arrive shortly. Open it on this device, then set your password.");
+      setNotice(result.message);
     },
     onError: (failure: Error) => setError(messageFromError(failure)),
   });
+
+  const passwordBytes = new TextEncoder().encode(password).length;
+  const passwordChecks: [string, boolean][] = [
+    ["At least 12 characters", Array.from(password).length >= 12],
+    ["One uppercase letter", /[A-Z]/.test(password)],
+    ["One lowercase letter", /[a-z]/.test(password)],
+    ["One number", /\d/.test(password)],
+    ["72 UTF-8 bytes or fewer", passwordBytes <= 72],
+  ];
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setNotice("");
-    const bytes = new TextEncoder().encode(password).length;
-    if (Array.from(password).length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || bytes > 72) {
+    if (Array.from(password).length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || passwordBytes > 72) {
       setError("Use at least 12 characters with uppercase, lowercase, and a number, and no more than 72 UTF-8 bytes.");
       return;
     }
@@ -110,8 +121,18 @@ export function AccountSecurity() {
             </div>}
             <div className="space-y-2">
               <Label htmlFor="security-password">{status.hasPassword ? "New password" : "Password"}</Label>
-              <Input id="security-password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required className="h-11 rounded-lg" />
+              <div className="relative">
+                <Input id="security-password" type={passwordPrompt && showPassword ? "text" : "password"} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required className={`h-11 rounded-lg ${passwordPrompt ? "pr-12" : ""}`} />
+                {passwordPrompt && <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>}
+              </div>
               <p className="text-xs leading-5 text-muted-foreground">At least 12 characters; include uppercase, lowercase, and a number. Maximum 72 UTF-8 bytes.</p>
+              {passwordPrompt && <div className="grid grid-cols-1 gap-2 rounded-xl border border-border bg-background/60 p-3 sm:grid-cols-2" aria-live="polite">
+                {passwordChecks.map(([rule, valid]) => <div key={rule} className={`flex items-center gap-2 text-xs ${valid ? "text-primary" : "text-muted-foreground"}`}>
+                  <Check className={`h-3.5 w-3.5 ${valid ? "" : "opacity-30"}`} />{rule}
+                </div>)}
+              </div>}
             </div>
             {error && <div role="alert" className="space-y-2 rounded-lg border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive">
               <p>{error}</p>
@@ -119,10 +140,10 @@ export function AccountSecurity() {
             </div>}
             {notice && <p role="status" className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">{notice}</p>}
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button type="submit" disabled={setPasswordMutation.isPending || isLoading} className="h-11 rounded-lg">
+              <Button type="submit" disabled={setPasswordMutation.isPending || isLoading || (!status.hasPassword && !status.canSetPassword)} className="h-11 rounded-lg">
                 {setPasswordMutation.isPending ? "Saving…" : status.hasPassword ? "Update password" : "Set password"}
               </Button>
-              {error && status.emailVerified && <Button type="button" variant="outline" disabled={requestLink.isPending || requestedLink} onClick={() => requestLink.mutate()} className="h-11 rounded-lg">
+              {((!status.hasPassword && !status.canSetPassword) || (error && status.emailVerified)) && <Button type="button" variant="outline" disabled={requestLink.isPending || requestedLink} onClick={() => requestLink.mutate()} className="h-11 rounded-lg">
                 <MailCheck className="mr-2 h-4 w-4" />{requestLink.isPending ? "Sending…" : "Email me a sign-in link"}
               </Button>}
             </div>

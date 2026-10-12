@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomInt } from "node:crypto";
 import express from "express";
 import session from "express-session";
 import { Passport } from "passport";
@@ -187,6 +187,8 @@ test("rate limits persist across repository instances, and stale password edits 
 
 test("two-step HTTP journey captures before password, signs in before verification delivery, and preserves login/recovery", async () => {
   const app = express();
+  const qaIp=`198.18.${randomInt(1,255)}.${randomInt(1,255)}`;
+  app.set("trust proxy",1);
   app.use(express.json());
   app.use(session({secret:randomUUID(),resave:false,saveUninitialized:false,cookie:{sameSite:"lax"}}));
   const passport = new Passport();
@@ -219,7 +221,7 @@ test("two-step HTTP journey captures before password, signs in before verificati
   let cookie = "";
   const request = async(path:string,body?:unknown,headers:Record<string,string>={}) => {
     const response = await fetch(base+path,{method:body===undefined?"GET":"POST",
-      headers:{"Content-Type":"application/json",Cookie:cookie,...headers},body:body===undefined?undefined:JSON.stringify(body)});
+      headers:{"Content-Type":"application/json",Cookie:cookie,"X-Forwarded-For":qaIp,...headers},body:body===undefined?undefined:JSON.stringify(body)});
     const setCookie=response.headers.get("set-cookie");
     if(setCookie) cookie=setCookie.split(";")[0];
     return response;
@@ -293,7 +295,10 @@ test("two-step HTTP journey captures before password, signs in before verificati
     const parallelCookie=parallelLogin.headers.get("set-cookie")!.split(";")[0];
     const forgotten = await request("/api/native-auth/forgot-password",{email:"unknown@example.invalid"});
     const known = await request("/api/native-auth/forgot-password",{email});
-    assert.deepEqual(await forgotten.json(),await known.json());
+    assert.equal(forgotten.status,404);
+    assert.equal((await forgotten.json()).code,"NO_ACCOUNT");
+    assert.equal(known.status,200);
+    assert.equal((await known.json()).linkSent,true);
     for(let i=0;i<100 && !messages.some(message=>message.kind==="reset");i++) await new Promise(resolve=>setTimeout(resolve,20));
     const reset=messages.find(message=>message.kind==="reset")!;
     assert.ok(reset);
@@ -321,6 +326,8 @@ test("two-step HTTP journey captures before password, signs in before verificati
     deliver();
     server.close();
     await once(server,"close");
+    await pool.query("DELETE FROM native_auth_rate_limits WHERE key=ANY($1)",
+      [["email","email-submit","signup-start","signup","login","consume","password","password-prompt"].map(action=>tokenHash(`${action}:ip:${qaIp}`))]);
   }
 });
 

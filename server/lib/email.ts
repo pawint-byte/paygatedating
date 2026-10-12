@@ -62,6 +62,21 @@ async function getResendClient() {
   };
 }
 
+export function migrationEmailContent(link:string) {
+  const body="We've upgraded how you sign in to PayGate Dating. Tap below to set your password and you're in.";
+  return {subject:"Your PayGate sign-in upgrade",text:`${body}\nSet your password: ${link}\nThis single-use link expires in 30 minutes. Your profile and history are unchanged. If it expires, request a new sign-in link on PayGate.`,
+    html:`<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto"><h1>Your next chapter, without the sign-in friction</h1><p>${body}</p><p><a style="background:#76229b;color:white;padding:14px 22px;border-radius:8px;display:inline-block;text-decoration:none" href="${escapeHtml(link)}">Set your password &amp; sign in</a></p><p>Your profile and history are unchanged. This single-use link expires in 30 minutes. If it expires, request a new sign-in link on PayGate.</p></div>`};
+}
+export async function sendMigrationEmail(to:string,link:string,_memberId:string):Promise<{status:"sent"|"failed"|"uncertain";providerId?:string}> {
+  try {
+    const {client,fromEmail}=await getResendClient();
+    // Durable per-member claiming prevents retries, including uncertain outcomes.
+    const result=await client.emails.send({from:fromEmail,to,...migrationEmailContent(link)});
+    if(result.error) return {status:"failed"};
+    return result.data?.id ? {status:"sent",providerId:result.data.id} : {status:"uncertain"};
+  } catch {return {status:"uncertain"};}
+}
+
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, character => ({
     "&": "&amp;",

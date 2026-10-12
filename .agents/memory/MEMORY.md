@@ -18,3 +18,5 @@
 - [GA4 signup attribution](ga4-signup-attribution.md) — count only persisted new accounts; real sign-in method, no PII, and distinguish transport from DebugView receipt.
 - [Wishlist discovery contract](wishlist-discovery-contract.md) — full approved spec is development-only; arbitrary-link saving does not override retailer gifting safeguards.
 - [Native auth policy](native-auth-policy.md) — persist email-only pending capture first, then password; background verification gates checkout only; preserve identities and Scout/owner launch approval.
+- [Auth QA rate-limit isolation](auth-qa-rate-limit-isolation.md) — preview and HTTP tests can share a loopback IP; isolate test budgets, never weaken production limits.
+- [Browser auth QA fixtures](browser-auth-qa-fixtures.md) — preserve synthetic credentials across worker resets in private temporary storage; never recover by changing a real member.

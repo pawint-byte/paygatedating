@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { registerMemberSetupRoutes } from "./member-setup";
 import { registerWishlistDiscovery } from "./wishlist-discovery";
 import { registerNativeAuth } from "./native-auth/routes";
+import { registerPasswordMigration } from "./native-auth/migration";
+import { pool } from "./db";
 import { productUrl } from "./lib/wishlist-preview";
 import { registerAgentApi } from "./agent-api";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
@@ -3898,6 +3900,8 @@ Be encouraging but honest. Keep responses concise (2-4 sentences unless they ask
       res.status(500).json({ message: "Failed to check admin status" });
     }
   });
+
+  registerPasswordMigration(app,isAuthenticated,isAdmin,pool);
 
   app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
