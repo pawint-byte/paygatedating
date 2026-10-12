@@ -184,7 +184,7 @@ export function ConciergeSection() {
           </div>
 
           <div className="text-center mt-12">
-            <a href="/api/login">
+            <a href="/signup">
               <Button size="lg" className="text-base px-8" data-testid="button-concierge-signup">
                 Create Your Link Free
                 <ArrowRight className="w-4 h-4 ml-2" />

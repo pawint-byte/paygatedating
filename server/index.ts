@@ -83,6 +83,14 @@ app.get("/favicon.ico", (_req, res) => {
 
 app.use(express.static(path.join(process.cwd(), "public")));
 
+app.use((req,res,next) => {
+  if (["/auth/confirm","/reset-password","/signup/complete"].includes(req.path)) {
+    res.setHeader("Referrer-Policy","no-referrer");
+    res.setHeader("Cache-Control","no-store");
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   if (process.env.MAINTENANCE_MODE === "true") {
     if (req.path.startsWith("/api") || req.path === "/maintenance.html") {
@@ -123,6 +131,7 @@ app.post(
 );
 
 // Now apply JSON middleware for all other routes
+app.use("/api/native-auth", express.json({ limit: "4kb" }));
 app.use(
   express.json({
     limit: '50mb',
@@ -182,16 +191,17 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const isGiftRequest = !shouldLogApiResponseBody(_req.path);
+    const isAuthRequest = /^\/api\/(?:native-auth|auth)(?:\/|$)/i.test(_req.path);
     const errorStatus = err.status || err.statusCode || 500;
     const status = isGiftRequest && (!Number.isInteger(errorStatus) || errorStatus < 400 || errorStatus > 599)
       ? 500 : errorStatus;
     const message = isGiftRequest
-      ? (status < 500 ? "Invalid gift request" : "Unable to process gift request")
+      ? (isAuthRequest ? "Unable to process authentication request" : status < 500 ? "Invalid gift request" : "Unable to process gift request")
       : err.message || "Internal Server Error";
 
     // JSON parsing errors can contain the raw body, before route handlers or
     // the response logger run. Never log or echo those details for gifts.
-    if (isGiftRequest) console.error("Gift request failed", { status });
+    if (isGiftRequest) console.error(isAuthRequest ? "Authentication request failed" : "Gift request failed", { status });
     else console.error("Internal Server Error:", err);
 
     if (res.headersSent) {

@@ -32,7 +32,7 @@ test("serveStatic serves assets and limits the SPA shell to real GET/HEAD routes
   const { server, base } = await listen(app);
   t.after(() => server.close());
 
-  for (const pathname of ["/", "/settings", "/nearby", "/radar", "/p/member-1", "/invite/code-1"]) {
+  for (const pathname of ["/", "/signup", "/signup/complete", "/login", "/forgot-password", "/reset-password", "/auth/confirm", "/account", "/settings", "/nearby", "/radar", "/p/member-1", "/invite/code-1"]) {
     const get = await fetch(base + pathname);
     assert.equal(get.status, 200, pathname);
     assert.match(await get.text(), /APP SHELL/);
@@ -73,6 +73,10 @@ test("SPA allowlist matches every top-level App route", async () => {
   const routes = new Set<string>();
 
   const visit = (node: ts.Node) => {
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+        node.left.getText(tree) === "routePath" && ts.isStringLiteral(node.right)) {
+      routes.add(node.right.text);
+    }
     if (ts.isJsxOpeningLikeElement(node) && node.tagName.getText(tree) === "Route") {
       const pathAttribute = node.attributes.properties.find(
         (attribute): attribute is ts.JsxAttribute =>
@@ -113,5 +117,7 @@ test("Radar and Nearby share the signed-in map, while signed-out entry offers th
   }
   assert.match(mobile, /\["\/nearby", "\/radar"\]\.includes\(location\)/);
   assert.match(sidebar, /item\.url === "\/nearby" && location === "\/radar"/);
-  assert.match(landingNav, /href="\/api\/login"/);
+  assert.match(landingNav, /href="\/login"/);
+  assert.match(landingNav, /href="\/signup"/);
+  assert.doesNotMatch(landingNav, /href="\/api\/login"/);
 });

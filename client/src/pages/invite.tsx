@@ -36,7 +36,7 @@ export default function InvitePage() {
     if (profile?.userId) {
       localStorage.setItem("referrerUserId", profile.userId);
     }
-    setLocation("/");
+    setLocation("/signup");
   };
 
   const handleGoHome = () => {

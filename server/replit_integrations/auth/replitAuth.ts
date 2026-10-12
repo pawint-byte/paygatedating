@@ -9,6 +9,7 @@ import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
 import { newSignUpReceipt } from "../../signup-analytics";
 import type { SignUpReceipt } from "../../../shared/signup-analytics";
+import { nativeAuthRepository } from "../../native-auth/service";
 
 const getOidcConfig = memoize(
   async () => {
@@ -37,6 +38,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: true,
+      sameSite: "lax",
       maxAge: sessionTtl,
     },
   });
@@ -68,27 +70,37 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
-
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user: { analyticsSignUp?: SignUpReceipt } = {};
+    const user: { claims?: any; analyticsSignUp?: SignUpReceipt } = {};
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims(), () => {
-      user.analyticsSignUp = newSignUpReceipt();
-    });
-    verified(null, user);
+    try {
+      const resolved = await nativeAuthRepository.resolveReplit(tokens.claims()!);
+      user.claims = { ...user.claims, sub: resolved.account.user_id, email: resolved.account.email };
+      Object.assign(user, {
+        authenticatedAt: Date.now(),
+        authVersion: resolved.account.session_version,
+        replitEmailMismatch: resolved.emailMismatch,
+      });
+      if (resolved.created) user.analyticsSignUp = newSignUpReceipt();
+      verified(null, user);
+    } catch {
+      // Fail closed without leaking SQL, provider tokens, or email identities.
+      verified(null, false);
+    }
   };
 
   // Keep track of registered strategies
   const registeredStrategies = new Set<string>();
 
   // Helper function to ensure strategy exists for a domain
-  const ensureStrategy = (domain: string) => {
+  const ensureStrategy = async (domain: string) => {
     const strategyName = `replitauth:${domain}`;
     if (!registeredStrategies.has(strategyName)) {
+      const config = await getOidcConfig();
+      if (registeredStrategies.has(strategyName)) return;
       const strategy = new Strategy(
         {
           name: strategyName,
@@ -107,22 +119,31 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    ensureStrategy(req.hostname);
+    res.redirect("/api/auth/replit/start");
+  });
+  app.get("/api/auth/replit/start", async (req, res, next) => {
+    await ensureStrategy(req.hostname);
     passport.authenticate(`replitauth:${req.hostname}`, {
-      prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
-  app.get("/api/callback", (req, res, next) => {
-    ensureStrategy(req.hostname);
+  app.get("/api/callback", async (req, res, next) => {
+    await ensureStrategy(req.hostname);
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+      failureRedirect: "/login?error=replit-sign-in",
     })(req, res, next);
   });
 
-  app.get("/api/logout", (req, res) => {
+  app.get("/api/logout", async (req, res) => {
+    if ((req.user as any)?.nativeAuth) {
+      return req.logout(() => req.session.destroy(() => {
+        res.clearCookie("connect.sid");
+        res.redirect("/login");
+      }));
+    }
+    const config = await getOidcConfig();
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
@@ -142,6 +163,17 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   }
 
   const now = Math.floor(Date.now() / 1000);
+  if (user.nativeAuth) {
+    try {
+      const account = await nativeAuthRepository.getAccount(user.claims.sub);
+      if (!account || account.session_version !== user.authVersion || now > user.expires_at) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      return next();
+    } catch {
+      return res.status(503).json({ message: "Sign-in is temporarily unavailable." });
+    }
+  }
   if (now <= user.expires_at) {
     return next();
   }
@@ -155,7 +187,10 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   try {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+    const canonicalSub = user.claims.sub;
+    const canonicalEmail = user.claims.email;
     updateUserSession(user, tokenResponse);
+    user.claims = { ...user.claims, sub: canonicalSub, email: canonicalEmail };
     return next();
   } catch (error) {
     res.status(401).json({ message: "Unauthorized" });

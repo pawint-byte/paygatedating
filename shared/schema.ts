@@ -5,6 +5,7 @@ import { z } from "zod";
 import { users } from "./models/auth";
 
 export * from "./models/auth";
+export * from "./native-auth";
 
 export const subscriptionTierEnum = pgEnum("subscription_tier", ["free", "premium"]);
 export const gateStageEnum = pgEnum("gate_stage", ["gate1", "gate2", "gate3", "gate4", "gate5", "completed"]);

@@ -94,7 +94,7 @@ export default function AssistantGuide() {
                   {user ? (
                     <Button asChild><Link href="/assistant-access">Open Assistant access<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
                   ) : (
-                    <Button asChild><a href="/api/login">Sign in to continue<ArrowRight className="ml-2 h-4 w-4" /></a></Button>
+                    <Button asChild><a href="/login">Sign in to continue<ArrowRight className="ml-2 h-4 w-4" /></a></Button>
                   )}
                   <a href="#paygate-setup" className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium hover:bg-muted">
                     Read the setup steps<ArrowDown className="h-4 w-4" />
@@ -335,7 +335,7 @@ export default function AssistantGuide() {
                 Manage your PayGate connection<ArrowRight className="h-4 w-4" />
               </Link>
             ) : (
-              <a href="/api/login" className="inline-flex items-center gap-2 text-sm font-medium text-primary underline underline-offset-4">
+              <a href="/login" className="inline-flex items-center gap-2 text-sm font-medium text-primary underline underline-offset-4">
                 Sign in to manage your connection<ArrowRight className="h-4 w-4" />
               </a>
             )}

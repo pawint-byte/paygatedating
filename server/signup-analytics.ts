@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { Express, RequestHandler, Response } from "express";
 import { parseSignUpReceipt, SIGNUP_ANALYTICS_HEADER, type SignUpReceipt } from "../shared/signup-analytics";
 
-export function newSignUpReceipt(): SignUpReceipt {
-  return { receipt: randomUUID(), method: "replit" };
+export function newSignUpReceipt(method: SignUpReceipt["method"] = "replit"): SignUpReceipt {
+  return { receipt: randomUUID(), method };
 }
 
 export function addSignUpAnalyticsHeader(
@@ -21,7 +21,7 @@ export function registerSignUpAnalyticsAck(app: Express, authenticated: RequestH
   app.post("/api/analytics/sign-up/ack", authenticated, (req: any, res) => {
     const receipt = parseSignUpReceipt(JSON.stringify({
       receipt: req.body?.receipt,
-      method: "replit",
+      method: req.user.analyticsSignUp?.method ?? "replit",
     }));
     if (!receipt) return res.sendStatus(400);
     const pending = req.user.analyticsSignUp;

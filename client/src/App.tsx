@@ -26,6 +26,8 @@ import AssistantGuide from "@/pages/assistant-guide";
 import { AssistantChat } from "@/components/assistant-chat";
 import MemberSetup from "@/pages/member-setup";
 import MemberGate from "@/pages/member-gate";
+import AuthPage, { AccountPage } from "@/pages/auth";
+import { VerificationBanner } from "@/components/auth/verification-banner";
 
 type SetupGuardState = {
   accepted: boolean;
@@ -54,6 +56,15 @@ function Router() {
       </div>
     );
   }
+
+  if (routePath === "/terms") return <Terms />;
+  if (routePath === "/privacy") return <Privacy />;
+  if (routePath === "/signup" || routePath === "/signup/complete" || routePath === "/login" || routePath === "/forgot-password" || routePath === "/reset-password" || routePath === "/auth/confirm") {
+    if (user && (routePath === "/signup" || routePath === "/signup/complete" || routePath === "/login")) return <Redirect to={routePath.startsWith("/signup") ? "/setup" : "/"} />;
+    const mode = routePath === "/signup" ? "signup" : routePath === "/signup/complete" ? "signup-complete" : routePath === "/forgot-password" ? "forgot-password" : routePath === "/reset-password" ? "reset-password" : routePath === "/auth/confirm" ? "confirm" : "login";
+    return <AuthPage mode={mode} />;
+  }
+  if (routePath === "/account") return user ? <AccountPage /> : <Redirect to="/login" />;
 
   if (user && !setupQuery.data && !setupQuery.isError) {
     return (
@@ -100,8 +111,6 @@ function Router() {
   return (
     <>
       <Switch>
-        <Route path="/terms" component={Terms} />
-        <Route path="/privacy" component={Privacy} />
         <Route path="/safety" component={Safety} />
         <Route path="/guidelines" component={Guidelines} />
         <Route path="/assistant-guide" component={AssistantGuide} />
@@ -141,6 +150,7 @@ function Router() {
         ) : (
           <>
             <Route path="/setup" component={MemberSetup} />
+            <Route path="/account" component={AccountPage} />
             <Route path="/" component={DashboardLayout} />
             <Route path="/serious-romance">
               <MemberGate gate="serious_romance" />
@@ -183,6 +193,7 @@ function App() {
         <SeasonalThemeProvider>
           <TooltipProvider>
             <Toaster />
+            <VerificationBanner />
             <Router />
           </TooltipProvider>
         </SeasonalThemeProvider>

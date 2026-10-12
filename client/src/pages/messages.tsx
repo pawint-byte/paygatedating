@@ -81,7 +81,7 @@ function ErrorState({
       <AlertDescription className="space-y-3">
         <p>{authError ? "Please sign in again to continue." : errorText(error, fallback)}</p>
         {authError ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => { window.location.href = "/api/login"; }}>
+            <Button type="button" variant="outline" size="sm" onClick={() => { window.location.href = "/login"; }}>
             Sign in again
           </Button>
         ) : (
@@ -107,7 +107,7 @@ function AuthState({ loading = false }: { loading?: boolean }) {
         </CardHeader>
         {!loading && (
           <CardContent className="flex justify-center">
-            <Button type="button" onClick={() => { window.location.href = "/api/login"; }} data-testid="button-messages-login">Sign in</Button>
+            <Button type="button" onClick={() => { window.location.href = "/login"; }} data-testid="button-messages-login">Sign in</Button>
           </CardContent>
         )}
       </Card>
@@ -255,7 +255,7 @@ function ConversationThread({
           {sendError && (
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
               <span>{unauthorized(sendError) ? "Your session expired. Sign in again to send this message." : errorText(sendError, "We couldn't send your message. Please try again.")} Your draft is still here.</span>
-              {unauthorized(sendError) ? <Button type="button" variant="outline" size="sm" onClick={() => { window.location.href = "/api/login"; }}>Sign in again</Button> : <Button type="button" variant="outline" size="sm" onClick={submit} disabled={composerDisabled || !draft.trim()}>Retry</Button>}
+              {unauthorized(sendError) ? <Button type="button" variant="outline" size="sm" onClick={() => { window.location.href = "/login"; }}>Sign in again</Button> : <Button type="button" variant="outline" size="sm" onClick={submit} disabled={composerDisabled || !draft.trim()}>Retry</Button>}
             </div>
           )}
           <form onSubmit={submitForm} aria-label={`Send a message to ${name}`}>

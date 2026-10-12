@@ -37,6 +37,23 @@ async function getCredentials() {
 }
 
 // Get fresh Resend client (tokens expire, so always get fresh)
+export async function sendAuthEmail(to: string, kind: "verify" | "signin" | "reset" | "signup", link: string): Promise<boolean> {
+  try {
+    const { client, fromEmail } = await getResendClient();
+    const action = kind === "signup" ? "Finish your PayGate signup" : kind === "verify" ? "Verify your email" : kind === "reset" ? "Reset your password" : "Sign in to PayGate";
+    const expiry = kind === "verify" || kind === "signup" ? "24 hours" : "30 minutes";
+    const safeLink = link.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const result = await client.emails.send({
+      from: fromEmail, to,
+      subject: `${action} — PayGate Dating`,
+      html: `<h1>${action}</h1><p><a href="${safeLink}">${action}</a></p><p>This single-use link expires in ${expiry}. If you did not request it, ignore this email.</p>`,
+      text: `${action}: ${link}\nThis single-use link expires in ${expiry}. If you did not request it, ignore this email.`,
+    });
+    if (result.error) { console.warn("Authentication email rejected by provider."); return false; }
+    return !!result.data?.id;
+  } catch { console.warn("Authentication email delivery unavailable."); return false; }
+}
+
 async function getResendClient() {
   const { apiKey, fromEmail } = await getCredentials();
   return {

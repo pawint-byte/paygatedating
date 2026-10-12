@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Heart, Sparkles, Gift, Sun, Leaf, Snowflake, Flower2, Users } from "lucide-react";
 import { useSeasonalTheme } from "@/contexts/seasonal-theme-context";
+import { Link } from "wouter";
 
 const iconMap: Record<string, typeof Heart> = {
   heart: Heart,
@@ -19,10 +20,6 @@ export function SeasonalBanner() {
   
   const Icon = iconMap[banner.icon] || Heart;
   
-  const scrollToSignup = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   return (
     <div 
       className={`bg-gradient-to-r ${banner.gradient} dark:opacity-90 text-white px-3 py-2 sm:px-4 sm:py-3`}
@@ -45,14 +42,8 @@ export function SeasonalBanner() {
           <Sparkles className="w-4 h-4 shrink-0" />
         </div>
         
-        <Button 
-          onClick={scrollToSignup}
-          size="sm" 
-          variant="secondary"
-          className="h-8 shrink-0 px-3"
-          data-testid="button-seasonal-cta"
-        >
-          {banner.cta}
+        <Button asChild size="sm" variant="secondary" className="h-8 shrink-0 px-3" data-testid="button-seasonal-cta">
+          <Link href="/signup">{banner.cta}</Link>
         </Button>
       </div>
     </div>

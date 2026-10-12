@@ -36,12 +36,12 @@ export function NavHeader() {
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-3">
           <ThemeToggle />
-          <a href="/api/login" className="hidden sm:block">
+          <a href="/login" className="hidden sm:block">
             <Button variant="ghost" size="sm" data-testid="button-login">
               Log In
             </Button>
           </a>
-          <a href="/api/login">
+          <a href="/signup">
             <Button size="sm" data-testid="button-get-started">
               <span className="sm:hidden">Start</span>
               <span className="hidden sm:inline">Get Started</span>

@@ -26,7 +26,7 @@ export function HeroSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="/api/login">
+              <a href="/signup">
                 <Button size="lg" className="text-base px-8" data-testid="button-hero-start">
                   Start Your Story Free
                 </Button>

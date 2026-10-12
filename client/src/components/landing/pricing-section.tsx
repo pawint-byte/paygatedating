@@ -63,7 +63,7 @@ export function PricingSection() {
               ))}
             </ul>
 
-            <a href="/api/login">
+            <a href="/signup">
               <Button variant="outline" className="w-full" data-testid="button-start-free">
                 Create My Free Profile
               </Button>
@@ -103,7 +103,7 @@ export function PricingSection() {
               ))}
             </ul>
 
-            <a href="/api/login">
+            <a href="/signup">
               <Button className="w-full" data-testid="button-start-connecting">
                 Begin Your Story
               </Button>

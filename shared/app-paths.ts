@@ -4,6 +4,13 @@
  */
 export const APP_PATHS = [
   "/",
+  "/signup",
+  "/signup/complete",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/confirm",
+  "/account",
   "/terms",
   "/privacy",
   "/safety",

@@ -17,3 +17,4 @@
 - [Member-owned assistant](member-owned-assistant.md) — external AI pilot stays draft-only; Agent tests, owner tests, joint verification and explicit acceptance must precede publishing.
 - [GA4 signup attribution](ga4-signup-attribution.md) — count only persisted new accounts; real sign-in method, no PII, and distinguish transport from DebugView receipt.
 - [Wishlist discovery contract](wishlist-discovery-contract.md) — full approved spec is development-only; arbitrary-link saving does not override retailer gifting safeguards.
+- [Native auth policy](native-auth-policy.md) — persist email-only pending capture first, then password; background verification gates checkout only; preserve identities and Scout/owner launch approval.

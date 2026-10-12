@@ -17,6 +17,7 @@ import { LocationCapture } from "@/components/dashboard/location-capture";
 import { GiftHistory } from "@/components/dashboard/gift-history";
 import { DatePreferences } from "@/components/dashboard/date-preferences";
 import { MyQRCode } from "@/components/dashboard/my-qr-code";
+import { AccountSecurity } from "@/components/auth/account-security";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -44,7 +45,7 @@ export default function Settings() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/login";
         }, 500);
         return;
       }
@@ -172,6 +173,8 @@ export default function Settings() {
       <WishlistManager />
 
       <GiftHistory />
+
+      <AccountSecurity />
 
       <Card>
         <CardHeader>

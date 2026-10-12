@@ -1,6 +1,6 @@
 import { parseSignUpReceipt, PAYGATE_GA4_ID } from "@shared/signup-analytics";
 
-type SignUpParameters = { method: "replit"; send_to: string; debug_mode?: true };
+type SignUpParameters = { method: "replit" | "password"; send_to: string; debug_mode?: true };
 export type SignUpAnalyticsEnvironment = {
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem">;
   hostname: string;

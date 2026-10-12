@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { registerMemberSetupRoutes } from "./member-setup";
 import { registerWishlistDiscovery } from "./wishlist-discovery";
+import { registerNativeAuth } from "./native-auth/routes";
 import { productUrl } from "./lib/wishlist-preview";
 import { registerAgentApi } from "./agent-api";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
@@ -92,6 +93,7 @@ export async function registerRoutes(
     acquireActionLock: acquireQaActionLock,
   }));
   registerAuthRoutes(app);
+  registerNativeAuth(app, isAuthenticated);
   registerMemberSetupRoutes(app);
   registerWishlistDiscovery(app, isAuthenticated);
 

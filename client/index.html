@@ -3,12 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZQDRXT3L0B"></script>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-ZQDRXT3L0B');
+      (function () {
+        // Bearer email-link URLs must never enter third-party page tracking.
+        if (["/auth/confirm", "/reset-password", "/signup/complete"].includes(window.location.pathname)) return;
+        var script = document.createElement("script");
+        script.async = true;
+        script.src = "https://www.googletagmanager.com/gtag/js?id=G-ZQDRXT3L0B";
+        document.head.appendChild(script);
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { window.dataLayer.push(arguments); };
+        gtag('js', new Date());
+        gtag('config', 'G-ZQDRXT3L0B');
+      })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -67,6 +74,7 @@
     <!-- Travelpayouts Verification -->
     <script data-noptimize="1" data-cfasync="false" data-wpfc-render="false">
       (function () {
+          if (["/auth/confirm", "/reset-password", "/signup/complete"].includes(window.location.pathname)) return;
           var script = document.createElement("script");
           script.async = 1;
           script.src = 'https://emrldco.com/NDkxNDYz.js?t=491463';

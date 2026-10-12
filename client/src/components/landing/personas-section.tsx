@@ -106,7 +106,7 @@ export function PersonasSection() {
               It doesn't matter. The chapters work the same way for all of them —
               effort in, connection out.
             </p>
-            <a href="/api/login">
+            <a href="/signup">
               <Button className="gap-2" data-testid="button-persona-cta">
                 Start Your Story Free
                 <ArrowRight className="w-4 h-4" />

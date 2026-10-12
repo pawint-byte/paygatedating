@@ -185,7 +185,7 @@ test("PATCH /api/auth/heard-via clears extraneous Other text for canonical non-O
   }
 });
 
-test("profile PATCH strips heardVia and profile creation retains referralCode handling", async () => {
+test("profile PATCH strips heardVia and existing setup acceptance retains referralCode handling", async () => {
   const updates: any[] = [];
   const handler = await routeHandler("patch", "/api/profile", {
     insertProfileSchema,
@@ -220,8 +220,8 @@ test("profile PATCH strips heardVia and profile creation retains referralCode ha
     await once(server, "close");
   }
 
-  const routesSource = await readFile(new URL("../server/routes.ts", import.meta.url), "utf8");
-  const tree = ts.createSourceFile("server/routes.ts", routesSource, ts.ScriptTarget.Latest, true);
+  const routesSource = await readFile(new URL("../server/member-setup.ts", import.meta.url), "utf8");
+  const tree = ts.createSourceFile("server/member-setup.ts", routesSource, ts.ScriptTarget.Latest, true);
   let referralCodeReadInProfilePost = false;
   const visit = (node: ts.Node, insideProfilePost = false) => {
     const isProfilePost = ts.isCallExpression(node)
@@ -229,12 +229,12 @@ test("profile PATCH strips heardVia and profile creation retains referralCode ha
       && node.expression.expression.getText(tree) === "app"
       && node.expression.name.text === "post"
       && ts.isStringLiteral(node.arguments[0])
-      && node.arguments[0].text === "/api/profile";
+      && node.arguments[0].text === "/api/setup/accept";
     const inside = insideProfilePost || isProfilePost;
     if (
       inside
       && ts.isPropertyAccessExpression(node)
-      && node.getText(tree) === "req.body.referralCode"
+      && node.getText(tree) === "parsed.data.referralCode"
     ) {
       referralCodeReadInProfilePost = true;
     }
