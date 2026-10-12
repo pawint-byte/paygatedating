@@ -111,7 +111,7 @@ export function AccountSecurity({ passwordPrompt = false, onPasswordSaved }: { p
           {status.replitEmailMismatch && <p role="status" className="rounded-lg border border-amber-700/20 bg-amber-50 px-3 py-2 text-sm text-amber-950">Your Replit sign-in email differs from your PayGate email. PayGate account security uses the email shown above.</p>}
           <div className="flex items-start gap-3 text-sm">
             <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <p className="text-muted-foreground">{status.hasPassword ? "A password is set for this account." : "Set a password to sign in directly without a developer-platform account."}</p>
+            <p className="text-muted-foreground">{status.hasPassword ? "A password is set for this account." : "Enter the password you want to use for direct sign-in — your usual one works."}</p>
           </div>
           {!status.hasPassword && !status.canSetPassword && <p className="rounded-lg border border-border bg-muted/40 p-3 text-sm leading-5 text-muted-foreground">To add a password, first verify your email and sign in from a fresh email link, or sign in with a verified Replit identity.</p>}
           <form onSubmit={submit} className="space-y-4">
